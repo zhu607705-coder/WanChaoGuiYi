@@ -7,324 +7,2922 @@
       "id": "history_guanzhong",
       "regionId": "guanzhong",
       "climateZone": "temperate_loess",
-      "geographyTags": ["loess_plain", "capital_corridor", "river_irrigation"],
-      "customTags": ["qin_han_ritual_core", "imperial_workshop"],
-      "weaponTraditions": ["crossbow", "heavy_infantry", "standardized_arms"],
-      "strategicResources": ["grain", "bronze", "labor_pool"],
+      "geographyTags": [
+        "loess_plain",
+        "capital_corridor",
+        "river_irrigation"
+      ],
+      "customTags": [
+        "qin_han_ritual_core",
+        "imperial_workshop"
+      ],
+      "weaponTraditions": [
+        "crossbow",
+        "heavy_infantry",
+        "standardized_arms"
+      ],
+      "strategicResources": [
+        "grain",
+        "bronze",
+        "labor_pool"
+      ],
       "seasonalProfile": {
         "spring": "irrigation_repair",
-        "summerRisk": ["drought", "river_flood"],
-        "autumnBonus": ["grain_harvest"],
-        "winterRisk": ["cold_supply"]
+        "summerRisk": [
+          "drought",
+          "river_flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
       },
-      "yieldModifiers": {"food": 8, "tax": 6, "manpower": 5, "mobility": 2, "legitimacy": 4},
-      "eventWeights": {"flood": 8, "drought": 14, "storm": 3, "cold": 5, "astronomy": 8},
-      "techAffinities": ["standard_script_law", "canal_granary", "bronze_casting"],
+      "yieldModifiers": {
+        "food": 8,
+        "tax": 6,
+        "manpower": 5,
+        "mobility": 2,
+        "legitimacy": 4
+      },
+      "eventWeights": {
+        "flood": 8,
+        "drought": 14,
+        "storm": 3,
+        "cold": 5,
+        "astronomy": 8
+      },
+      "techAffinities": [
+        "standard_script_law",
+        "canal_granary",
+        "bronze_casting"
+      ],
       "uiSummary": "关中适合中央集权、工程和标准化军备，但干旱与徭役会放大民生压力。"
     },
     {
       "id": "history_longxi",
       "regionId": "longxi",
       "climateZone": "northwest_dry_highland",
-      "geographyTags": ["upland_pass", "frontier_corridor", "horse_route"],
-      "customTags": ["qin_frontier_militia", "border_clans"],
-      "weaponTraditions": ["cavalry", "composite_bow", "frontier_scouts"],
-      "strategicResources": ["horses", "pasture", "iron"],
+      "geographyTags": [
+        "upland_pass",
+        "frontier_corridor",
+        "horse_route"
+      ],
+      "customTags": [
+        "qin_frontier_militia",
+        "border_clans"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "composite_bow",
+        "frontier_scouts"
+      ],
+      "strategicResources": [
+        "horses",
+        "pasture",
+        "iron"
+      ],
       "seasonalProfile": {
         "spring": "horse_breeding",
-        "summerRisk": ["drought"],
-        "autumnBonus": ["frontier_trade"],
-        "winterRisk": ["snow_pass"]
+        "summerRisk": [
+          "drought"
+        ],
+        "autumnBonus": [
+          "frontier_trade"
+        ],
+        "winterRisk": [
+          "snow_pass"
+        ]
       },
-      "yieldModifiers": {"food": -2, "tax": -1, "manpower": 8, "mobility": 3, "legitimacy": 0},
-      "eventWeights": {"flood": 2, "drought": 18, "storm": 5, "cold": 10, "astronomy": 7},
-      "techAffinities": ["mounted_warfare", "iron_smelting"],
+      "yieldModifiers": {
+        "food": -2,
+        "tax": -1,
+        "manpower": 8,
+        "mobility": 3,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 2,
+        "drought": 18,
+        "storm": 5,
+        "cold": 10,
+        "astronomy": 7
+      },
+      "techAffinities": [
+        "mounted_warfare",
+        "iron_smelting"
+      ],
       "uiSummary": "陇西提供马政与边军传统，适合远征和骑兵体系，粮食承压。"
     },
     {
       "id": "history_hedong",
       "regionId": "hedong",
       "climateZone": "temperate_river_plain",
-      "geographyTags": ["river_bend", "grain_corridor", "mountain_gate"],
-      "customTags": ["old_lineages", "salt_iron_workshops"],
-      "weaponTraditions": ["infantry", "crossbow", "siege_engineering"],
-      "strategicResources": ["grain", "salt", "iron"],
+      "geographyTags": [
+        "river_bend",
+        "grain_corridor",
+        "mountain_gate"
+      ],
+      "customTags": [
+        "old_lineages",
+        "salt_iron_workshops"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow",
+        "siege_engineering"
+      ],
+      "strategicResources": [
+        "grain",
+        "salt",
+        "iron"
+      ],
       "seasonalProfile": {
         "spring": "field_repair",
-        "summerRisk": ["river_flood"],
-        "autumnBonus": ["tax_grain"],
-        "winterRisk": ["transport_delay"]
+        "summerRisk": [
+          "river_flood"
+        ],
+        "autumnBonus": [
+          "tax_grain"
+        ],
+        "winterRisk": [
+          "transport_delay"
+        ]
       },
-      "yieldModifiers": {"food": 6, "tax": 5, "manpower": 4, "mobility": 1, "legitimacy": 2},
-      "eventWeights": {"flood": 13, "drought": 9, "storm": 4, "cold": 7, "astronomy": 6},
-      "techAffinities": ["iron_smelting", "canal_granary", "paper_bureaucracy"],
+      "yieldModifiers": {
+        "food": 6,
+        "tax": 5,
+        "manpower": 4,
+        "mobility": 1,
+        "legitimacy": 2
+      },
+      "eventWeights": {
+        "flood": 13,
+        "drought": 9,
+        "storm": 4,
+        "cold": 7,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "iron_smelting",
+        "canal_granary",
+        "paper_bureaucracy"
+      ],
       "uiSummary": "河东是粮税和盐铁节点，科技收益稳定，但洪水会干扰交通和税粮。"
     },
     {
       "id": "history_hanzhong",
       "regionId": "hanzhong",
       "climateZone": "mountain_basin",
-      "geographyTags": ["mountain_pass", "basin_farmland", "river_gate"],
-      "customTags": ["pass_garrisons", "local_grain_storage"],
-      "weaponTraditions": ["mountain_infantry", "crossbow", "garrison"],
-      "strategicResources": ["grain", "timber", "passes"],
+      "geographyTags": [
+        "mountain_pass",
+        "basin_farmland",
+        "river_gate"
+      ],
+      "customTags": [
+        "pass_garrisons",
+        "local_grain_storage"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow",
+        "garrison"
+      ],
+      "strategicResources": [
+        "grain",
+        "timber",
+        "passes"
+      ],
       "seasonalProfile": {
         "spring": "pass_reopen",
-        "summerRisk": ["landslide", "rain_flood"],
-        "autumnBonus": ["basin_harvest"],
-        "winterRisk": ["blocked_pass"]
+        "summerRisk": [
+          "landslide",
+          "rain_flood"
+        ],
+        "autumnBonus": [
+          "basin_harvest"
+        ],
+        "winterRisk": [
+          "blocked_pass"
+        ]
       },
-      "yieldModifiers": {"food": 4, "tax": 0, "manpower": 2, "mobility": -2, "legitimacy": 1},
-      "eventWeights": {"flood": 11, "drought": 5, "storm": 10, "cold": 8, "astronomy": 5},
-      "techAffinities": ["crossbow_standardization", "canal_granary"],
+      "yieldModifiers": {
+        "food": 4,
+        "tax": 0,
+        "manpower": 2,
+        "mobility": -2,
+        "legitimacy": 1
+      },
+      "eventWeights": {
+        "flood": 11,
+        "drought": 5,
+        "storm": 10,
+        "cold": 8,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "crossbow_standardization",
+        "canal_granary"
+      ],
       "uiSummary": "汉中是山地门户，防守和补给价值高，行军效率低。"
     },
     {
       "id": "history_bashu",
       "regionId": "bashu",
       "climateZone": "humid_basin",
-      "geographyTags": ["fertile_basin", "river_network", "mountain_ring"],
-      "customTags": ["local_autonomy", "granary_culture"],
-      "weaponTraditions": ["crossbow", "river_infantry", "defensive_garrison"],
-      "strategicResources": ["grain", "salt", "timber"],
+      "geographyTags": [
+        "fertile_basin",
+        "river_network",
+        "mountain_ring"
+      ],
+      "customTags": [
+        "local_autonomy",
+        "granary_culture"
+      ],
+      "weaponTraditions": [
+        "crossbow",
+        "river_infantry",
+        "defensive_garrison"
+      ],
+      "strategicResources": [
+        "grain",
+        "salt",
+        "timber"
+      ],
       "seasonalProfile": {
         "spring": "irrigation_expansion",
-        "summerRisk": ["flood", "humidity_disease"],
-        "autumnBonus": ["double_harvest"],
-        "winterRisk": ["mist_delay"]
+        "summerRisk": [
+          "flood",
+          "humidity_disease"
+        ],
+        "autumnBonus": [
+          "double_harvest"
+        ],
+        "winterRisk": [
+          "mist_delay"
+        ]
       },
-      "yieldModifiers": {"food": 12, "tax": 3, "manpower": 2, "mobility": -1, "legitimacy": 1},
-      "eventWeights": {"flood": 14, "drought": 4, "storm": 8, "cold": 3, "astronomy": 5},
-      "techAffinities": ["agricultural_calendar", "canal_granary", "river_transport"],
+      "yieldModifiers": {
+        "food": 12,
+        "tax": 3,
+        "manpower": 2,
+        "mobility": -1,
+        "legitimacy": 1
+      },
+      "eventWeights": {
+        "flood": 14,
+        "drought": 4,
+        "storm": 8,
+        "cold": 3,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "agricultural_calendar",
+        "canal_granary",
+        "river_transport"
+      ],
       "uiSummary": "巴蜀是高粮仓地区，适合长期经营，地方自治与山地交通会提高整合成本。"
     },
     {
       "id": "history_jingxiang",
       "regionId": "jingxiang",
       "climateZone": "middle_yangtze_humid",
-      "geographyTags": ["river_plain", "lake_marsh", "crossroads"],
-      "customTags": ["chu_custom", "river_market"],
-      "weaponTraditions": ["river_navy", "crossbow", "spear_infantry"],
-      "strategicResources": ["grain", "timber", "boats"],
+      "geographyTags": [
+        "river_plain",
+        "lake_marsh",
+        "crossroads"
+      ],
+      "customTags": [
+        "chu_custom",
+        "river_market"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow",
+        "spear_infantry"
+      ],
+      "strategicResources": [
+        "grain",
+        "timber",
+        "boats"
+      ],
       "seasonalProfile": {
         "spring": "river_trade",
-        "summerRisk": ["flood", "plague"],
-        "autumnBonus": ["lake_harvest"],
-        "winterRisk": ["muddy_roads"]
+        "summerRisk": [
+          "flood",
+          "plague"
+        ],
+        "autumnBonus": [
+          "lake_harvest"
+        ],
+        "winterRisk": [
+          "muddy_roads"
+        ]
       },
-      "yieldModifiers": {"food": 8, "tax": 5, "manpower": 3, "mobility": 1, "legitimacy": 0},
-      "eventWeights": {"flood": 18, "drought": 5, "storm": 11, "cold": 3, "astronomy": 6},
-      "techAffinities": ["river_transport", "canal_granary", "crossbow_standardization"],
+      "yieldModifiers": {
+        "food": 8,
+        "tax": 5,
+        "manpower": 3,
+        "mobility": 1,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 18,
+        "drought": 5,
+        "storm": 11,
+        "cold": 3,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "river_transport",
+        "canal_granary",
+        "crossbow_standardization"
+      ],
       "uiSummary": "荆襄连接南北，水军和运输收益高，洪涝事件权重大。"
     },
     {
       "id": "history_zhongyuan",
       "regionId": "zhongyuan",
       "climateZone": "central_plain",
-      "geographyTags": ["open_plain", "ritual_center", "population_core"],
-      "customTags": ["orthodox_memory", "scholar_gentry"],
-      "weaponTraditions": ["infantry", "chariot_memory", "siege_engineering"],
-      "strategicResources": ["grain", "population", "ritual_sites"],
+      "geographyTags": [
+        "open_plain",
+        "ritual_center",
+        "population_core"
+      ],
+      "customTags": [
+        "orthodox_memory",
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "chariot_memory",
+        "siege_engineering"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "ritual_sites"
+      ],
       "seasonalProfile": {
         "spring": "population_register",
-        "summerRisk": ["yellow_river_flood", "drought"],
-        "autumnBonus": ["tax_base"],
-        "winterRisk": ["refugee_pressure"]
+        "summerRisk": [
+          "yellow_river_flood",
+          "drought"
+        ],
+        "autumnBonus": [
+          "tax_base"
+        ],
+        "winterRisk": [
+          "refugee_pressure"
+        ]
       },
-      "yieldModifiers": {"food": 10, "tax": 10, "manpower": 8, "mobility": 3, "legitimacy": 8},
-      "eventWeights": {"flood": 19, "drought": 13, "storm": 5, "cold": 6, "astronomy": 10},
-      "techAffinities": ["standard_script_law", "paper_bureaucracy", "civil_service_exams"],
+      "yieldModifiers": {
+        "food": 10,
+        "tax": 10,
+        "manpower": 8,
+        "mobility": 3,
+        "legitimacy": 8
+      },
+      "eventWeights": {
+        "flood": 19,
+        "drought": 13,
+        "storm": 5,
+        "cold": 6,
+        "astronomy": 10
+      },
+      "techAffinities": [
+        "standard_script_law",
+        "paper_bureaucracy",
+        "civil_service_exams"
+      ],
       "uiSummary": "中原提供最高法统与人口收益，也最容易成为灾害、叛乱和继承争议中心。"
     },
     {
       "id": "history_qilu",
       "regionId": "qilu",
       "climateZone": "eastern_plain_coast",
-      "geographyTags": ["plain_coast", "salt_zone", "ritual_schools"],
-      "customTags": ["confucian_lineages", "salt_merchants"],
-      "weaponTraditions": ["infantry", "crossbow", "coastal_patrol"],
-      "strategicResources": ["salt", "fish", "grain"],
+      "geographyTags": [
+        "plain_coast",
+        "salt_zone",
+        "ritual_schools"
+      ],
+      "customTags": [
+        "confucian_lineages",
+        "salt_merchants"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow",
+        "coastal_patrol"
+      ],
+      "strategicResources": [
+        "salt",
+        "fish",
+        "grain"
+      ],
       "seasonalProfile": {
         "spring": "salt_revenue",
-        "summerRisk": ["coastal_storm"],
-        "autumnBonus": ["grain_and_salt"],
-        "winterRisk": ["sea_wind"]
+        "summerRisk": [
+          "coastal_storm"
+        ],
+        "autumnBonus": [
+          "grain_and_salt"
+        ],
+        "winterRisk": [
+          "sea_wind"
+        ]
       },
-      "yieldModifiers": {"food": 4, "tax": 7, "manpower": 3, "mobility": 1, "legitimacy": 5},
-      "eventWeights": {"flood": 8, "drought": 8, "storm": 12, "cold": 5, "astronomy": 8},
-      "techAffinities": ["paper_bureaucracy", "civil_service_exams", "maritime_compass"],
+      "yieldModifiers": {
+        "food": 4,
+        "tax": 7,
+        "manpower": 3,
+        "mobility": 1,
+        "legitimacy": 5
+      },
+      "eventWeights": {
+        "flood": 8,
+        "drought": 8,
+        "storm": 12,
+        "cold": 5,
+        "astronomy": 8
+      },
+      "techAffinities": [
+        "paper_bureaucracy",
+        "civil_service_exams",
+        "maritime_compass"
+      ],
       "uiSummary": "齐鲁兼具礼法、盐利和沿海收益，士人安抚收益更高。"
     },
     {
       "id": "history_youyan",
       "regionId": "youyan",
       "climateZone": "northern_frontier_plain",
-      "geographyTags": ["frontier_plain", "fortified_pass", "steppe_edge"],
-      "customTags": ["military_households", "multiethnic_market"],
-      "weaponTraditions": ["cavalry", "horse_archer", "frontier_garrison"],
-      "strategicResources": ["horses", "iron", "frontier_trade"],
+      "geographyTags": [
+        "frontier_plain",
+        "fortified_pass",
+        "steppe_edge"
+      ],
+      "customTags": [
+        "military_households",
+        "multiethnic_market"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "horse_archer",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron",
+        "frontier_trade"
+      ],
       "seasonalProfile": {
         "spring": "horse_market",
-        "summerRisk": ["border_raid"],
-        "autumnBonus": ["pasture_gain"],
-        "winterRisk": ["hard_freeze"]
+        "summerRisk": [
+          "border_raid"
+        ],
+        "autumnBonus": [
+          "pasture_gain"
+        ],
+        "winterRisk": [
+          "hard_freeze"
+        ]
       },
-      "yieldModifiers": {"food": 0, "tax": 2, "manpower": 9, "mobility": 4, "legitimacy": 1},
-      "eventWeights": {"flood": 3, "drought": 10, "storm": 6, "cold": 16, "astronomy": 7},
-      "techAffinities": ["mounted_warfare", "frontier_fortification", "astronomical_bureau"],
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 2,
+        "manpower": 9,
+        "mobility": 4,
+        "legitimacy": 1
+      },
+      "eventWeights": {
+        "flood": 3,
+        "drought": 10,
+        "storm": 6,
+        "cold": 16,
+        "astronomy": 7
+      },
+      "techAffinities": [
+        "mounted_warfare",
+        "frontier_fortification",
+        "astronomical_bureau"
+      ],
       "uiSummary": "幽燕是北方军事核心，骑兵和边防收益高，寒潮与边患风险高。"
     },
     {
       "id": "history_bingzhou",
       "regionId": "bingzhou",
       "climateZone": "plateau_frontier",
-      "geographyTags": ["plateau", "pass_network", "pasture_edge"],
-      "customTags": ["frontier_clans", "military_colonies"],
-      "weaponTraditions": ["cavalry", "heavy_infantry", "frontier_scouts"],
-      "strategicResources": ["horses", "iron", "pasture"],
+      "geographyTags": [
+        "plateau",
+        "pass_network",
+        "pasture_edge"
+      ],
+      "customTags": [
+        "frontier_clans",
+        "military_colonies"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "heavy_infantry",
+        "frontier_scouts"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron",
+        "pasture"
+      ],
       "seasonalProfile": {
         "spring": "military_drill",
-        "summerRisk": ["drought"],
-        "autumnBonus": ["horse_supply"],
-        "winterRisk": ["snow_pass"]
+        "summerRisk": [
+          "drought"
+        ],
+        "autumnBonus": [
+          "horse_supply"
+        ],
+        "winterRisk": [
+          "snow_pass"
+        ]
       },
-      "yieldModifiers": {"food": -1, "tax": 0, "manpower": 8, "mobility": 2, "legitimacy": 0},
-      "eventWeights": {"flood": 2, "drought": 15, "storm": 6, "cold": 14, "astronomy": 6},
-      "techAffinities": ["mounted_warfare", "iron_smelting", "frontier_fortification"],
+      "yieldModifiers": {
+        "food": -1,
+        "tax": 0,
+        "manpower": 8,
+        "mobility": 2,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 2,
+        "drought": 15,
+        "storm": 6,
+        "cold": 14,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "mounted_warfare",
+        "iron_smelting",
+        "frontier_fortification"
+      ],
       "uiSummary": "并州适合军政与马政，经济收益较低，适合作为北线兵源。"
     },
     {
       "id": "history_liangzhou",
       "regionId": "liangzhou",
       "climateZone": "arid_corridor",
-      "geographyTags": ["hexi_corridor", "oasis", "frontier_trade"],
-      "customTags": ["corridor_oasis_towns", "multiethnic_caravans"],
-      "weaponTraditions": ["cavalry", "horse_archer", "frontier_garrison"],
-      "strategicResources": ["horses", "jade_route", "oasis_grain"],
+      "geographyTags": [
+        "hexi_corridor",
+        "oasis",
+        "frontier_trade"
+      ],
+      "customTags": [
+        "corridor_oasis_towns",
+        "multiethnic_caravans"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "horse_archer",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "jade_route",
+        "oasis_grain"
+      ],
       "seasonalProfile": {
         "spring": "caravan_start",
-        "summerRisk": ["drought", "sandstorm"],
-        "autumnBonus": ["oasis_trade"],
-        "winterRisk": ["cold_desert"]
+        "summerRisk": [
+          "drought",
+          "sandstorm"
+        ],
+        "autumnBonus": [
+          "oasis_trade"
+        ],
+        "winterRisk": [
+          "cold_desert"
+        ]
       },
-      "yieldModifiers": {"food": -3, "tax": 4, "manpower": 5, "mobility": 3, "legitimacy": 0},
-      "eventWeights": {"flood": 1, "drought": 22, "storm": 9, "cold": 11, "astronomy": 9},
-      "techAffinities": ["mounted_warfare", "maritime_compass", "astronomical_bureau"],
+      "yieldModifiers": {
+        "food": -3,
+        "tax": 4,
+        "manpower": 5,
+        "mobility": 3,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 1,
+        "drought": 22,
+        "storm": 9,
+        "cold": 11,
+        "astronomy": 9
+      },
+      "techAffinities": [
+        "mounted_warfare",
+        "maritime_compass",
+        "astronomical_bureau"
+      ],
       "uiSummary": "凉州是走廊贸易和边军节点，战略收益高，干旱和沙暴会扰动补给。"
     },
     {
       "id": "history_huainan",
       "regionId": "huainan",
       "climateZone": "huai_river_plain",
-      "geographyTags": ["river_plain", "canal_candidate", "grain_zone"],
-      "customTags": ["river_lineages", "market_towns"],
-      "weaponTraditions": ["river_navy", "infantry", "crossbow"],
-      "strategicResources": ["grain", "boats", "salt"],
+      "geographyTags": [
+        "river_plain",
+        "canal_candidate",
+        "grain_zone"
+      ],
+      "customTags": [
+        "river_lineages",
+        "market_towns"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "boats",
+        "salt"
+      ],
       "seasonalProfile": {
         "spring": "canal_maintenance",
-        "summerRisk": ["flood", "storm"],
-        "autumnBonus": ["grain_tax"],
-        "winterRisk": ["river_ice"]
+        "summerRisk": [
+          "flood",
+          "storm"
+        ],
+        "autumnBonus": [
+          "grain_tax"
+        ],
+        "winterRisk": [
+          "river_ice"
+        ]
       },
-      "yieldModifiers": {"food": 7, "tax": 6, "manpower": 4, "mobility": 2, "legitimacy": 2},
-      "eventWeights": {"flood": 17, "drought": 7, "storm": 10, "cold": 5, "astronomy": 6},
-      "techAffinities": ["river_transport", "canal_granary", "paper_bureaucracy"],
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 6,
+        "manpower": 4,
+        "mobility": 2,
+        "legitimacy": 2
+      },
+      "eventWeights": {
+        "flood": 17,
+        "drought": 7,
+        "storm": 10,
+        "cold": 5,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "river_transport",
+        "canal_granary",
+        "paper_bureaucracy"
+      ],
       "uiSummary": "淮南适合漕运、粮税和水军，洪涝会影响财政稳定。"
     },
     {
       "id": "history_jiangdong",
       "regionId": "jiangdong",
       "climateZone": "lower_yangtze_delta",
-      "geographyTags": ["river_delta", "wetland", "craft_towns"],
-      "customTags": ["southern_lineages", "merchant_boatmen"],
-      "weaponTraditions": ["river_navy", "crossbow", "marine_infantry"],
-      "strategicResources": ["rice", "boats", "silk"],
+      "geographyTags": [
+        "river_delta",
+        "wetland",
+        "craft_towns"
+      ],
+      "customTags": [
+        "southern_lineages",
+        "merchant_boatmen"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow",
+        "marine_infantry"
+      ],
+      "strategicResources": [
+        "rice",
+        "boats",
+        "silk"
+      ],
       "seasonalProfile": {
         "spring": "craft_market",
-        "summerRisk": ["flood", "typhoon"],
-        "autumnBonus": ["rice_tax"],
-        "winterRisk": ["river_fog"]
+        "summerRisk": [
+          "flood",
+          "typhoon"
+        ],
+        "autumnBonus": [
+          "rice_tax"
+        ],
+        "winterRisk": [
+          "river_fog"
+        ]
       },
-      "yieldModifiers": {"food": 9, "tax": 8, "manpower": 3, "mobility": 2, "legitimacy": 1},
-      "eventWeights": {"flood": 18, "drought": 4, "storm": 16, "cold": 2, "astronomy": 7},
-      "techAffinities": ["river_transport", "maritime_compass", "paper_bureaucracy"],
+      "yieldModifiers": {
+        "food": 9,
+        "tax": 8,
+        "manpower": 3,
+        "mobility": 2,
+        "legitimacy": 1
+      },
+      "eventWeights": {
+        "flood": 18,
+        "drought": 4,
+        "storm": 16,
+        "cold": 2,
+        "astronomy": 7
+      },
+      "techAffinities": [
+        "river_transport",
+        "maritime_compass",
+        "paper_bureaucracy"
+      ],
       "uiSummary": "江东经济和水军潜力高，台风与洪涝权重大，士族整合需要成本。"
     },
     {
       "id": "history_minyue",
       "regionId": "minyue",
       "climateZone": "southeast_mountain_coast",
-      "geographyTags": ["mountain_coast", "harbor_pockets", "forest"],
-      "customTags": ["mountain_maritime_customs", "local_chieftains"],
-      "weaponTraditions": ["mountain_infantry", "coastal_patrol", "short_blades"],
-      "strategicResources": ["timber", "fish", "harbors"],
+      "geographyTags": [
+        "mountain_coast",
+        "harbor_pockets",
+        "forest"
+      ],
+      "customTags": [
+        "mountain_maritime_customs",
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "coastal_patrol",
+        "short_blades"
+      ],
+      "strategicResources": [
+        "timber",
+        "fish",
+        "harbors"
+      ],
       "seasonalProfile": {
         "spring": "coastal_trade",
-        "summerRisk": ["typhoon", "mountain_flood"],
-        "autumnBonus": ["timber_supply"],
-        "winterRisk": ["sea_delay"]
+        "summerRisk": [
+          "typhoon",
+          "mountain_flood"
+        ],
+        "autumnBonus": [
+          "timber_supply"
+        ],
+        "winterRisk": [
+          "sea_delay"
+        ]
       },
-      "yieldModifiers": {"food": 1, "tax": 3, "manpower": 2, "mobility": -2, "legitimacy": -1},
-      "eventWeights": {"flood": 13, "drought": 3, "storm": 20, "cold": 1, "astronomy": 8},
-      "techAffinities": ["maritime_compass", "river_transport"],
+      "yieldModifiers": {
+        "food": 1,
+        "tax": 3,
+        "manpower": 2,
+        "mobility": -2,
+        "legitimacy": -1
+      },
+      "eventWeights": {
+        "flood": 13,
+        "drought": 3,
+        "storm": 20,
+        "cold": 1,
+        "astronomy": 8
+      },
+      "techAffinities": [
+        "maritime_compass",
+        "river_transport"
+      ],
       "uiSummary": "闽越提供港口、山地和木材价值，整合难度高，风暴权重最高。"
     },
     {
       "id": "history_lingnan",
       "regionId": "lingnan",
       "climateZone": "subtropical_coast",
-      "geographyTags": ["subtropical", "coastal_river", "southern_gate"],
-      "customTags": ["lingnan_customs", "maritime_markets"],
-      "weaponTraditions": ["river_navy", "light_infantry", "javelin"],
-      "strategicResources": ["rice", "pearls", "harbors"],
+      "geographyTags": [
+        "subtropical",
+        "coastal_river",
+        "southern_gate"
+      ],
+      "customTags": [
+        "lingnan_customs",
+        "maritime_markets"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "light_infantry",
+        "javelin"
+      ],
+      "strategicResources": [
+        "rice",
+        "pearls",
+        "harbors"
+      ],
       "seasonalProfile": {
         "spring": "maritime_trade",
-        "summerRisk": ["typhoon", "humidity_disease"],
-        "autumnBonus": ["southern_rice"],
-        "winterRisk": ["supply_distance"]
+        "summerRisk": [
+          "typhoon",
+          "humidity_disease"
+        ],
+        "autumnBonus": [
+          "southern_rice"
+        ],
+        "winterRisk": [
+          "supply_distance"
+        ]
       },
-      "yieldModifiers": {"food": 6, "tax": 5, "manpower": 2, "mobility": -1, "legitimacy": -1},
-      "eventWeights": {"flood": 12, "drought": 3, "storm": 19, "cold": 0, "astronomy": 8},
-      "techAffinities": ["maritime_compass", "river_transport", "frontier_fortification"],
+      "yieldModifiers": {
+        "food": 6,
+        "tax": 5,
+        "manpower": 2,
+        "mobility": -1,
+        "legitimacy": -1
+      },
+      "eventWeights": {
+        "flood": 12,
+        "drought": 3,
+        "storm": 19,
+        "cold": 0,
+        "astronomy": 8
+      },
+      "techAffinities": [
+        "maritime_compass",
+        "river_transport",
+        "frontier_fortification"
+      ],
       "uiSummary": "岭南贸易和粮食潜力高，距离、气候病和地方风俗会提高治理成本。"
     },
     {
       "id": "history_yun_gui",
       "regionId": "yun_gui",
       "climateZone": "southwest_mountain",
-      "geographyTags": ["mountain_plateau", "mineral_zone", "tribal_routes"],
-      "customTags": ["southwest_chieftains", "mountain_markets"],
-      "weaponTraditions": ["mountain_infantry", "poison_arrow_memory", "fortified_villages"],
-      "strategicResources": ["copper", "silver", "timber"],
+      "geographyTags": [
+        "mountain_plateau",
+        "mineral_zone",
+        "tribal_routes"
+      ],
+      "customTags": [
+        "southwest_chieftains",
+        "mountain_markets"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "poison_arrow_memory",
+        "fortified_villages"
+      ],
+      "strategicResources": [
+        "copper",
+        "silver",
+        "timber"
+      ],
       "seasonalProfile": {
         "spring": "mountain_market",
-        "summerRisk": ["landslide", "disease"],
-        "autumnBonus": ["mineral_tax"],
-        "winterRisk": ["blocked_routes"]
+        "summerRisk": [
+          "landslide",
+          "disease"
+        ],
+        "autumnBonus": [
+          "mineral_tax"
+        ],
+        "winterRisk": [
+          "blocked_routes"
+        ]
       },
-      "yieldModifiers": {"food": 0, "tax": 3, "manpower": 3, "mobility": -3, "legitimacy": -2},
-      "eventWeights": {"flood": 9, "drought": 5, "storm": 12, "cold": 5, "astronomy": 6},
-      "techAffinities": ["iron_smelting", "paper_bureaucracy", "frontier_fortification"],
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 3,
+        "manpower": 3,
+        "mobility": -3,
+        "legitimacy": -2
+      },
+      "eventWeights": {
+        "flood": 9,
+        "drought": 5,
+        "storm": 12,
+        "cold": 5,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "iron_smelting",
+        "paper_bureaucracy",
+        "frontier_fortification"
+      ],
       "uiSummary": "云贵矿产和山地防御价值高，交通和地方势力是核心治理难点。"
     },
     {
       "id": "history_liaodong",
       "regionId": "liaodong",
       "climateZone": "northeast_forest_frontier",
-      "geographyTags": ["forest_frontier", "cold_coast", "river_border"],
-      "customTags": ["frontier_forts", "hunting_pastoral_markets"],
-      "weaponTraditions": ["cavalry", "forest_archer", "frontier_garrison"],
-      "strategicResources": ["horses", "fur", "iron"],
+      "geographyTags": [
+        "forest_frontier",
+        "cold_coast",
+        "river_border"
+      ],
+      "customTags": [
+        "frontier_forts",
+        "hunting_pastoral_markets"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "forest_archer",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "fur",
+        "iron"
+      ],
       "seasonalProfile": {
         "spring": "frontier_patrol",
-        "summerRisk": ["border_raid"],
-        "autumnBonus": ["fur_trade"],
-        "winterRisk": ["deep_freeze"]
+        "summerRisk": [
+          "border_raid"
+        ],
+        "autumnBonus": [
+          "fur_trade"
+        ],
+        "winterRisk": [
+          "deep_freeze"
+        ]
       },
-      "yieldModifiers": {"food": -2, "tax": 2, "manpower": 5, "mobility": -1, "legitimacy": -1},
-      "eventWeights": {"flood": 4, "drought": 7, "storm": 8, "cold": 22, "astronomy": 8},
-      "techAffinities": ["mounted_warfare", "frontier_fortification", "astronomical_bureau"],
+      "yieldModifiers": {
+        "food": -2,
+        "tax": 2,
+        "manpower": 5,
+        "mobility": -1,
+        "legitimacy": -1
+      },
+      "eventWeights": {
+        "flood": 4,
+        "drought": 7,
+        "storm": 8,
+        "cold": 22,
+        "astronomy": 8
+      },
+      "techAffinities": [
+        "mounted_warfare",
+        "frontier_fortification",
+        "astronomical_bureau"
+      ],
       "uiSummary": "辽东是寒地边防和多民族接触区，骑射与边镇收益高，冬季补给风险极高。"
+    },
+    {
+      "id": "history_luoyang",
+      "regionId": "luoyang",
+      "climateZone": "temperate_river_plain",
+      "geographyTags": [
+        "river_bend",
+        "capital_corridor",
+        "ritual_center"
+      ],
+      "customTags": [
+        "zhou_ritual_capital",
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "chariot_memory",
+        "siege_engineering"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "ritual_sites"
+      ],
+      "seasonalProfile": {
+        "spring": "population_register",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "tax_base"
+        ],
+        "winterRisk": [
+          "refugee_pressure"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 8,
+        "tax": 10,
+        "manpower": 5,
+        "mobility": 3,
+        "legitimacy": 10
+      },
+      "eventWeights": {
+        "flood": 16,
+        "drought": 10,
+        "storm": 4,
+        "cold": 6,
+        "astronomy": 12
+      },
+      "techAffinities": [
+        "standard_script_law",
+        "paper_bureaucracy",
+        "civil_service_exams"
+      ],
+      "uiSummary": "洛阳是东汉、曹魏、西晋、北魏都城，法统和文化底蕴极高。"
+    },
+    {
+      "id": "history_xuzhou",
+      "regionId": "xuzhou",
+      "climateZone": "temperate_river_plain",
+      "geographyTags": [
+        "crossroads",
+        "grain_zone",
+        "military_hub"
+      ],
+      "customTags": [
+        "military_households",
+        "river_lineages"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "cavalry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "transport"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 5,
+        "manpower": 5,
+        "mobility": 4,
+        "legitimacy": 2
+      },
+      "eventWeights": {
+        "flood": 14,
+        "drought": 8,
+        "storm": 5,
+        "cold": 6,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "iron_smelting",
+        "canal_granary"
+      ],
+      "uiSummary": "徐州是南北交通要冲，历来兵家必争之地。"
+    },
+    {
+      "id": "history_changsha",
+      "regionId": "changsha",
+      "climateZone": "middle_yangtze_humid",
+      "geographyTags": [
+        "river_plain",
+        "rice_zone",
+        "southern_stronghold"
+      ],
+      "customTags": [
+        "chu_custom",
+        "river_market"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow",
+        "light_infantry"
+      ],
+      "strategicResources": [
+        "rice",
+        "timber",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "rice_planting",
+        "summerRisk": [
+          "flood",
+          "humidity_disease"
+        ],
+        "autumnBonus": [
+          "rice_harvest"
+        ],
+        "winterRisk": [
+          "muddy_roads"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 6,
+        "tax": 4,
+        "manpower": 3,
+        "mobility": 1,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 15,
+        "drought": 4,
+        "storm": 10,
+        "cold": 2,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "agricultural_calendar",
+        "river_transport"
+      ],
+      "uiSummary": "长沙是湘江流域核心，稻米产区，军事价值在南北对峙时凸显。"
+    },
+    {
+      "id": "history_hebei",
+      "regionId": "hebei",
+      "climateZone": "northern_plain",
+      "geographyTags": [
+        "open_plain",
+        "population_core",
+        "military_stronghold"
+      ],
+      "customTags": [
+        "military_households",
+        "old_lineages"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "infantry",
+        "siege_engineering"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "flood",
+          "drought"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 8,
+        "tax": 7,
+        "manpower": 7,
+        "mobility": 3,
+        "legitimacy": 3
+      },
+      "eventWeights": {
+        "flood": 12,
+        "drought": 10,
+        "storm": 4,
+        "cold": 8,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "iron_smelting",
+        "paper_bureaucracy",
+        "frontier_fortification"
+      ],
+      "uiSummary": "河北是华北平原核心，人口和农业产出极高，也是安史之乱的策源地。"
+    },
+    {
+      "id": "history_chang_an",
+      "regionId": "chang_an",
+      "climateZone": "temperate_loess",
+      "geographyTags": [
+        "loess_plain",
+        "capital_corridor",
+        "silk_road_start"
+      ],
+      "customTags": [
+        "qin_han_ritual_core",
+        "imperial_workshop"
+      ],
+      "weaponTraditions": [
+        "crossbow",
+        "heavy_infantry",
+        "standardized_arms"
+      ],
+      "strategicResources": [
+        "grain",
+        "bronze",
+        "labor_pool"
+      ],
+      "seasonalProfile": {
+        "spring": "irrigation_repair",
+        "summerRisk": [
+          "drought",
+          "river_flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 10,
+        "manpower": 5,
+        "mobility": 2,
+        "legitimacy": 10
+      },
+      "eventWeights": {
+        "flood": 8,
+        "drought": 14,
+        "storm": 3,
+        "cold": 5,
+        "astronomy": 10
+      },
+      "techAffinities": [
+        "standard_script_law",
+        "canal_granary",
+        "bronze_casting"
+      ],
+      "uiSummary": "长安是西汉、隋、唐都城，丝绸之路起点，法统和经济地位极高。"
+    },
+    {
+      "id": "history_jianye",
+      "regionId": "jianye",
+      "climateZone": "lower_yangtze_delta",
+      "geographyTags": [
+        "river_delta",
+        "wetland",
+        "craft_towns"
+      ],
+      "customTags": [
+        "southern_lineages",
+        "merchant_boatmen"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow",
+        "marine_infantry"
+      ],
+      "strategicResources": [
+        "rice",
+        "boats",
+        "silk"
+      ],
+      "seasonalProfile": {
+        "spring": "craft_market",
+        "summerRisk": [
+          "flood",
+          "typhoon"
+        ],
+        "autumnBonus": [
+          "rice_tax"
+        ],
+        "winterRisk": [
+          "river_fog"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 8,
+        "tax": 9,
+        "manpower": 4,
+        "mobility": 2,
+        "legitimacy": 5
+      },
+      "eventWeights": {
+        "flood": 17,
+        "drought": 3,
+        "storm": 14,
+        "cold": 2,
+        "astronomy": 7
+      },
+      "techAffinities": [
+        "river_transport",
+        "maritime_compass",
+        "paper_bureaucracy"
+      ],
+      "uiSummary": "建康是东晋、宋齐梁陈都城，南方政治和文化中心。"
+    },
+    {
+      "id": "history_chengdu",
+      "regionId": "chengdu",
+      "climateZone": "humid_basin",
+      "geographyTags": [
+        "fertile_basin",
+        "river_network",
+        "mountain_ring"
+      ],
+      "customTags": [
+        "local_autonomy",
+        "granary_culture"
+      ],
+      "weaponTraditions": [
+        "crossbow",
+        "river_infantry",
+        "defensive_garrison"
+      ],
+      "strategicResources": [
+        "grain",
+        "salt",
+        "silk"
+      ],
+      "seasonalProfile": {
+        "spring": "irrigation_expansion",
+        "summerRisk": [
+          "flood",
+          "humidity_disease"
+        ],
+        "autumnBonus": [
+          "double_harvest"
+        ],
+        "winterRisk": [
+          "mist_delay"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 10,
+        "tax": 5,
+        "manpower": 4,
+        "mobility": -1,
+        "legitimacy": 3
+      },
+      "eventWeights": {
+        "flood": 12,
+        "drought": 4,
+        "storm": 7,
+        "cold": 2,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "agricultural_calendar",
+        "canal_granary",
+        "river_transport"
+      ],
+      "uiSummary": "成都平原是天府之国，蜀汉和前蜀都城，粮食产出极高。"
+    },
+    {
+      "id": "history_ye",
+      "regionId": "ye",
+      "climateZone": "northern_plain",
+      "geographyTags": [
+        "open_plain",
+        "military_stronghold",
+        "river_bend"
+      ],
+      "customTags": [
+        "military_households",
+        "warlord_base"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "infantry",
+        "siege_engineering"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 6,
+        "manpower": 6,
+        "mobility": 3,
+        "legitimacy": 4
+      },
+      "eventWeights": {
+        "flood": 11,
+        "drought": 9,
+        "storm": 4,
+        "cold": 7,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "iron_smelting",
+        "paper_bureaucracy"
+      ],
+      "uiSummary": "邺城是曹魏、后赵、前燕、东魏、北齐都城，北方军事重镇。"
+    },
+    {
+      "id": "history_yanzhou",
+      "regionId": "yanzhou",
+      "climateZone": "central_plain",
+      "geographyTags": [
+        "open_plain",
+        "grain_zone",
+        "scholarly_center"
+      ],
+      "customTags": [
+        "confucian_lineages",
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population",
+        "salt"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "flood",
+          "drought"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "refugee_pressure"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 6,
+        "tax": 5,
+        "manpower": 4,
+        "mobility": 2,
+        "legitimacy": 3
+      },
+      "eventWeights": {
+        "flood": 12,
+        "drought": 9,
+        "storm": 4,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "paper_bureaucracy",
+        "civil_service_exams"
+      ],
+      "uiSummary": "兖州是曹操起兵之地，孔孟之乡，文化底蕴深厚。"
+    },
+    {
+      "id": "history_yangzhou_city",
+      "regionId": "yangzhou_city",
+      "climateZone": "lower_yangtze_delta",
+      "geographyTags": [
+        "river_delta",
+        "salt_zone",
+        "trade_hub"
+      ],
+      "customTags": [
+        "merchant_boatmen",
+        "salt_merchants"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "light_infantry"
+      ],
+      "strategicResources": [
+        "salt",
+        "silk",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "trade_season",
+        "summerRisk": [
+          "flood",
+          "typhoon"
+        ],
+        "autumnBonus": [
+          "salt_harvest"
+        ],
+        "winterRisk": [
+          "river_fog"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 10,
+        "manpower": 3,
+        "mobility": 2,
+        "legitimacy": 2
+      },
+      "eventWeights": {
+        "flood": 16,
+        "drought": 3,
+        "storm": 12,
+        "cold": 2,
+        "astronomy": 5
+      },
+      "techAffinities": [
+        "river_transport",
+        "maritime_compass"
+      ],
+      "uiSummary": "扬州是唐代最繁华的商业城市，盐税重地。"
+    },
+    {
+      "id": "history_jingzhou_city",
+      "regionId": "jingzhou_city",
+      "climateZone": "middle_yangtze_humid",
+      "geographyTags": [
+        "river_plain",
+        "crossroads",
+        "military_hub"
+      ],
+      "customTags": [
+        "chu_custom",
+        "military_households"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow",
+        "spear_infantry"
+      ],
+      "strategicResources": [
+        "grain",
+        "timber",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "river_trade",
+        "summerRisk": [
+          "flood",
+          "plague"
+        ],
+        "autumnBonus": [
+          "lake_harvest"
+        ],
+        "winterRisk": [
+          "muddy_roads"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 7,
+        "tax": 6,
+        "manpower": 5,
+        "mobility": 2,
+        "legitimacy": 2
+      },
+      "eventWeights": {
+        "flood": 16,
+        "drought": 5,
+        "storm": 10,
+        "cold": 3,
+        "astronomy": 6
+      },
+      "techAffinities": [
+        "river_transport",
+        "crossbow_standardization"
+      ],
+      "uiSummary": "荆州是三国必争之地，关羽大意失荆州的舞台。"
+    },
+    {
+      "id": "history_xuchang",
+      "regionId": "xuchang",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 3,
+        "tax": 2,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "许昌地区，plain地形。"
+    },
+    {
+      "id": "history_yuzhou",
+      "regionId": "yuzhou",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 3,
+        "tax": 2,
+        "manpower": 2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "豫州地区，plain地形。"
+    },
+    {
+      "id": "history_qingzhou",
+      "regionId": "qingzhou",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 2,
+        "tax": 1,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "青州地区，plain地形。"
+    },
+    {
+      "id": "history_nanhai",
+      "regionId": "nanhai",
+      "climateZone": "subtropical",
+      "geographyTags": [
+        "subtropical_coast"
+      ],
+      "customTags": [
+        "lingnan_customs"
+      ],
+      "weaponTraditions": [
+        "light_infantry",
+        "javelin"
+      ],
+      "strategicResources": [
+        "rice",
+        "harbors"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 0,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "南海地区，subtropical地形。"
+    },
+    {
+      "id": "history_jiaozhi",
+      "regionId": "jiaozhi",
+      "climateZone": "subtropical",
+      "geographyTags": [
+        "subtropical_coast"
+      ],
+      "customTags": [
+        "lingnan_customs"
+      ],
+      "weaponTraditions": [
+        "light_infantry",
+        "javelin"
+      ],
+      "strategicResources": [
+        "rice",
+        "harbors"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -1,
+        "tax": -2,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "交趾地区，subtropical地形。"
+    },
+    {
+      "id": "history_wuyuan",
+      "regionId": "wuyuan",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "frontier_plain"
+      ],
+      "customTags": [
+        "military_households"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "五原地区，frontier_plain地形。"
+    },
+    {
+      "id": "history_shuofang",
+      "regionId": "shuofang",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "frontier_plain"
+      ],
+      "customTags": [
+        "military_households"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "朔方地区，frontier_plain地形。"
+    },
+    {
+      "id": "history_hexi",
+      "regionId": "hexi",
+      "climateZone": "corridor",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "河西地区，corridor地形。"
+    },
+    {
+      "id": "history_xiyu",
+      "regionId": "xiyu",
+      "climateZone": "desert_oasis",
+      "geographyTags": [
+        "oasis"
+      ],
+      "customTags": [
+        "multiethnic_caravans"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "horse_archer"
+      ],
+      "strategicResources": [
+        "horses",
+        "jade_route"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "西域地区，desert_oasis地形。"
+    },
+    {
+      "id": "history_xianyang",
+      "regionId": "xianyang",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 1,
+        "tax": 1,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "咸阳地区，plain地形。"
+    },
+    {
+      "id": "history_luoyi",
+      "regionId": "luoyi",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 1,
+        "tax": 1,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "洛邑地区，plain地形。"
+    },
+    {
+      "id": "history_yanjing",
+      "regionId": "yanjing",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "frontier_plain"
+      ],
+      "customTags": [
+        "military_households"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 2,
+        "tax": 2,
+        "manpower": 3,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "燕京地区，frontier_plain地形。"
+    },
+    {
+      "id": "history_donghai",
+      "regionId": "donghai",
+      "climateZone": "mountain_coast",
+      "geographyTags": [
+        "mountain"
+      ],
+      "customTags": [
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "timber",
+        "minerals"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -1,
+        "tax": -1,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "东海地区，mountain_coast地形。"
+    },
+    {
+      "id": "history_guangling",
+      "regionId": "guangling",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "river_plain"
+      ],
+      "customTags": [
+        "river_lineages"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "infantry"
+      ],
+      "strategicResources": [
+        "grain",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 2,
+        "tax": 2,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "广陵地区，river_plain地形。"
+    },
+    {
+      "id": "history_yizhou",
+      "regionId": "yizhou",
+      "climateZone": "basin",
+      "geographyTags": [
+        "fertile_basin"
+      ],
+      "customTags": [
+        "local_autonomy"
+      ],
+      "weaponTraditions": [
+        "crossbow",
+        "defensive_garrison"
+      ],
+      "strategicResources": [
+        "grain",
+        "salt"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 6,
+        "tax": 2,
+        "manpower": 1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "益州地区，basin地形。"
+    },
+    {
+      "id": "history_jianning",
+      "regionId": "jianning",
+      "climateZone": "mountain",
+      "geographyTags": [
+        "mountain"
+      ],
+      "customTags": [
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "timber",
+        "minerals"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "建宁地区，mountain地形。"
+    },
+    {
+      "id": "history_dali",
+      "regionId": "dali",
+      "climateZone": "mountain_plateau",
+      "geographyTags": [
+        "mountain"
+      ],
+      "customTags": [
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "timber",
+        "minerals"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "大理地区，mountain_plateau地形。"
+    },
+    {
+      "id": "history_xiazhou",
+      "regionId": "xiazhou",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "frontier_plain"
+      ],
+      "customTags": [
+        "military_households"
+      ],
+      "weaponTraditions": [
+        "cavalry",
+        "frontier_garrison"
+      ],
+      "strategicResources": [
+        "horses",
+        "iron"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "夏州地区，frontier_plain地形。"
+    },
+    {
+      "id": "history_yongzhou",
+      "regionId": "yongzhou",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 1,
+        "tax": 1,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "雍州地区，plain地形。"
+    },
+    {
+      "id": "history_jizhou",
+      "regionId": "jizhou",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 0,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "济州地区，plain地形。"
+    },
+    {
+      "id": "history_taishan",
+      "regionId": "taishan",
+      "climateZone": "hill",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -1,
+        "tax": -1,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "泰山地区，hill地形。"
+    },
+    {
+      "id": "history_jingkou",
+      "regionId": "jingkou",
+      "climateZone": "river_delta",
+      "geographyTags": [
+        "river_delta"
+      ],
+      "customTags": [
+        "merchant_boatmen"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "rice",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 0,
+        "manpower": -1,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "京口地区，river_delta地形。"
+    },
+    {
+      "id": "history_shouchun",
+      "regionId": "shouchun",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "river_plain"
+      ],
+      "customTags": [
+        "river_lineages"
+      ],
+      "weaponTraditions": [
+        "river_navy",
+        "infantry"
+      ],
+      "strategicResources": [
+        "grain",
+        "boats"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 1,
+        "tax": 0,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "寿春地区，river_plain地形。"
+    },
+    {
+      "id": "history_pangcheng",
+      "regionId": "pangcheng",
+      "climateZone": "temperate",
+      "geographyTags": [
+        "open_plain"
+      ],
+      "customTags": [
+        "scholar_gentry"
+      ],
+      "weaponTraditions": [
+        "infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "grain",
+        "population"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": 0,
+        "tax": 0,
+        "manpower": 0,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "彭城地区，plain地形。"
+    },
+    {
+      "id": "history_yongzhou_south",
+      "regionId": "yongzhou_south",
+      "climateZone": "subtropical",
+      "geographyTags": [
+        "subtropical_coast"
+      ],
+      "customTags": [
+        "lingnan_customs"
+      ],
+      "weaponTraditions": [
+        "light_infantry",
+        "javelin"
+      ],
+      "strategicResources": [
+        "rice",
+        "harbors"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "邕州地区，subtropical地形。"
+    },
+    {
+      "id": "history_qinzhou",
+      "regionId": "qinzhou",
+      "climateZone": "subtropical",
+      "geographyTags": [
+        "subtropical_coast"
+      ],
+      "customTags": [
+        "lingnan_customs"
+      ],
+      "weaponTraditions": [
+        "light_infantry",
+        "javelin"
+      ],
+      "strategicResources": [
+        "rice",
+        "harbors"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -3,
+        "tax": -3,
+        "manpower": -3,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "钦州地区，subtropical地形。"
+    },
+    {
+      "id": "history_guizhou",
+      "regionId": "guizhou",
+      "climateZone": "mountain",
+      "geographyTags": [
+        "mountain"
+      ],
+      "customTags": [
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "timber",
+        "minerals"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -2,
+        "tax": -2,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "桂州地区，mountain地形。"
+    },
+    {
+      "id": "history_haicheng",
+      "regionId": "haicheng",
+      "climateZone": "mountain_coast",
+      "geographyTags": [
+        "mountain"
+      ],
+      "customTags": [
+        "local_chieftains"
+      ],
+      "weaponTraditions": [
+        "mountain_infantry",
+        "crossbow"
+      ],
+      "strategicResources": [
+        "timber",
+        "minerals"
+      ],
+      "seasonalProfile": {
+        "spring": "field_repair",
+        "summerRisk": [
+          "drought",
+          "flood"
+        ],
+        "autumnBonus": [
+          "grain_harvest"
+        ],
+        "winterRisk": [
+          "cold_supply"
+        ]
+      },
+      "yieldModifiers": {
+        "food": -2,
+        "tax": -2,
+        "manpower": -2,
+        "mobility": 0,
+        "legitimacy": 0
+      },
+      "eventWeights": {
+        "flood": 10,
+        "drought": 8,
+        "storm": 5,
+        "cold": 5,
+        "astronomy": 5
+      },
+      "techAffinities": [],
+      "uiSummary": "海城地区，mountain_coast地形。"
     }
   ]
 }

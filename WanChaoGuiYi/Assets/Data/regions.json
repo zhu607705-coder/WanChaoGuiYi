@@ -21,10 +21,21 @@
         "stateLand": 0.15,
         "religiousLand": 0.05
       },
-      "legitimacyMemory": ["mandate", "military"],
+      "legitimacyMemory": [
+        "mandate",
+        "military"
+      ],
       "localPower": 45,
       "rebellionRisk": 12,
-      "neighbors": ["longxi", "hedong", "hanzhong"],
+      "neighbors": [
+        "longxi",
+        "hedong",
+        "hanzhong",
+        "luoyang",
+        "chang_an",
+        "xianyang",
+        "yongzhou"
+      ],
       "eraProfile": {
         "classical": "imperial_core",
         "medieval": "frontier_gateway",
@@ -45,10 +56,19 @@
         "stateLand": 0.18,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["military", "law"],
+      "legitimacyMemory": [
+        "military",
+        "law"
+      ],
       "localPower": 52,
       "rebellionRisk": 16,
-      "neighbors": ["guanzhong", "liangzhou", "hanzhong"],
+      "neighbors": [
+        "guanzhong",
+        "liangzhou",
+        "hanzhong",
+        "hexi",
+        "chang_an"
+      ],
       "eraProfile": {
         "classical": "qin_frontier",
         "medieval": "border_corridor",
@@ -69,10 +89,19 @@
         "stateLand": 0.13,
         "religiousLand": 0.05
       },
-      "legitimacyMemory": ["mandate", "bureaucracy"],
+      "legitimacyMemory": [
+        "mandate",
+        "bureaucracy"
+      ],
       "localPower": 50,
       "rebellionRisk": 14,
-      "neighbors": ["guanzhong", "bingzhou", "zhongyuan"],
+      "neighbors": [
+        "guanzhong",
+        "bingzhou",
+        "zhongyuan",
+        "luoyang",
+        "hebei"
+      ],
       "eraProfile": {
         "classical": "grain_corridor",
         "medieval": "northern_pivot",
@@ -93,10 +122,20 @@
         "stateLand": 0.12,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["mandate", "military"],
+      "legitimacyMemory": [
+        "mandate",
+        "military"
+      ],
       "localPower": 42,
       "rebellionRisk": 10,
-      "neighbors": ["guanzhong", "longxi", "bashu", "jingxiang"],
+      "neighbors": [
+        "guanzhong",
+        "longxi",
+        "bashu",
+        "jingxiang",
+        "chang_an",
+        "chengdu"
+      ],
       "eraProfile": {
         "classical": "mountain_gate",
         "medieval": "shuhan_entry",
@@ -117,10 +156,19 @@
         "stateLand": 0.12,
         "religiousLand": 0.05
       },
-      "legitimacyMemory": ["mandate", "local"],
+      "legitimacyMemory": [
+        "mandate",
+        "local"
+      ],
       "localPower": 56,
       "rebellionRisk": 15,
-      "neighbors": ["hanzhong", "jingxiang", "yun_gui"],
+      "neighbors": [
+        "hanzhong",
+        "jingxiang",
+        "yun_gui",
+        "chengdu",
+        "yizhou"
+      ],
       "eraProfile": {
         "classical": "self_sufficient_basin",
         "medieval": "kingdom_base",
@@ -141,10 +189,26 @@
         "stateLand": 0.12,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["mandate", "bureaucracy"],
+      "legitimacyMemory": [
+        "mandate",
+        "bureaucracy"
+      ],
       "localPower": 58,
       "rebellionRisk": 17,
-      "neighbors": ["hanzhong", "bashu", "zhongyuan", "huainan", "jiangdong", "lingnan"],
+      "neighbors": [
+        "hanzhong",
+        "bashu",
+        "zhongyuan",
+        "huainan",
+        "jiangdong",
+        "lingnan",
+        "xuchang",
+        "yuzhou",
+        "changsha",
+        "yizhou",
+        "shouchun",
+        "jingzhou_city"
+      ],
       "eraProfile": {
         "classical": "chu_heartland",
         "medieval": "river_contest_zone",
@@ -165,10 +229,29 @@
         "stateLand": 0.12,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["mandate", "ritual", "bureaucracy"],
+      "legitimacyMemory": [
+        "mandate",
+        "ritual",
+        "bureaucracy"
+      ],
       "localPower": 68,
       "rebellionRisk": 18,
-      "neighbors": ["hedong", "qilu", "huainan", "jingxiang", "youyan"],
+      "neighbors": [
+        "hedong",
+        "qilu",
+        "huainan",
+        "jingxiang",
+        "youyan",
+        "luoyang",
+        "xuchang",
+        "xuzhou",
+        "yanzhou",
+        "yuzhou",
+        "hebei",
+        "ye",
+        "luoyi",
+        "pangcheng"
+      ],
       "eraProfile": {
         "classical": "royal_plain",
         "medieval": "dynastic_center",
@@ -189,10 +272,22 @@
         "stateLand": 0.1,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["ritual", "mandate"],
+      "legitimacyMemory": [
+        "ritual",
+        "mandate"
+      ],
       "localPower": 62,
       "rebellionRisk": 13,
-      "neighbors": ["zhongyuan", "youyan", "huainan"],
+      "neighbors": [
+        "zhongyuan",
+        "youyan",
+        "huainan",
+        "xuzhou",
+        "yanzhou",
+        "qingzhou",
+        "jizhou",
+        "taishan"
+      ],
       "eraProfile": {
         "classical": "ritual_scholarly_land",
         "medieval": "eastern_tax_base",
@@ -213,10 +308,21 @@
         "stateLand": 0.2,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["military", "multiethnic"],
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
       "localPower": 64,
       "rebellionRisk": 20,
-      "neighbors": ["zhongyuan", "qilu", "bingzhou", "liaodong"],
+      "neighbors": [
+        "zhongyuan",
+        "qilu",
+        "bingzhou",
+        "liaodong",
+        "qingzhou",
+        "hebei",
+        "yanjing"
+      ],
       "eraProfile": {
         "classical": "northern_frontier",
         "medieval": "cavalry_gateway",
@@ -237,10 +343,20 @@
         "stateLand": 0.21,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["military", "mandate"],
+      "legitimacyMemory": [
+        "military",
+        "mandate"
+      ],
       "localPower": 60,
       "rebellionRisk": 19,
-      "neighbors": ["hedong", "youyan", "liangzhou"],
+      "neighbors": [
+        "hedong",
+        "youyan",
+        "liangzhou",
+        "wuyuan",
+        "shuofang",
+        "xiazhou"
+      ],
       "eraProfile": {
         "classical": "frontier_military_zone",
         "medieval": "warlord_base",
@@ -261,10 +377,19 @@
         "stateLand": 0.24,
         "religiousLand": 0.08
       },
-      "legitimacyMemory": ["military", "multiethnic"],
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
       "localPower": 70,
       "rebellionRisk": 24,
-      "neighbors": ["longxi", "bingzhou"],
+      "neighbors": [
+        "longxi",
+        "bingzhou",
+        "wuyuan",
+        "hexi",
+        "xiyu"
+      ],
       "eraProfile": {
         "classical": "western_corridor",
         "medieval": "silk_route_gate",
@@ -285,10 +410,24 @@
         "stateLand": 0.1,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["mandate", "local"],
+      "legitimacyMemory": [
+        "mandate",
+        "local"
+      ],
       "localPower": 59,
       "rebellionRisk": 16,
-      "neighbors": ["zhongyuan", "qilu", "jiangdong", "jingxiang"],
+      "neighbors": [
+        "zhongyuan",
+        "qilu",
+        "jiangdong",
+        "jingxiang",
+        "xuzhou",
+        "jianye",
+        "guangling",
+        "jingkou",
+        "shouchun",
+        "yangzhou_city"
+      ],
       "eraProfile": {
         "classical": "river_borderland",
         "medieval": "north_south_buffer",
@@ -309,10 +448,23 @@
         "stateLand": 0.09,
         "religiousLand": 0.06
       },
-      "legitimacyMemory": ["local", "bureaucracy"],
+      "legitimacyMemory": [
+        "local",
+        "bureaucracy"
+      ],
       "localPower": 72,
       "rebellionRisk": 18,
-      "neighbors": ["huainan", "jingxiang", "minyue", "lingnan"],
+      "neighbors": [
+        "huainan",
+        "jingxiang",
+        "minyue",
+        "lingnan",
+        "jianye",
+        "donghai",
+        "guangling",
+        "jingkou",
+        "yangzhou_city"
+      ],
       "eraProfile": {
         "classical": "southern_rise",
         "medieval": "river_kingdom_base",
@@ -333,10 +485,19 @@
         "stateLand": 0.08,
         "religiousLand": 0.1
       },
-      "legitimacyMemory": ["local", "multiethnic"],
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
       "localPower": 66,
       "rebellionRisk": 22,
-      "neighbors": ["jiangdong", "lingnan"],
+      "neighbors": [
+        "jiangdong",
+        "lingnan",
+        "nanhai",
+        "donghai",
+        "haicheng"
+      ],
       "eraProfile": {
         "classical": "southern_periphery",
         "medieval": "coastal_mountain_zone",
@@ -357,10 +518,26 @@
         "stateLand": 0.1,
         "religiousLand": 0.1
       },
-      "legitimacyMemory": ["local", "multiethnic"],
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
       "localPower": 68,
       "rebellionRisk": 23,
-      "neighbors": ["jingxiang", "jiangdong", "minyue", "yun_gui"],
+      "neighbors": [
+        "jingxiang",
+        "jiangdong",
+        "minyue",
+        "yun_gui",
+        "changsha",
+        "nanhai",
+        "jiaozhi",
+        "jianning",
+        "jingzhou_city",
+        "yongzhou_south",
+        "qinzhou",
+        "guizhou"
+      ],
       "eraProfile": {
         "classical": "integration_frontier",
         "medieval": "southern_gateway",
@@ -381,10 +558,20 @@
         "stateLand": 0.1,
         "religiousLand": 0.15
       },
-      "legitimacyMemory": ["local", "multiethnic"],
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
       "localPower": 76,
       "rebellionRisk": 28,
-      "neighbors": ["bashu", "lingnan"],
+      "neighbors": [
+        "bashu",
+        "lingnan",
+        "chengdu",
+        "jianning",
+        "dali",
+        "guizhou"
+      ],
       "eraProfile": {
         "classical": "remote_highland",
         "medieval": "tribal_frontier",
@@ -405,14 +592,1214 @@
         "stateLand": 0.22,
         "religiousLand": 0.1
       },
-      "legitimacyMemory": ["military", "multiethnic"],
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
       "localPower": 74,
       "rebellionRisk": 26,
-      "neighbors": ["youyan"],
+      "neighbors": [
+        "youyan"
+      ],
       "eraProfile": {
         "classical": "northeast_outpost",
         "medieval": "frontier_contest",
         "early_modern": "dynastic_origin_zone"
+      }
+    },
+    {
+      "id": "luoyang",
+      "name": "洛阳",
+      "terrain": "plain",
+      "population": 900000,
+      "foodOutput": 110,
+      "taxOutput": 100,
+      "manpower": 65,
+      "landStructure": {
+        "smallFarmers": 0.48,
+        "localElites": 0.34,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "ritual",
+        "bureaucracy"
+      ],
+      "localPower": 65,
+      "rebellionRisk": 16,
+      "neighbors": [
+        "zhongyuan",
+        "hedong",
+        "guanzhong",
+        "luoyi"
+      ],
+      "eraProfile": {
+        "classical": "imperial_capital",
+        "medieval": "contested_capital",
+        "early_modern": "secondary_capital"
+      }
+    },
+    {
+      "id": "xuchang",
+      "name": "许昌",
+      "terrain": "plain",
+      "population": 680000,
+      "foodOutput": 95,
+      "taxOutput": 75,
+      "manpower": 55,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.3,
+        "stateLand": 0.14,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "military"
+      ],
+      "localPower": 55,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "zhongyuan",
+        "jingxiang",
+        "yuzhou"
+      ],
+      "eraProfile": {
+        "classical": "cao_wei_base",
+        "medieval": "contested_town",
+        "early_modern": "interior_city"
+      }
+    },
+    {
+      "id": "xuzhou",
+      "name": "徐州",
+      "terrain": "plain",
+      "population": 720000,
+      "foodOutput": 100,
+      "taxOutput": 80,
+      "manpower": 60,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.32,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "mandate"
+      ],
+      "localPower": 60,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "zhongyuan",
+        "qilu",
+        "huainan",
+        "yanzhou",
+        "pangcheng"
+      ],
+      "eraProfile": {
+        "classical": "strategic_crossroads",
+        "medieval": "contested_city",
+        "early_modern": "northern_gateway"
+      }
+    },
+    {
+      "id": "yanzhou",
+      "name": "兖州",
+      "terrain": "plain",
+      "population": 600000,
+      "foodOutput": 88,
+      "taxOutput": 70,
+      "manpower": 52,
+      "landStructure": {
+        "smallFarmers": 0.49,
+        "localElites": 0.33,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "bureaucracy",
+        "mandate"
+      ],
+      "localPower": 58,
+      "rebellionRisk": 13,
+      "neighbors": [
+        "zhongyuan",
+        "qilu",
+        "xuzhou",
+        "jizhou",
+        "taishan"
+      ],
+      "eraProfile": {
+        "classical": "cao_cao_base",
+        "medieval": "scholarly_center",
+        "early_modern": "tax_base"
+      }
+    },
+    {
+      "id": "yuzhou",
+      "name": "豫州",
+      "terrain": "plain",
+      "population": 650000,
+      "foodOutput": 92,
+      "taxOutput": 78,
+      "manpower": 56,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.31,
+        "stateLand": 0.13,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "ritual"
+      ],
+      "localPower": 56,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "zhongyuan",
+        "jingxiang",
+        "xuchang"
+      ],
+      "eraProfile": {
+        "classical": "central_province",
+        "medieval": "contested_territory",
+        "early_modern": "interior_province"
+      }
+    },
+    {
+      "id": "qingzhou",
+      "name": "青州",
+      "terrain": "plain",
+      "population": 580000,
+      "foodOutput": 85,
+      "taxOutput": 68,
+      "manpower": 50,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.32,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "bureaucracy",
+        "local"
+      ],
+      "localPower": 55,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "qilu",
+        "youyan"
+      ],
+      "eraProfile": {
+        "classical": "eastern_province",
+        "medieval": "yellow_turban_origin",
+        "early_modern": "coastal_base"
+      }
+    },
+    {
+      "id": "changsha",
+      "name": "长沙",
+      "terrain": "river_plain",
+      "population": 520000,
+      "foodOutput": 78,
+      "taxOutput": 58,
+      "manpower": 42,
+      "landStructure": {
+        "smallFarmers": 0.52,
+        "localElites": 0.28,
+        "stateLand": 0.12,
+        "religiousLand": 0.08
+      },
+      "legitimacyMemory": [
+        "local",
+        "military"
+      ],
+      "localPower": 58,
+      "rebellionRisk": 16,
+      "neighbors": [
+        "jingxiang",
+        "lingnan",
+        "jingzhou_city",
+        "guizhou"
+      ],
+      "eraProfile": {
+        "classical": "chu_southern_base",
+        "medieval": "contested_city",
+        "early_modern": "rice_granary"
+      }
+    },
+    {
+      "id": "nanhai",
+      "name": "南海",
+      "terrain": "subtropical",
+      "population": 380000,
+      "foodOutput": 60,
+      "taxOutput": 52,
+      "manpower": 32,
+      "landStructure": {
+        "smallFarmers": 0.54,
+        "localElites": 0.26,
+        "stateLand": 0.1,
+        "religiousLand": 0.1
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 65,
+      "rebellionRisk": 20,
+      "neighbors": [
+        "lingnan",
+        "minyue"
+      ],
+      "eraProfile": {
+        "classical": "trade_port",
+        "medieval": "maritime_gateway",
+        "early_modern": "foreign_trade"
+      }
+    },
+    {
+      "id": "jiaozhi",
+      "name": "交趾",
+      "terrain": "subtropical",
+      "population": 280000,
+      "foodOutput": 50,
+      "taxOutput": 35,
+      "manpower": 28,
+      "landStructure": {
+        "smallFarmers": 0.55,
+        "localElites": 0.22,
+        "stateLand": 0.1,
+        "religiousLand": 0.13
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 72,
+      "rebellionRisk": 25,
+      "neighbors": [
+        "lingnan",
+        "yongzhou_south",
+        "qinzhou"
+      ],
+      "eraProfile": {
+        "classical": "southern_frontier",
+        "medieval": "chinese_vietnam",
+        "early_modern": "tributary_region"
+      }
+    },
+    {
+      "id": "wuyuan",
+      "name": "五原",
+      "terrain": "frontier_plain",
+      "population": 220000,
+      "foodOutput": 32,
+      "taxOutput": 22,
+      "manpower": 50,
+      "landStructure": {
+        "smallFarmers": 0.4,
+        "localElites": 0.25,
+        "stateLand": 0.28,
+        "religiousLand": 0.07
+      },
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
+      "localPower": 68,
+      "rebellionRisk": 22,
+      "neighbors": [
+        "bingzhou",
+        "liangzhou",
+        "shuofang"
+      ],
+      "eraProfile": {
+        "classical": "northern_garrison",
+        "medieval": "steppe_border",
+        "early_modern": "frontier_fortress"
+      }
+    },
+    {
+      "id": "shuofang",
+      "name": "朔方",
+      "terrain": "frontier_plain",
+      "population": 200000,
+      "foodOutput": 28,
+      "taxOutput": 20,
+      "manpower": 52,
+      "landStructure": {
+        "smallFarmers": 0.38,
+        "localElites": 0.24,
+        "stateLand": 0.3,
+        "religiousLand": 0.08
+      },
+      "legitimacyMemory": [
+        "military"
+      ],
+      "localPower": 70,
+      "rebellionRisk": 24,
+      "neighbors": [
+        "bingzhou",
+        "wuyuan",
+        "xiazhou"
+      ],
+      "eraProfile": {
+        "classical": "han_frontier",
+        "medieval": "northern_defense",
+        "early_modern": "military_zone"
+      }
+    },
+    {
+      "id": "hexi",
+      "name": "河西",
+      "terrain": "corridor",
+      "population": 180000,
+      "foodOutput": 25,
+      "taxOutput": 22,
+      "manpower": 45,
+      "landStructure": {
+        "smallFarmers": 0.38,
+        "localElites": 0.26,
+        "stateLand": 0.28,
+        "religiousLand": 0.08
+      },
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
+      "localPower": 72,
+      "rebellionRisk": 22,
+      "neighbors": [
+        "liangzhou",
+        "longxi",
+        "xiyu"
+      ],
+      "eraProfile": {
+        "classical": "silk_road_segment",
+        "medieval": "oasis_network",
+        "early_modern": "frontier_trade"
+      }
+    },
+    {
+      "id": "xiyu",
+      "name": "西域",
+      "terrain": "desert_oasis",
+      "population": 150000,
+      "foodOutput": 20,
+      "taxOutput": 18,
+      "manpower": 35,
+      "landStructure": {
+        "smallFarmers": 0.35,
+        "localElites": 0.25,
+        "stateLand": 0.3,
+        "religiousLand": 0.1
+      },
+      "legitimacyMemory": [
+        "military",
+        "multiethnic"
+      ],
+      "localPower": 75,
+      "rebellionRisk": 28,
+      "neighbors": [
+        "hexi",
+        "liangzhou"
+      ],
+      "eraProfile": {
+        "classical": "han_protectorate",
+        "medieval": "tang_control",
+        "early_modern": "marginal_control"
+      }
+    },
+    {
+      "id": "hebei",
+      "name": "河北",
+      "terrain": "plain",
+      "population": 850000,
+      "foodOutput": 115,
+      "taxOutput": 95,
+      "manpower": 70,
+      "landStructure": {
+        "smallFarmers": 0.47,
+        "localElites": 0.34,
+        "stateLand": 0.13,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "military",
+        "bureaucracy"
+      ],
+      "localPower": 62,
+      "rebellionRisk": 16,
+      "neighbors": [
+        "youyan",
+        "zhongyuan",
+        "hedong",
+        "ye",
+        "yanjing"
+      ],
+      "eraProfile": {
+        "classical": "warring_states_ground",
+        "medieval": "an_lushan_base",
+        "early_modern": "northern_core"
+      }
+    },
+    {
+      "id": "chang_an",
+      "name": "长安",
+      "terrain": "plain",
+      "population": 950000,
+      "foodOutput": 105,
+      "taxOutput": 110,
+      "manpower": 60,
+      "landStructure": {
+        "smallFarmers": 0.46,
+        "localElites": 0.32,
+        "stateLand": 0.16,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "ritual",
+        "military"
+      ],
+      "localPower": 60,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "guanzhong",
+        "longxi",
+        "hanzhong",
+        "xianyang",
+        "yongzhou"
+      ],
+      "eraProfile": {
+        "classical": "qin_han_capital",
+        "medieval": "tang_capital",
+        "early_modern": "secondary_capital"
+      }
+    },
+    {
+      "id": "jianye",
+      "name": "建康",
+      "terrain": "river_delta",
+      "population": 800000,
+      "foodOutput": 118,
+      "taxOutput": 105,
+      "manpower": 52,
+      "landStructure": {
+        "smallFarmers": 0.45,
+        "localElites": 0.38,
+        "stateLand": 0.1,
+        "religiousLand": 0.07
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "bureaucracy",
+        "local"
+      ],
+      "localPower": 70,
+      "rebellionRisk": 17,
+      "neighbors": [
+        "jiangdong",
+        "huainan"
+      ],
+      "eraProfile": {
+        "classical": "southern_capital",
+        "medieval": "eastern_jin_capital",
+        "early_modern": "ming_capital"
+      }
+    },
+    {
+      "id": "chengdu",
+      "name": "成都",
+      "terrain": "basin",
+      "population": 850000,
+      "foodOutput": 135,
+      "taxOutput": 80,
+      "manpower": 58,
+      "landStructure": {
+        "smallFarmers": 0.56,
+        "localElites": 0.27,
+        "stateLand": 0.12,
+        "religiousLand": 0.05
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "local"
+      ],
+      "localPower": 55,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "bashu",
+        "hanzhong",
+        "yun_gui"
+      ],
+      "eraProfile": {
+        "classical": "shu_capital",
+        "medieval": "shu_han_capital",
+        "early_modern": "sichuan_capital"
+      }
+    },
+    {
+      "id": "ye",
+      "name": "邺城",
+      "terrain": "plain",
+      "population": 700000,
+      "foodOutput": 95,
+      "taxOutput": 82,
+      "manpower": 62,
+      "landStructure": {
+        "smallFarmers": 0.48,
+        "localElites": 0.33,
+        "stateLand": 0.13,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "mandate"
+      ],
+      "localPower": 64,
+      "rebellionRisk": 16,
+      "neighbors": [
+        "hebei",
+        "zhongyuan"
+      ],
+      "eraProfile": {
+        "classical": "cao_wei_capital",
+        "medieval": "northern_capital",
+        "early_modern": "regional_city"
+      }
+    },
+    {
+      "id": "xianyang",
+      "name": "咸阳",
+      "terrain": "plain",
+      "population": 500000,
+      "foodOutput": 75,
+      "taxOutput": 65,
+      "manpower": 48,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.28,
+        "stateLand": 0.16,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "military"
+      ],
+      "localPower": 50,
+      "rebellionRisk": 12,
+      "neighbors": [
+        "guanzhong",
+        "chang_an"
+      ],
+      "eraProfile": {
+        "classical": "qin_capital",
+        "medieval": "tang_suburb",
+        "early_modern": "interior_city"
+      }
+    },
+    {
+      "id": "luoyi",
+      "name": "洛邑",
+      "terrain": "plain",
+      "population": 450000,
+      "foodOutput": 70,
+      "taxOutput": 60,
+      "manpower": 40,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.3,
+        "stateLand": 0.14,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "ritual",
+        "mandate"
+      ],
+      "localPower": 52,
+      "rebellionRisk": 12,
+      "neighbors": [
+        "luoyang",
+        "zhongyuan"
+      ],
+      "eraProfile": {
+        "classical": "zhou_capital",
+        "medieval": "ritual_center",
+        "early_modern": "historical_site"
+      }
+    },
+    {
+      "id": "yanjing",
+      "name": "燕京",
+      "terrain": "frontier_plain",
+      "population": 600000,
+      "foodOutput": 80,
+      "taxOutput": 70,
+      "manpower": 65,
+      "landStructure": {
+        "smallFarmers": 0.44,
+        "localElites": 0.3,
+        "stateLand": 0.2,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "mandate"
+      ],
+      "localPower": 66,
+      "rebellionRisk": 18,
+      "neighbors": [
+        "youyan",
+        "hebei"
+      ],
+      "eraProfile": {
+        "classical": "yan_capital",
+        "medieval": "liao_capital",
+        "early_modern": "mongol_capital"
+      }
+    },
+    {
+      "id": "donghai",
+      "name": "东海",
+      "terrain": "mountain_coast",
+      "population": 350000,
+      "foodOutput": 55,
+      "taxOutput": 42,
+      "manpower": 35,
+      "landStructure": {
+        "smallFarmers": 0.52,
+        "localElites": 0.26,
+        "stateLand": 0.1,
+        "religiousLand": 0.12
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 62,
+      "rebellionRisk": 18,
+      "neighbors": [
+        "minyue",
+        "jiangdong",
+        "haicheng"
+      ],
+      "eraProfile": {
+        "classical": "coastal_periphery",
+        "medieval": "pirate_base",
+        "early_modern": "maritime_zone"
+      }
+    },
+    {
+      "id": "guangling",
+      "name": "广陵",
+      "terrain": "river_plain",
+      "population": 550000,
+      "foodOutput": 85,
+      "taxOutput": 72,
+      "manpower": 48,
+      "landStructure": {
+        "smallFarmers": 0.49,
+        "localElites": 0.33,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "bureaucracy",
+        "local"
+      ],
+      "localPower": 58,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "huainan",
+        "jiangdong"
+      ],
+      "eraProfile": {
+        "classical": "canal_city",
+        "medieval": "salt_trade_hub",
+        "early_modern": "commercial_center"
+      }
+    },
+    {
+      "id": "yizhou",
+      "name": "益州",
+      "terrain": "basin",
+      "population": 700000,
+      "foodOutput": 120,
+      "taxOutput": 72,
+      "manpower": 55,
+      "landStructure": {
+        "smallFarmers": 0.55,
+        "localElites": 0.27,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "local",
+        "mandate"
+      ],
+      "localPower": 56,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "bashu",
+        "jingxiang"
+      ],
+      "eraProfile": {
+        "classical": "shu_province",
+        "medieval": "rice_basin",
+        "early_modern": "sichuan_core"
+      }
+    },
+    {
+      "id": "jianning",
+      "name": "建宁",
+      "terrain": "mountain",
+      "population": 250000,
+      "foodOutput": 38,
+      "taxOutput": 28,
+      "manpower": 30,
+      "landStructure": {
+        "smallFarmers": 0.53,
+        "localElites": 0.24,
+        "stateLand": 0.1,
+        "religiousLand": 0.13
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 68,
+      "rebellionRisk": 22,
+      "neighbors": [
+        "yun_gui",
+        "lingnan"
+      ],
+      "eraProfile": {
+        "classical": "southwestern_frontier",
+        "medieval": "tribal_zone",
+        "early_modern": "border_region"
+      }
+    },
+    {
+      "id": "dali",
+      "name": "大理",
+      "terrain": "mountain_plateau",
+      "population": 200000,
+      "foodOutput": 30,
+      "taxOutput": 22,
+      "manpower": 25,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.22,
+        "stateLand": 0.08,
+        "religiousLand": 0.2
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 78,
+      "rebellionRisk": 26,
+      "neighbors": [
+        "yun_gui"
+      ],
+      "eraProfile": {
+        "classical": "remote_kingdom",
+        "medieval": "dali_kingdom",
+        "early_modern": "frontier_province"
+      }
+    },
+    {
+      "id": "xiazhou",
+      "name": "夏州",
+      "terrain": "frontier_plain",
+      "population": 180000,
+      "foodOutput": 26,
+      "taxOutput": 18,
+      "manpower": 42,
+      "landStructure": {
+        "smallFarmers": 0.38,
+        "localElites": 0.24,
+        "stateLand": 0.3,
+        "religiousLand": 0.08
+      },
+      "legitimacyMemory": [
+        "military"
+      ],
+      "localPower": 70,
+      "rebellionRisk": 22,
+      "neighbors": [
+        "bingzhou",
+        "shuofang"
+      ],
+      "eraProfile": {
+        "classical": "northern_garrison",
+        "medieval": "tangut_border",
+        "early_modern": "xia_territory"
+      }
+    },
+    {
+      "id": "yongzhou",
+      "name": "雍州",
+      "terrain": "plain",
+      "population": 480000,
+      "foodOutput": 72,
+      "taxOutput": 60,
+      "manpower": 45,
+      "landStructure": {
+        "smallFarmers": 0.49,
+        "localElites": 0.3,
+        "stateLand": 0.15,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "mandate",
+        "ritual"
+      ],
+      "localPower": 52,
+      "rebellionRisk": 13,
+      "neighbors": [
+        "guanzhong",
+        "chang_an"
+      ],
+      "eraProfile": {
+        "classical": "zhou_province",
+        "medieval": "tang_core",
+        "early_modern": "interior_province"
+      }
+    },
+    {
+      "id": "jizhou",
+      "name": "济州",
+      "terrain": "plain",
+      "population": 420000,
+      "foodOutput": 65,
+      "taxOutput": 52,
+      "manpower": 38,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.3,
+        "stateLand": 0.14,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "bureaucracy"
+      ],
+      "localPower": 54,
+      "rebellionRisk": 12,
+      "neighbors": [
+        "qilu",
+        "yanzhou"
+      ],
+      "eraProfile": {
+        "classical": "eastern_province",
+        "medieval": "scholarly_center",
+        "early_modern": "interior_city"
+      }
+    },
+    {
+      "id": "taishan",
+      "name": "泰山",
+      "terrain": "hill",
+      "population": 380000,
+      "foodOutput": 55,
+      "taxOutput": 45,
+      "manpower": 35,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.32,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "ritual",
+        "mandate"
+      ],
+      "localPower": 56,
+      "rebellionRisk": 12,
+      "neighbors": [
+        "qilu",
+        "yanzhou"
+      ],
+      "eraProfile": {
+        "classical": "ritual_mountain",
+        "medieval": "pilgrimage_site",
+        "early_modern": "cultural_symbol"
+      }
+    },
+    {
+      "id": "jingkou",
+      "name": "京口",
+      "terrain": "river_delta",
+      "population": 400000,
+      "foodOutput": 65,
+      "taxOutput": 55,
+      "manpower": 38,
+      "landStructure": {
+        "smallFarmers": 0.48,
+        "localElites": 0.34,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "local"
+      ],
+      "localPower": 60,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "jiangdong",
+        "huainan"
+      ],
+      "eraProfile": {
+        "classical": "northern_fortress",
+        "medieval": "beifu_army_base",
+        "early_modern": "military_hub"
+      }
+    },
+    {
+      "id": "shouchun",
+      "name": "寿春",
+      "terrain": "river_plain",
+      "population": 450000,
+      "foodOutput": 72,
+      "taxOutput": 58,
+      "manpower": 42,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.3,
+        "stateLand": 0.14,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "local"
+      ],
+      "localPower": 58,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "huainan",
+        "jingxiang"
+      ],
+      "eraProfile": {
+        "classical": "chu_capital",
+        "medieval": "contested_city",
+        "early_modern": "northern_defense"
+      }
+    },
+    {
+      "id": "pangcheng",
+      "name": "彭城",
+      "terrain": "plain",
+      "population": 400000,
+      "foodOutput": 62,
+      "taxOutput": 50,
+      "manpower": 40,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.3,
+        "stateLand": 0.14,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military"
+      ],
+      "localPower": 56,
+      "rebellionRisk": 14,
+      "neighbors": [
+        "xuzhou",
+        "zhongyuan"
+      ],
+      "eraProfile": {
+        "classical": "xiang_yu_base",
+        "medieval": "contested_city",
+        "early_modern": "northern_gateway"
+      }
+    },
+    {
+      "id": "yangzhou_city",
+      "name": "扬州",
+      "terrain": "river_delta",
+      "population": 700000,
+      "foodOutput": 108,
+      "taxOutput": 95,
+      "manpower": 48,
+      "landStructure": {
+        "smallFarmers": 0.46,
+        "localElites": 0.36,
+        "stateLand": 0.1,
+        "religiousLand": 0.08
+      },
+      "legitimacyMemory": [
+        "bureaucracy",
+        "local"
+      ],
+      "localPower": 62,
+      "rebellionRisk": 15,
+      "neighbors": [
+        "jiangdong",
+        "huainan"
+      ],
+      "eraProfile": {
+        "classical": "trade_center",
+        "medieval": "salt_trade_capital",
+        "early_modern": "commercial_metropolis"
+      }
+    },
+    {
+      "id": "jingzhou_city",
+      "name": "荆州",
+      "terrain": "river_plain",
+      "population": 650000,
+      "foodOutput": 98,
+      "taxOutput": 78,
+      "manpower": 55,
+      "landStructure": {
+        "smallFarmers": 0.5,
+        "localElites": 0.32,
+        "stateLand": 0.12,
+        "religiousLand": 0.06
+      },
+      "legitimacyMemory": [
+        "military",
+        "mandate"
+      ],
+      "localPower": 60,
+      "rebellionRisk": 16,
+      "neighbors": [
+        "jingxiang",
+        "changsha",
+        "lingnan"
+      ],
+      "eraProfile": {
+        "classical": "chu_capital",
+        "medieval": "contested_territory",
+        "early_modern": "strategic_hub"
+      }
+    },
+    {
+      "id": "yongzhou_south",
+      "name": "邕州",
+      "terrain": "subtropical",
+      "population": 220000,
+      "foodOutput": 38,
+      "taxOutput": 28,
+      "manpower": 25,
+      "landStructure": {
+        "smallFarmers": 0.54,
+        "localElites": 0.22,
+        "stateLand": 0.1,
+        "religiousLand": 0.14
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 72,
+      "rebellionRisk": 24,
+      "neighbors": [
+        "lingnan",
+        "jiaozhi"
+      ],
+      "eraProfile": {
+        "classical": "southern_outpost",
+        "medieval": "border_town",
+        "early_modern": "frontier_city"
+      }
+    },
+    {
+      "id": "qinzhou",
+      "name": "钦州",
+      "terrain": "subtropical",
+      "population": 180000,
+      "foodOutput": 32,
+      "taxOutput": 24,
+      "manpower": 22,
+      "landStructure": {
+        "smallFarmers": 0.55,
+        "localElites": 0.2,
+        "stateLand": 0.1,
+        "religiousLand": 0.15
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 74,
+      "rebellionRisk": 26,
+      "neighbors": [
+        "lingnan",
+        "jiaozhi"
+      ],
+      "eraProfile": {
+        "classical": "coastal_frontier",
+        "medieval": "trade_outpost",
+        "early_modern": "maritime_border"
+      }
+    },
+    {
+      "id": "guizhou",
+      "name": "桂州",
+      "terrain": "mountain",
+      "population": 260000,
+      "foodOutput": 42,
+      "taxOutput": 32,
+      "manpower": 28,
+      "landStructure": {
+        "smallFarmers": 0.53,
+        "localElites": 0.24,
+        "stateLand": 0.1,
+        "religiousLand": 0.13
+      },
+      "legitimacyMemory": [
+        "local",
+        "military"
+      ],
+      "localPower": 66,
+      "rebellionRisk": 20,
+      "neighbors": [
+        "lingnan",
+        "changsha",
+        "yun_gui"
+      ],
+      "eraProfile": {
+        "classical": "southern_garrison",
+        "medieval": "border_defense",
+        "early_modern": "interior_city"
+      }
+    },
+    {
+      "id": "haicheng",
+      "name": "海城",
+      "terrain": "mountain_coast",
+      "population": 300000,
+      "foodOutput": 48,
+      "taxOutput": 38,
+      "manpower": 30,
+      "landStructure": {
+        "smallFarmers": 0.52,
+        "localElites": 0.26,
+        "stateLand": 0.1,
+        "religiousLand": 0.12
+      },
+      "legitimacyMemory": [
+        "local",
+        "multiethnic"
+      ],
+      "localPower": 64,
+      "rebellionRisk": 18,
+      "neighbors": [
+        "minyue",
+        "donghai"
+      ],
+      "eraProfile": {
+        "classical": "coastal_town",
+        "medieval": "port_city",
+        "early_modern": "trade_hub"
       }
     }
   ]
