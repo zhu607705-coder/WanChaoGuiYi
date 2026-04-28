@@ -22,6 +22,9 @@ namespace WanChaoGuiYi
 
         public void OnTurnStart(GameContext context)
         {
+            // 清除上回合天文事件
+            context.State.currentCelestialEventId = null;
+
             // 更新冷却
             List<string> expiredKeys = new List<string>();
             foreach (string key in cooldowns.Keys)

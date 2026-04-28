@@ -32,9 +32,20 @@ namespace WanChaoGuiYi
             SpriteRenderer spriteRenderer = controller.GetComponent<SpriteRenderer>();
             if (spriteRenderer == null) return;
 
-            int hash = ownerFactionId != null ? ownerFactionId.GetHashCode() : 0;
+            int hash = DeterministicHash(ownerFactionId ?? "");
             float hue = Mathf.Abs(hash % 360) / 360f;
             spriteRenderer.color = Color.HSVToRGB(hue, 0.45f, 0.85f);
+        }
+
+        private static int DeterministicHash(string text)
+        {
+            int hash = 5381;
+            for (int i = 0; i < text.Length; i++)
+            {
+                hash = ((hash << 5) + hash) + text[i];
+            }
+
+            return hash;
         }
     }
 }

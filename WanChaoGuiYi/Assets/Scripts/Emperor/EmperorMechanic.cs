@@ -251,13 +251,9 @@ namespace WanChaoGuiYi
                 RegionState region = context.State.FindRegion(faction.regionIds[i]);
                 if (region == null) continue;
 
-                // 开皇改制：税收效率提升，地方势力压低
-                region.annexationPressure = Mathf.Max(0, region.annexationPressure - 1);
-                region.localPower = Mathf.Max(0, region.localPower - 1);
+                // 开皇改制：地方势力压低（但有下限）
+                region.localPower = Mathf.Max(10, region.localPower - 1);
             }
-
-            // 财政收益
-            faction.money += Mathf.RoundToInt(faction.regionIds.Count * 2f);
         }
     }
 
@@ -344,9 +340,6 @@ namespace WanChaoGuiYi
                 {
                     region.integration = Mathf.Min(100, region.integration + 2);
                 }
-
-                // 但地方势力和民变风险更高
-                region.localPower = Mathf.Min(100, region.localPower + 1);
             }
 
             // 继承风险高
