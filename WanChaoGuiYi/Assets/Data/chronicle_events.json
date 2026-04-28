@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "designReference": "Turn-based weather, astronomy, custom, weapon, and technology events inspired by Civ6 disasters, eurekas, and era pressure",
+  "items": [
+    {
+      "id": "yellow_river_flood",
+      "name": "河决改道",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 2, "endTurn": 999},
+      "regionScopeTags": ["river_plain", "central_plain", "huai_river_plain"],
+      "requiredTechs": [],
+      "weatherTags": ["flood"],
+      "astronomyTags": [],
+      "triggerWeight": 14,
+      "choices": [
+        {
+          "id": "mobilize_labor",
+          "label": "征发治河",
+          "effects": {"disasterMitigation": 8, "legitimacy": 2},
+          "risks": {"corveePressure": 10, "rebellionRisk": 4},
+          "followUpTags": ["flood_control", "labor_pressure"]
+        },
+        {
+          "id": "open_granary",
+          "label": "开仓赈济",
+          "effects": {"rebellionRisk": -8, "legitimacy": 4},
+          "risks": {"treasuryPressure": 5},
+          "followUpTags": ["relief"]
+        }
+      ],
+      "cooldownTurns": 10,
+      "uiSummary": "洪水不是单次扣数值，而是治河、财政、合法性和徭役压力的选择。"
+    },
+    {
+      "id": "great_drought",
+      "name": "岁旱",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 2, "endTurn": 999},
+      "regionScopeTags": ["temperate_loess", "northwest_dry_highland", "arid_corridor"],
+      "requiredTechs": [],
+      "weatherTags": ["drought"],
+      "astronomyTags": [],
+      "triggerWeight": 13,
+      "choices": [
+        {
+          "id": "reduce_tax",
+          "label": "减免田赋",
+          "effects": {"rebellionRisk": -6, "legitimacy": 3},
+          "risks": {"taxEfficiency": -4, "treasuryPressure": 4},
+          "followUpTags": ["relief", "tax_loss"]
+        },
+        {
+          "id": "force_collection",
+          "label": "催征税粮",
+          "effects": {"money": 40},
+          "risks": {"rebellionRisk": 10, "annexationPressure": 5},
+          "followUpTags": ["elite_gain", "popular_anger"]
+        }
+      ],
+      "cooldownTurns": 8,
+      "uiSummary": "干旱迫使玩家在财政和民变之间做选择。"
+    },
+    {
+      "id": "coastal_typhoon",
+      "name": "海飓入境",
+      "eventType": "weather",
+      "eraScope": ["medieval", "early_modern"],
+      "turnWindow": {"startTurn": 4, "endTurn": 999},
+      "regionScopeTags": ["mountain_coast", "subtropical_coast", "river_delta"],
+      "requiredTechs": [],
+      "weatherTags": ["typhoon", "storm"],
+      "astronomyTags": [],
+      "triggerWeight": 11,
+      "choices": [
+        {
+          "id": "repair_harbors",
+          "label": "修港保船",
+          "effects": {"taxEfficiency": 3, "disasterMitigation": 5},
+          "risks": {"treasuryPressure": 4},
+          "followUpTags": ["maritime_recovery"]
+        },
+        {
+          "id": "prioritize_people",
+          "label": "迁民避灾",
+          "effects": {"rebellionRisk": -7, "legitimacy": 3},
+          "risks": {"taxEfficiency": -3},
+          "followUpTags": ["population_protection"]
+        }
+      ],
+      "cooldownTurns": 9,
+      "uiSummary": "东南沿海的海贸收益伴随风暴风险。"
+    },
+    {
+      "id": "hard_winter",
+      "name": "严冬断道",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 3, "endTurn": 999},
+      "regionScopeTags": ["northern_frontier_plain", "plateau_frontier", "northeast_forest_frontier"],
+      "requiredTechs": [],
+      "weatherTags": ["cold", "snow"],
+      "astronomyTags": [],
+      "triggerWeight": 12,
+      "choices": [
+        {
+          "id": "stockpile_supply",
+          "label": "转运冬储",
+          "effects": {"weatherResilience": 5, "armyMorale": 2},
+          "risks": {"treasuryPressure": 3},
+          "followUpTags": ["winter_supply"]
+        },
+        {
+          "id": "halt_campaign",
+          "label": "暂停出征",
+          "effects": {"rebellionRisk": -2},
+          "risks": {"armyMorale": -3},
+          "followUpTags": ["campaign_delay"]
+        }
+      ],
+      "cooldownTurns": 7,
+      "uiSummary": "北方天气直接影响边疆行军和军心。"
+    },
+    {
+      "id": "solar_eclipse",
+      "name": "日食示警",
+      "eventType": "astronomy",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 1, "endTurn": 999},
+      "regionScopeTags": ["ritual_center", "orthodox_memory"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": ["eclipse"],
+      "triggerWeight": 6,
+      "choices": [
+        {
+          "id": "issue_self_reproach",
+          "label": "下诏自省",
+          "effects": {"legitimacy": 5, "factionPressure": -2},
+          "risks": {"successionRisk": 2},
+          "followUpTags": ["mandate_repair"]
+        },
+        {
+          "id": "punish_astronomers",
+          "label": "责罚司天",
+          "effects": {"factionPressure": -3},
+          "risks": {"astronomyInsight": -5, "legitimacy": -3},
+          "followUpTags": ["court_fear"]
+        }
+      ],
+      "cooldownTurns": 14,
+      "uiSummary": "天文事件进入合法性系统，司天监科技可降低负面波动。"
+    },
+    {
+      "id": "comet_omen",
+      "name": "彗星犯境",
+      "eventType": "astronomy",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 5, "endTurn": 999},
+      "regionScopeTags": ["capital_corridor", "ritual_center", "frontier_corridor"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": ["comet"],
+      "triggerWeight": 5,
+      "choices": [
+        {
+          "id": "ritual_consolation",
+          "label": "修礼安民",
+          "effects": {"legitimacy": 4, "rebellionRisk": -3},
+          "risks": {"treasuryPressure": 3},
+          "followUpTags": ["ritual"]
+        },
+        {
+          "id": "use_as_campaign_mandate",
+          "label": "借势整军",
+          "effects": {"armyMorale": 5},
+          "risks": {"legitimacy": -2, "factionPressure": 4},
+          "followUpTags": ["military_omen"]
+        }
+      ],
+      "cooldownTurns": 16,
+      "uiSummary": "彗星让玩家在修礼和军事动员之间取舍。"
+    },
+    {
+      "id": "guest_star",
+      "name": "客星见天",
+      "eventType": "astronomy",
+      "eraScope": ["medieval", "early_modern"],
+      "turnWindow": {"startTurn": 6, "endTurn": 999},
+      "regionScopeTags": ["observatory", "ritual_center", "arid_corridor"],
+      "requiredTechs": ["astronomical_bureau"],
+      "weatherTags": [],
+      "astronomyTags": ["nova", "guest_star"],
+      "triggerWeight": 4,
+      "choices": [
+        {
+          "id": "record_precisely",
+          "label": "详录天象",
+          "effects": {"astronomyInsight": 8, "science": 5},
+          "risks": {},
+          "followUpTags": ["calendar_progress"]
+        },
+        {
+          "id": "ritualize_record",
+          "label": "入礼解释",
+          "effects": {"legitimacy": 4},
+          "risks": {"science": -2},
+          "followUpTags": ["mandate_story"]
+        }
+      ],
+      "cooldownTurns": 18,
+      "uiSummary": "解锁司天监后，天文事件也能成为科技推进。"
+    },
+    {
+      "id": "border_horse_plague",
+      "name": "边马疫",
+      "eventType": "custom_military",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 4, "endTurn": 999},
+      "regionScopeTags": ["horse_route", "pasture_edge", "steppe_edge"],
+      "requiredTechs": ["mounted_warfare"],
+      "weatherTags": ["drought", "cold"],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "quarantine_herds",
+          "label": "隔离马群",
+          "effects": {"weatherResilience": 4},
+          "risks": {"armyMorale": -2, "treasuryPressure": 2},
+          "followUpTags": ["horse_policy"]
+        },
+        {
+          "id": "buy_replacement_horses",
+          "label": "市马补缺",
+          "effects": {"armyMorale": 3, "mobility": 2},
+          "risks": {"treasuryPressure": 5},
+          "followUpTags": ["frontier_trade"]
+        }
+      ],
+      "cooldownTurns": 9,
+      "uiSummary": "骑兵强势地区会承担马政维护成本。"
+    },
+    {
+      "id": "canal_silt",
+      "name": "漕渠淤塞",
+      "eventType": "infrastructure",
+      "eraScope": ["medieval", "early_modern"],
+      "turnWindow": {"startTurn": 5, "endTurn": 999},
+      "regionScopeTags": ["canal_candidate", "river_network", "river_delta"],
+      "requiredTechs": ["river_transport"],
+      "weatherTags": ["flood"],
+      "astronomyTags": [],
+      "triggerWeight": 8,
+      "choices": [
+        {
+          "id": "dredge_canal",
+          "label": "疏浚漕渠",
+          "effects": {"taxEfficiency": 5, "food": 30},
+          "risks": {"treasuryPressure": 4, "corveePressure": 5},
+          "followUpTags": ["canal"]
+        },
+        {
+          "id": "shift_local_storage",
+          "label": "改行地方仓储",
+          "effects": {"disasterMitigation": 3},
+          "risks": {"localPower": 4},
+          "followUpTags": ["local_granary"]
+        }
+      ],
+      "cooldownTurns": 8,
+      "uiSummary": "漕运科技带来高收益，也引入维护事件。"
+    },
+    {
+      "id": "harvest_festival",
+      "name": "社祭丰年",
+      "eventType": "custom",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 3, "endTurn": 999},
+      "regionScopeTags": ["grain_zone", "fertile_basin", "rice"],
+      "requiredTechs": ["agricultural_calendar"],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 9,
+      "choices": [
+        {
+          "id": "ritual_gratitude",
+          "label": "修礼答谢",
+          "effects": {"legitimacy": 5, "rebellionRisk": -3},
+          "risks": {"treasuryPressure": 2},
+          "followUpTags": ["ritual", "food_security"]
+        },
+        {
+          "id": "increase_storage",
+          "label": "增储入仓",
+          "effects": {"food": 60, "treasuryStability": 2},
+          "risks": {"localPower": 2},
+          "followUpTags": ["granary"]
+        }
+      ],
+      "cooldownTurns": 7,
+      "uiSummary": "风俗节令把农业、合法性和仓储连接起来。"
+    },
+    {
+      "id": "armory_breakthrough",
+      "name": "军器监试制",
+      "eventType": "technology",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 4, "endTurn": 999},
+      "regionScopeTags": ["imperial_workshop", "salt_iron_workshops", "mineral_zone"],
+      "requiredTechs": ["bronze_casting"],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 8,
+      "choices": [
+        {
+          "id": "standardize_weapon",
+          "label": "定型量产",
+          "effects": {"weaponQuality": 6, "armyMorale": 2},
+          "risks": {"treasuryPressure": 3},
+          "followUpTags": ["standardized_arms"]
+        },
+        {
+          "id": "reward_artisans",
+          "label": "厚赏工匠",
+          "effects": {"science": 4, "talentChance": 4},
+          "risks": {"treasuryPressure": 2},
+          "followUpTags": ["workshop"]
+        }
+      ],
+      "cooldownTurns": 6,
+      "uiSummary": "兵器发展通过事件、科技和地区资源共同触发。"
+    }
+  ]
+}

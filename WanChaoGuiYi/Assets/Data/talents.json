@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "veteran_general",
+      "name": "宿将",
+      "role": "general",
+      "rarity": "common",
+      "effects": {"battlePower": 8, "armyMorale": 4},
+      "politicalCost": {"factionPressure": 3}
+    },
+    {
+      "id": "fiscal_minister",
+      "name": "理财重臣",
+      "role": "minister",
+      "rarity": "uncommon",
+      "effects": {"taxEfficiency": 8, "treasuryControl": 6},
+      "politicalCost": {"popularSatisfaction": -3}
+    },
+    {
+      "id": "land_reform_official",
+      "name": "清丈能吏",
+      "role": "reformer",
+      "rarity": "uncommon",
+      "effects": {"annexationPressure": -6, "landSurveyEfficiency": 10},
+      "politicalCost": {"eliteAnger": 5}
+    },
+    {
+      "id": "frontier_envoy",
+      "name": "边疆使臣",
+      "role": "diplomat",
+      "rarity": "rare",
+      "effects": {"frontierIntegration": 10, "multiethnicAcceptance": 8},
+      "politicalCost": {"courtSuspicion": 4}
+    }
+  ]
+}

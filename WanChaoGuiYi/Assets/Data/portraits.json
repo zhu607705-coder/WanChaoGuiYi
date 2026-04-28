@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "styleBible": {
+    "projectStyle": "historical grand-strategy character concept art",
+    "framing": "vertical half-body emperor portrait, readable at strategy-game UI size",
+    "rendering": "painterly realistic, sharp facial design, detailed textile and armor motifs",
+    "background": "subtle dynastic atmosphere, no literal text, no modern objects",
+    "negativePrompt": "photoreal celebrity likeness, anime, modern uniform, text, watermark, logo, extra fingers, distorted face"
+  },
+  "items": [
+    {
+      "id": "portrait_qin_shi_huang",
+      "emperorId": "qin_shi_huang",
+      "assetPath": "Assets/Art/Portraits/qin_shi_huang.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "upright imperial posture, severe shoulders, black-gold crown lines",
+        "costume": "black Qin imperial robe with narrow red and gold trim, lacquered armor hints under robe",
+        "props": ["jade seal", "bamboo decree slips", "standardized bronze weight"],
+        "palette": ["black", "deep red", "antique gold"],
+        "backgroundMotif": "straight roads, bronze seal script pattern, unified measures",
+        "expression": "cold, controlled, administrative pressure"
+      },
+      "prompt": "Original game concept art portrait of Qin Shi Huang for a Chinese dynastic strategy game, vertical half-body emperor portrait, black Qin imperial robe with deep red and antique gold trim, severe crown silhouette, jade seal, bamboo decree slips, bronze standardized weight, subtle unified roads and seal-script motifs in background, painterly realistic, strong UI readability, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_liu_bang",
+      "emperorId": "liu_bang",
+      "assetPath": "Assets/Art/Portraits/liu_bang.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "relaxed founding ruler posture, practical robe, approachable but alert",
+        "costume": "early Han dark robe with worn leather belt and modest imperial trim",
+        "props": ["wine cup", "campaign cloak", "simple imperial sword"],
+        "palette": ["earth brown", "dark crimson", "warm gold"],
+        "backgroundMotif": "camp banners turning into palace columns",
+        "expression": "streetwise, charismatic, calculating"
+      },
+      "prompt": "Original game concept art portrait of Liu Bang, Han Gaozu, vertical half-body founding emperor portrait, practical early Han robe, worn leather belt, campaign cloak, simple imperial sword, wine cup as political symbol, camp banners fading into palace columns, painterly realistic, charismatic and calculating expression, strategy game UI portrait, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.32, "safeScale": 0.9}
+    },
+    {
+      "id": "portrait_han_wu_di",
+      "emperorId": "han_wu_di",
+      "assetPath": "Assets/Art/Portraits/han_wu_di.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "expansive imperial posture, forward-leaning command presence",
+        "costume": "Han court robe over frontier lamellar armor accents",
+        "props": ["horse tally", "frontier map", "salt and iron token"],
+        "palette": ["imperial red", "dark blue", "bronze gold"],
+        "backgroundMotif": "desert frontier, cavalry standard, treasury tablets",
+        "expression": "ambitious, intense, expensive victory"
+      },
+      "prompt": "Original game concept art portrait of Emperor Wu of Han, vertical half-body Chinese strategy game emperor portrait, Han court robe with frontier lamellar armor accents, horse tally, frontier campaign map, salt and iron monopoly token, desert frontier and cavalry standard in subtle background, painterly realistic, ambitious intense expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.3, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_cao_cao",
+      "emperorId": "cao_cao",
+      "assetPath": "Assets/Art/Portraits/cao_cao.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "military statesman, compact armor-robe profile, restless intelligence",
+        "costume": "late Han warlord robe with dark armor plates and official sash",
+        "props": ["military order tablet", "grain register", "sheathed sword"],
+        "palette": ["charcoal", "muted red", "aged brass"],
+        "backgroundMotif": "reclaimed fields and war tents",
+        "expression": "sharp, pragmatic, suspicious"
+      },
+      "prompt": "Original game concept art portrait of Cao Cao as Wei Wudi, vertical half-body military statesman portrait, late Han warlord robe with dark armor plates and official sash, military order tablet, grain register for tuntian colonies, sheathed sword, reclaimed fields and war tents in subtle background, painterly realistic, sharp pragmatic expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.9}
+    },
+    {
+      "id": "portrait_li_shi_min",
+      "emperorId": "li_shi_min",
+      "assetPath": "Assets/Art/Portraits/li_shi_min.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "balanced warrior-scholar emperor, open chest line, calm command",
+        "costume": "Tang imperial robe with refined armor collar and court belt",
+        "props": ["remonstrance memorial", "bow case", "open court scroll"],
+        "palette": ["warm gold", "deep green", "white jade"],
+        "backgroundMotif": "Tang court columns and frontier horizon",
+        "expression": "composed, perceptive, self-controlled"
+      },
+      "prompt": "Original game concept art portrait of Li Shimin, Tang Taizong, vertical half-body warrior-scholar emperor portrait, Tang imperial robe with refined armor collar and court belt, remonstrance memorial, bow case, open court scroll, Tang court columns and frontier horizon in subtle background, painterly realistic, composed perceptive expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.3, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_zhao_kuang_yin",
+      "emperorId": "zhao_kuang_yin",
+      "assetPath": "Assets/Art/Portraits/zhao_kuang_yin.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "restrained founder, broad but softened military outline",
+        "costume": "early Song robe over subdued general armor, simple formal cap",
+        "props": ["wine vessel", "demobilized command tally", "audit ledger"],
+        "palette": ["soft red", "ink black", "muted gold"],
+        "backgroundMotif": "palace hall replacing army camp",
+        "expression": "measured, conciliatory, watchful"
+      },
+      "prompt": "Original game concept art portrait of Zhao Kuangyin, Song Taizu, vertical half-body restrained founding emperor portrait, early Song robe over subdued general armor, simple formal cap, wine vessel, demobilized command tally, audit ledger, palace hall replacing army camp in subtle background, painterly realistic, measured watchful expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.32, "safeScale": 0.9}
+    },
+    {
+      "id": "portrait_zhu_yuan_zhang",
+      "emperorId": "zhu_yuan_zhang",
+      "assetPath": "Assets/Art/Portraits/zhu_yuan_zhang.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "austere founder, heavy robe mass, hard vertical lines",
+        "costume": "Ming imperial robe with plain agricultural and legal motifs",
+        "props": ["household register", "land survey cord", "anti-corruption tablet"],
+        "palette": ["vermilion", "dark umber", "old gold"],
+        "backgroundMotif": "fields, county offices, strict palace shadows",
+        "expression": "severe, vigilant, uncompromising"
+      },
+      "prompt": "Original game concept art portrait of Zhu Yuanzhang, Ming Taizu, vertical half-body austere founding emperor portrait, Ming imperial robe with plain agricultural and legal motifs, household register, land survey cord, anti-corruption tablet, fields and county offices with strict palace shadows in subtle background, painterly realistic, severe vigilant expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_kang_xi",
+      "emperorId": "kang_xi",
+      "assetPath": "Assets/Art/Portraits/kang_xi.png",
+      "sourceStatus": "gpt_image_generation_requested",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "multiethnic imperial ruler, composed horseman-scholar outline",
+        "costume": "Qing court robe with riding sleeves and restrained dragon pattern",
+        "props": ["frontier map", "astronomical instrument", "edict scroll"],
+        "palette": ["imperial yellow", "sapphire blue", "dark sable"],
+        "backgroundMotif": "observatory, steppe frontier, southern river map",
+        "expression": "calm, adaptive, long-reign authority"
+      },
+      "prompt": "Original game concept art portrait of Kangxi Emperor, vertical half-body multiethnic imperial ruler portrait, Qing court robe with riding sleeves and restrained dragon pattern, frontier map, astronomical instrument, edict scroll, observatory, steppe frontier and southern river map in subtle background, painterly realistic, calm adaptive authority, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.88}
+    }
+  ]
+}

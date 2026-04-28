@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "succession_dispute_minor",
+      "name": "储位争议",
+      "category": "succession",
+      "trigger": {
+        "minSuccessionRisk": 50,
+        "minCourtFactionPressure": 40
+      },
+      "choices": [
+        {
+          "id": "support_heir",
+          "label": "支持太子",
+          "effects": {"legitimacy": -5, "successionRisk": -12}
+        },
+        {
+          "id": "balance_factions",
+          "label": "安抚各派",
+          "effects": {"money": -40, "factionPressure": -8, "successionRisk": -4}
+        }
+      ],
+      "cooldownTurns": 8
+    },
+    {
+      "id": "local_elite_resistance",
+      "name": "豪强抗丈",
+      "category": "land",
+      "trigger": {
+        "policyUsed": "land_survey",
+        "minLocalPower": 55
+      },
+      "choices": [
+        {
+          "id": "enforce_survey",
+          "label": "强行清丈",
+          "effects": {"annexationPressure": -8, "rebellionRisk": 8, "legitimacy": -2}
+        },
+        {
+          "id": "negotiate_elites",
+          "label": "折中安抚",
+          "effects": {"annexationPressure": -3, "money": -30, "localPower": 3}
+        }
+      ],
+      "cooldownTurns": 6
+    },
+    {
+      "id": "frontier_victory_claim",
+      "name": "边功入朝",
+      "category": "military",
+      "trigger": {
+        "recentBattleWon": true,
+        "terrainTag": "frontier"
+      },
+      "choices": [
+        {
+          "id": "reward_generals",
+          "label": "厚赏将领",
+          "effects": {"money": -50, "armyMorale": 8, "factionPressure": 5}
+        },
+        {
+          "id": "claim_imperial_merit",
+          "label": "归功朝廷",
+          "effects": {"legitimacy": 5, "generalLoyalty": -4}
+        }
+      ],
+      "cooldownTurns": 5
+    }
+  ]
+}

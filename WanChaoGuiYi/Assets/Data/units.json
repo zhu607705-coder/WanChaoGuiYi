@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "infantry",
+      "name": "步兵",
+      "category": "land",
+      "cost": {"money": 10, "food": 8, "manpower": 10},
+      "upkeep": {"money": 2, "food": 3},
+      "stats": {"attack": 10, "defense": 12, "mobility": 6, "siege": 5}
+    },
+    {
+      "id": "cavalry",
+      "name": "骑兵",
+      "category": "land",
+      "cost": {"money": 18, "food": 12, "manpower": 10},
+      "upkeep": {"money": 4, "food": 5},
+      "stats": {"attack": 16, "defense": 9, "mobility": 14, "siege": 3}
+    },
+    {
+      "id": "garrison",
+      "name": "守军",
+      "category": "defense",
+      "cost": {"money": 8, "food": 6, "manpower": 8},
+      "upkeep": {"money": 1, "food": 2},
+      "stats": {"attack": 6, "defense": 16, "mobility": 2, "siege": 2}
+    },
+    {
+      "id": "crossbowmen",
+      "name": "强弩兵",
+      "category": "land",
+      "cost": {"money": 20, "food": 10, "manpower": 10},
+      "upkeep": {"money": 4, "food": 4},
+      "stats": {"attack": 18, "defense": 11, "mobility": 5, "siege": 6}
+    },
+    {
+      "id": "frontier_cavalry",
+      "name": "边骑",
+      "category": "land",
+      "cost": {"money": 24, "food": 14, "manpower": 10},
+      "upkeep": {"money": 5, "food": 6},
+      "stats": {"attack": 20, "defense": 10, "mobility": 17, "siege": 2}
+    },
+    {
+      "id": "river_navy",
+      "name": "舟师",
+      "category": "naval",
+      "cost": {"money": 26, "food": 12, "manpower": 8},
+      "upkeep": {"money": 5, "food": 4},
+      "stats": {"attack": 14, "defense": 13, "mobility": 12, "siege": 7}
+    },
+    {
+      "id": "siege_engineer",
+      "name": "攻城匠营",
+      "category": "siege",
+      "cost": {"money": 30, "food": 14, "manpower": 8},
+      "upkeep": {"money": 6, "food": 4},
+      "stats": {"attack": 8, "defense": 8, "mobility": 3, "siege": 20}
+    },
+    {
+      "id": "fire_lance_guard",
+      "name": "火枪亲军",
+      "category": "land",
+      "cost": {"money": 38, "food": 16, "manpower": 10},
+      "upkeep": {"money": 8, "food": 5},
+      "stats": {"attack": 24, "defense": 12, "mobility": 5, "siege": 10}
+    }
+  ]
+}

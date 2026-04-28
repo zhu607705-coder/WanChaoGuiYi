@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "unify_jiuzhou",
+      "name": "统一九州",
+      "description": "控制全部关键区域，并维持最低合法性。",
+      "requirements": {
+        "controlAllKeyRegions": true,
+        "minLegitimacy": 55
+      }
+    },
+    {
+      "id": "three_generation_dynasty",
+      "name": "三代延续",
+      "description": "完成三次平稳继承，且王朝未发生大规模分裂。",
+      "requirements": {
+        "stableSuccessions": 3,
+        "maxFragmentation": 10,
+        "minLegitimacy": 50
+      }
+    },
+    {
+      "id": "institutional_order",
+      "name": "制度胜利",
+      "description": "完成核心制度改革，财政、土地和合法性达到稳定阈值。",
+      "requirements": {
+        "completedCoreReforms": 4,
+        "minLegitimacy": 70,
+        "minTreasuryStability": 65,
+        "maxAnnexationPressure": 45
+      }
+    }
+  ]
+}

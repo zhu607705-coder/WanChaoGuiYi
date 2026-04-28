@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Unity generated folders
+WanChaoGuiYi/Library/
+WanChaoGuiYi/Temp/
+WanChaoGuiYi/Obj/
+WanChaoGuiYi/Build/
+WanChaoGuiYi/Builds/
+WanChaoGuiYi/Logs/
+WanChaoGuiYi/UserSettings/
+
+# Unity generated files
+WanChaoGuiYi/*.csproj
+WanChaoGuiYi/*.sln
+WanChaoGuiYi/*.suo
+WanChaoGuiYi/*.user
+WanChaoGuiYi/*.pidb
+WanChaoGuiYi/*.booproj
+WanChaoGuiYi/*.svd
+WanChaoGuiYi/*.pdb
+WanChaoGuiYi/*.mdb
+WanChaoGuiYi/sysinfo.txt
+
+# Rider / VS Code
+.idea/
+.vscode/
