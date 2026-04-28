@@ -20,6 +20,7 @@ namespace WanChaoGuiYi
         [SerializeField] private Text localPowerText;
         [SerializeField] private Text neighborsText;
         [SerializeField] private Text landStructureText;
+        [SerializeField] private Text customsText;
         [SerializeField] private Button closeButton;
 
         public string CurrentRegionId { get; private set; }
@@ -49,8 +50,7 @@ namespace WanChaoGuiYi
             SetText(localPowerText, "地方势力：" + state.localPower);
             SetText(neighborsText, "相邻区域：" + FormatNeighbors(definition.neighbors));
             SetText(landStructureText, FormatLandStructure(state.landStructure));
-
-            // ownerText 由外部设置（需要 FactionState 数据）
+            SetText(customsText, FormatCustoms(state.customs, state.customStability));
         }
 
         public void SetOwner(string ownerName)
@@ -121,6 +121,36 @@ namespace WanChaoGuiYi
                    "% | 地方精英 " + Mathf.RoundToInt(ls.localElites * 100) +
                    "% | 国有 " + Mathf.RoundToInt(ls.stateLand * 100) +
                    "% | 寺院 " + Mathf.RoundToInt(ls.religiousLand * 100) + "%";
+        }
+
+        private static string FormatCustoms(string[] customs, int stability)
+        {
+            if (customs == null || customs.Length == 0) return "风俗：无";
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append("风俗：");
+            for (int i = 0; i < customs.Length; i++)
+            {
+                if (i > 0) sb.Append("、");
+                sb.Append(FormatCustomName(customs[i]));
+            }
+
+            sb.Append(" | 稳定度：" + stability + "%");
+            return sb.ToString();
+        }
+
+        private static string FormatCustomName(string custom)
+        {
+            switch (custom)
+            {
+                case "martial": return "尚武";
+                case "scholarly": return "崇文";
+                case "mercantile": return "重商";
+                case "agrarian": return "农耕";
+                case "frontier": return "边塞";
+                case "pluralistic": return "多元";
+                default: return custom;
+            }
         }
     }
 }
