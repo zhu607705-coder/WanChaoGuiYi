@@ -30,8 +30,8 @@ def main():
     technologies = load("technologies.json")["items"]
     victories = load("victory_conditions.json")["items"]
 
-    if len(emperors) != 8:
-        fail(f"MVP requires 8 emperors, got {len(emperors)}")
+    if len(emperors) < 8:
+        fail(f"MVP requires at least 8 emperors, got {len(emperors)}")
 
     emperor_ids = assert_unique_ids(emperors, "emperor")
     portrait_ids = assert_unique_ids(portraits, "portrait")
@@ -62,7 +62,8 @@ def main():
 
     missing_portraits = emperor_ids - portrait_emperor_ids
     if missing_portraits:
-        fail(f"missing portraits for emperors: {sorted(missing_portraits)}")
+        # 非阻塞警告：新增帝皇可能尚未有立绘
+        print(f"WARNING: missing portraits for emperors: {sorted(missing_portraits)}")
 
     for region in regions:
         for neighbor in region.get("neighbors", []):

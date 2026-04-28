@@ -13,7 +13,12 @@ namespace WanChaoGuiYi
         BattleResolved,
         EventTriggered,
         SuccessionResolved,
-        VictoryChecked
+        VictoryChecked,
+        TechResearched,
+        WeatherChanged,
+        CelestialEventOccurred,
+        CustomEventOccurred,
+        EquipmentUnlocked
     }
 
     public sealed class GameEvent

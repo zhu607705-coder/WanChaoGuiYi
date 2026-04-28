@@ -308,7 +308,123 @@
         "mechanicTags": ["frontier", "fortification", "multiethnic"]
       },
       "effects": {"rebellionRisk": -4, "localPower": -2, "armyMorale": 3},
-      "uiSummary": "把边疆控制从单纯驻军提升为制度化边镇。"
+      "uiSummary": "把边疆控制从单纯驻军提升为制度化边镇。",
+      "sourceReference": "《魏书·食货志》《隋书·地理志》"
+    },
+    {
+      "id": "three_departments",
+      "name": "三省六部",
+      "kind": "civic",
+      "era": "early_modern",
+      "cost": 110,
+      "prerequisites": ["paper_bureaucracy", "standard_script_law"],
+      "boost": {
+        "id": "complete_three_reforms",
+        "name": "三轮改制",
+        "description": "完成三项制度改革政策。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": ["central_audit", "civil_service", "fiscal_order"],
+        "events": [],
+        "mechanicTags": ["bureaucracy", "centralization", "three_departments"]
+      },
+      "effects": {"taxEfficiency": 8, "factionPressure": -5, "integrationSpeed": 6},
+      "uiSummary": "三省六部制是隋唐中央集权的核心制度框架。",
+      "sourceReference": "《隋书·百官志》《旧唐书·职官志》"
+    },
+    {
+      "id": "equal_field_system",
+      "name": "均田制",
+      "kind": "civic",
+      "era": "medieval",
+      "cost": 85,
+      "prerequisites": ["paper_bureaucracy"],
+      "boost": {
+        "id": "control_grain_plain",
+        "name": "掌控粮仓平原",
+        "description": "控制两个 food yield 高于 80 的平原地区。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": ["household_registry", "agricultural_recovery"],
+        "events": [],
+        "mechanicTags": ["land_reform", "equal_field", "population_register"]
+      },
+      "effects": {"food": 50, "taxBase": 6, "populationGrowth": 3, "annexationPressure": -4},
+      "uiSummary": "均田制是北魏到唐初的土地制度基础，稳定农业和税基。",
+      "sourceReference": "《魏书·食货志》《隋书·食货志》"
+    },
+    {
+      "id": "three_chiefs_system",
+      "name": "三长制",
+      "kind": "civic",
+      "era": "medieval",
+      "cost": 75,
+      "prerequisites": ["equal_field_system"],
+      "boost": {
+        "id": "integrate_five_regions",
+        "name": "整合五地",
+        "description": "完成五个地区的法统整合。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": ["household_registry", "multiethnic_governance"],
+        "events": [],
+        "mechanicTags": ["local_administration", "population_control", "hanhua"]
+      },
+      "effects": {"taxBase": 5, "integrationSpeed": 8, "localPower": -3},
+      "uiSummary": "三长制用基层行政网络取代宗主督护，是北魏汉化改革的核心。",
+      "sourceReference": "《魏书·食货志》《资治通鉴·齐纪》"
+    },
+    {
+      "id": "buddhist_wealth_recovery",
+      "name": "灭佛回收",
+      "kind": "civic",
+      "era": "medieval",
+      "cost": 70,
+      "prerequisites": ["paper_bureaucracy"],
+      "boost": {
+        "id": "low_treasury",
+        "name": "国库告急",
+        "description": "金钱低于 100 时获得启发。",
+        "progressBonus": 50
+      },
+      "unlocks": {
+        "units": [],
+        "policies": ["anti_corruption", "fiscal_order"],
+        "events": [],
+        "mechanicTags": ["buddhist_recovery", "fiscal", "state_assets"]
+      },
+      "effects": {"money": 80, "taxEfficiency": 5, "rebellionRisk": 4, "legitimacy": -3},
+      "uiSummary": "灭佛回收寺产人口，是柴荣和宇文邕的财政应急手段。",
+      "sourceReference": "《旧五代史·周世宗本纪》《周书·武帝本纪》"
+    },
+    {
+      "id": "shu_han_governance",
+      "name": "蜀中治理",
+      "kind": "civic",
+      "era": "medieval",
+      "cost": 65,
+      "prerequisites": ["canal_granary", "standard_script_law"],
+      "boost": {
+        "id": "control_bashu",
+        "name": "入主巴蜀",
+        "description": "控制巴蜀地区。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": ["local_compromise", "talent_absorption", "light_tax"],
+        "events": [],
+        "mechanicTags": ["shu_governance", "coalition", "local_compromise"]
+      },
+      "effects": {"rebellionRisk": -5, "legitimacy": 4, "integrationSpeed": 4, "taxEfficiency": 3},
+      "uiSummary": "蜀汉治理以德政和人才凝聚为核心，适合弱势条件下的稳定经营。",
+      "sourceReference": "《三国志·先主传》《三国志·诸葛亮传》"
     }
   ]
 }

@@ -248,7 +248,198 @@
         "expansion": 78,
         "governance": 92,
         "riskTolerance": 58
-      }
+      },
+      "score": {
+        "virtue": 6, "wisdom": 8, "physique": 7, "aesthetics": 7, "diligence": 8,
+        "ambition": 7, "dignity": 8, "tolerance": 6, "selfControl": 6,
+        "personnelManagement": 8, "nationalPower": 9, "popularSupport": 7
+      },
+      "sourceReference": "《清史稿·圣祖本纪》"
+    },
+    {
+      "id": "yang_jian",
+      "name": "杨坚",
+      "title": "隋文帝",
+      "versionScope": ["china"],
+      "civilization": "huaxia",
+      "mapScope": "china",
+      "era": "early_modern",
+      "legitimacyTypes": ["mandate", "law", "bureaucracy"],
+      "globalMechanicTag": "imperial_reunification",
+      "stats": {
+        "military": 78,
+        "administration": 96,
+        "reform": 92,
+        "charisma": 70,
+        "diplomacy": 74,
+        "successionControl": 42
+      },
+      "uniqueMechanic": {
+        "id": "kai_huang_gai_zhi",
+        "name": "开皇改制",
+        "description": "户籍、财政和官僚精简效率极高，但猜忌心重，功臣和宗室压力累积更快。"
+      },
+      "historicalBurdens": ["猜忌功臣", "继承安排失策", "晚年高压"],
+      "preferredPolicies": ["household_registry", "fiscal_order", "civil_service", "central_audit"],
+      "aiPersonality": {
+        "expansion": 70,
+        "governance": 96,
+        "riskTolerance": 45
+      },
+      "score": {
+        "virtue": 5, "wisdom": 8, "physique": 6, "aesthetics": 7, "diligence": 9,
+        "ambition": 8, "dignity": 6, "tolerance": 4, "selfControl": 4,
+        "personnelManagement": 6, "nationalPower": 10, "popularSupport": 6
+      },
+      "sourceReference": "《隋书·高祖本纪》《资治通鉴·隋纪》"
+    },
+    {
+      "id": "chai_rong",
+      "name": "柴荣",
+      "title": "后周世宗",
+      "versionScope": ["china"],
+      "civilization": "huaxia",
+      "mapScope": "china",
+      "era": "medieval",
+      "legitimacyTypes": ["military", "mandate", "bureaucracy"],
+      "globalMechanicTag": "rapid_reform",
+      "stats": {
+        "military": 94,
+        "administration": 90,
+        "reform": 92,
+        "charisma": 82,
+        "diplomacy": 72,
+        "successionControl": 30
+      },
+      "uniqueMechanic": {
+        "id": "shi_nian_kai_tuo",
+        "name": "十年开拓",
+        "description": "短期改革效率极高，军事和经济同步推进，但寿命风险大，继承安排脆弱。"
+      },
+      "historicalBurdens": ["在位仅六年", "继承人年幼", "功臣赵匡胤隐患"],
+      "preferredPolicies": ["military_governance", "fiscal_order", "land_survey", "anti_corruption"],
+      "aiPersonality": {
+        "expansion": 90,
+        "governance": 88,
+        "riskTolerance": 80
+      },
+      "score": {
+        "virtue": 8, "wisdom": 9, "physique": 8, "aesthetics": 7, "diligence": 10,
+        "ambition": 10, "dignity": 8, "tolerance": 7, "selfControl": 7,
+        "personnelManagement": 8, "nationalPower": 7, "popularSupport": 8
+      },
+      "sourceReference": "《旧五代史·周世宗本纪》《新五代史·周本纪》《资治通鉴·后周纪》"
+    },
+    {
+      "id": "yuan_hong",
+      "name": "元宏",
+      "title": "北魏孝文帝",
+      "versionScope": ["china"],
+      "civilization": "huaxia_steppe",
+      "mapScope": "china",
+      "era": "medieval",
+      "legitimacyTypes": ["mandate", "ritual", "bureaucracy"],
+      "globalMechanicTag": "cultural_transformation",
+      "stats": {
+        "military": 72,
+        "administration": 86,
+        "reform": 94,
+        "charisma": 80,
+        "diplomacy": 78,
+        "successionControl": 50
+      },
+      "uniqueMechanic": {
+        "id": "han_hua_gai_ge",
+        "name": "汉化改革",
+        "description": "文明建设和制度汉化效率极高，但旧代人集团反弹强烈，边镇隐患累积。"
+      },
+      "historicalBurdens": ["改革推进过急", "代人集团反弹", "六镇隐患伏笔"],
+      "preferredPolicies": ["civil_service", "literati_pacification", "multiethnic_governance", "standardization"],
+      "aiPersonality": {
+        "expansion": 65,
+        "governance": 92,
+        "riskTolerance": 60
+      },
+      "score": {
+        "virtue": 8, "wisdom": 8, "physique": 5, "aesthetics": 9, "diligence": 8,
+        "ambition": 9, "dignity": 8, "tolerance": 7, "selfControl": 6,
+        "personnelManagement": 7, "nationalPower": 7, "popularSupport": 6
+      },
+      "sourceReference": "《魏书·高祖本纪》《资治通鉴·齐纪》《资治通鉴·梁纪》"
+    },
+    {
+      "id": "shi_le",
+      "name": "石勒",
+      "title": "后赵明帝",
+      "versionScope": ["china"],
+      "civilization": "huaxia_steppe",
+      "mapScope": "china",
+      "era": "classical",
+      "legitimacyTypes": ["military", "charisma"],
+      "globalMechanicTag": "bottom_up_conquest",
+      "stats": {
+        "military": 92,
+        "administration": 76,
+        "reform": 68,
+        "charisma": 80,
+        "diplomacy": 60,
+        "successionControl": 35
+      },
+      "uniqueMechanic": {
+        "id": "di_ceng_jue_qi",
+        "name": "底层崛起",
+        "description": "军事扩张和杂胡整合能力强，但合法性基础弱，继承问题严重。"
+      },
+      "historicalBurdens": ["奴隶出身合法性弱", "杀伐过重", "石虎隐患"],
+      "preferredPolicies": ["military_governance", "amnesty", "local_compromise", "conscription"],
+      "aiPersonality": {
+        "expansion": 88,
+        "governance": 70,
+        "riskTolerance": 75
+      },
+      "score": {
+        "virtue": 5, "wisdom": 8, "physique": 9, "aesthetics": 4, "diligence": 9,
+        "ambition": 9, "dignity": 7, "tolerance": 6, "selfControl": 5,
+        "personnelManagement": 8, "nationalPower": 7, "popularSupport": 5
+      },
+      "sourceReference": "《晋书·石勒载记》《资治通鉴·晋纪》"
+    },
+    {
+      "id": "liu_bei",
+      "name": "刘备",
+      "title": "汉昭烈帝",
+      "versionScope": ["china"],
+      "civilization": "huaxia",
+      "mapScope": "china",
+      "era": "medieval",
+      "legitimacyTypes": ["mandate", "charisma", "ritual"],
+      "globalMechanicTag": "virtue_based_legitimacy",
+      "stats": {
+        "military": 72,
+        "administration": 70,
+        "reform": 60,
+        "charisma": 96,
+        "diplomacy": 80,
+        "successionControl": 55
+      },
+      "uniqueMechanic": {
+        "id": "yi_de_ju_ren",
+        "name": "以德聚人",
+        "description": "民心和人才凝聚力极高，弱势条件下仍能维持势力，但国力增长慢，军事上限受限。"
+      },
+      "historicalBurdens": ["国力长期弱势", "夷陵决策失误", "人才断层风险"],
+      "preferredPolicies": ["amnesty", "talent_absorption", "local_compromise", "light_tax"],
+      "aiPersonality": {
+        "expansion": 68,
+        "governance": 78,
+        "riskTolerance": 55
+      },
+      "score": {
+        "virtue": 10, "wisdom": 7, "physique": 6, "aesthetics": 6, "diligence": 8,
+        "ambition": 8, "dignity": 9, "tolerance": 8, "selfControl": 7,
+        "personnelManagement": 9, "nationalPower": 4, "popularSupport": 9
+      },
+      "sourceReference": "《三国志·先主传》《资治通鉴·汉纪》"
     }
   ]
 }

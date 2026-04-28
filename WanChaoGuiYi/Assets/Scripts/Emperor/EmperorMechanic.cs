@@ -54,6 +54,16 @@ namespace WanChaoGuiYi
                     return new GrassrootsRebuildMechanic();
                 case "duo_yuan_tiao_he":
                     return new MultiethnicHarmonizationMechanic();
+                case "kai_huang_gai_zhi":
+                    return new KaiHuangReformMechanic();
+                case "shi_nian_kai_tuo":
+                    return new ShiNianKaiTuoMechanic();
+                case "han_hua_gai_ge":
+                    return new HanHuaReformMechanic();
+                case "di_ceng_jue_qi":
+                    return new DiCengJueQiMechanic();
+                case "yi_de_ju_ren":
+                    return new YiDeJuRenMechanic();
                 default:
                     return new DefaultEmperorMechanic();
             }
@@ -222,6 +232,148 @@ namespace WanChaoGuiYi
                     region.integration = Mathf.Min(100, region.integration + 2);
                     region.rebellionRisk = Mathf.Max(0, region.rebellionRisk - 1);
                 }
+            }
+        }
+    }
+
+    public sealed class KaiHuangReformMechanic : DefaultEmperorMechanic
+    {
+        public override string Id { get { return "kai_huang_gai_zhi"; } }
+
+        public override void ApplyPassive(GameContext context, FactionState faction)
+        {
+            // 杨坚：户籍财政效率极高，但猜忌心导致功臣和宗室压力累积
+            faction.courtFactionPressure = Mathf.Min(100, faction.courtFactionPressure + 2);
+            faction.successionRisk = Mathf.Min(100, faction.successionRisk + 1);
+
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(faction.regionIds[i]);
+                if (region == null) continue;
+
+                // 开皇改制：税收效率提升，地方势力压低
+                region.annexationPressure = Mathf.Max(0, region.annexationPressure - 1);
+                region.localPower = Mathf.Max(0, region.localPower - 1);
+            }
+
+            // 财政收益
+            faction.money += Mathf.RoundToInt(faction.regionIds.Count * 2f);
+        }
+    }
+
+    public sealed class ShiNianKaiTuoMechanic : DefaultEmperorMechanic
+    {
+        public override string Id { get { return "shi_nian_kai_tuo"; } }
+
+        private int turnsSinceStart;
+
+        public override void ApplyPassive(GameContext context, FactionState faction)
+        {
+            turnsSinceStart++;
+
+            // 柴荣：短期高强度改革，但寿命风险递增
+            faction.successionRisk = Mathf.Min(100, faction.successionRisk + 2);
+
+            // 前 12 回合（约 6 年）改革效率极高
+            if (turnsSinceStart <= 12)
+            {
+                for (int i = 0; i < faction.regionIds.Count; i++)
+                {
+                    RegionState region = context.State.FindRegion(faction.regionIds[i]);
+                    if (region == null) continue;
+
+                    region.integration = Mathf.Min(100, region.integration + 3);
+                    region.annexationPressure = Mathf.Max(0, region.annexationPressure - 2);
+                }
+
+                faction.legitimacy = Mathf.Min(100, faction.legitimacy + 1);
+            }
+            else
+            {
+                // 超过 12 回合后，寿命风险急剧上升
+                faction.successionRisk = Mathf.Min(100, faction.successionRisk + 3);
+            }
+        }
+    }
+
+    public sealed class HanHuaReformMechanic : DefaultEmperorMechanic
+    {
+        public override string Id { get { return "han_hua_gai_ge"; } }
+
+        public override void ApplyPassive(GameContext context, FactionState faction)
+        {
+            // 元宏：汉化改革提升文明，但旧势力反弹
+            faction.legitimacy = Mathf.Min(100, faction.legitimacy + 1);
+            faction.courtFactionPressure = Mathf.Min(100, faction.courtFactionPressure + 2);
+
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(faction.regionIds[i]);
+                if (region == null) continue;
+
+                // 汉化地区整合更快，但高地方势力区域反弹
+                if (region.localPower > 60)
+                {
+                    region.rebellionRisk = Mathf.Min(100, region.rebellionRisk + 2);
+                }
+                else
+                {
+                    region.integration = Mathf.Min(100, region.integration + 2);
+                    region.rebellionRisk = Mathf.Max(0, region.rebellionRisk - 1);
+                }
+            }
+        }
+    }
+
+    public sealed class DiCengJueQiMechanic : DefaultEmperorMechanic
+    {
+        public override string Id { get { return "di_ceng_jue_qi"; } }
+
+        public override void ApplyPassive(GameContext context, FactionState faction)
+        {
+            // 石勒：军事扩张强，但合法性基础弱
+            faction.legitimacy = Mathf.Max(0, faction.legitimacy - 1);
+
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(faction.regionIds[i]);
+                if (region == null) continue;
+
+                // 新占领地区（低整合）恢复更快
+                if (region.integration < 50)
+                {
+                    region.integration = Mathf.Min(100, region.integration + 2);
+                }
+
+                // 但地方势力和民变风险更高
+                region.localPower = Mathf.Min(100, region.localPower + 1);
+            }
+
+            // 继承风险高
+            faction.successionRisk = Mathf.Min(100, faction.successionRisk + 2);
+        }
+    }
+
+    public sealed class YiDeJuRenMechanic : DefaultEmperorMechanic
+    {
+        public override string Id { get { return "yi_de_ju_ren"; } }
+
+        public override void ApplyPassive(GameContext context, FactionState faction)
+        {
+            // 刘备：民心极高，人才凝聚力强，但国力增长慢
+            faction.legitimacy = Mathf.Min(100, faction.legitimacy + 2);
+            faction.courtFactionPressure = Mathf.Max(0, faction.courtFactionPressure - 1);
+
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(faction.regionIds[i]);
+                if (region == null) continue;
+
+                // 民心地区民变风险低
+                region.rebellionRisk = Mathf.Max(0, region.rebellionRisk - 1);
+
+                // 但经济效率较低（弱势条件）
+                region.taxOutput = Mathf.Max(0, region.taxOutput - 1);
             }
         }
     }

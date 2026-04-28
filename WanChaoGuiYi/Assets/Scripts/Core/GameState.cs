@@ -21,6 +21,10 @@ namespace WanChaoGuiYi
         public List<ArmyState> armies = new List<ArmyState>();
         public List<TurnLogEntry> turnLog = new List<TurnLogEntry>();
 
+        // 天气系统
+        public string currentWeatherId;
+        public string currentCelestialEventId;
+
         public FactionState FindFaction(string id)
         {
             for (int i = 0; i < factions.Count; i++)
@@ -82,6 +86,15 @@ namespace WanChaoGuiYi
         public List<string> regionIds = new List<string>();
         public List<string> talentIds = new List<string>();
         public List<string> completedReformIds = new List<string>();
+
+        // 科技系统
+        public int researchPoints;
+        public List<string> completedTechIds = new List<string>();
+        public string currentResearchId;
+
+        // 天气系统
+        public int weatherResilience;
+        public int disasterMitigation;
     }
 
     [Serializable]
@@ -98,6 +111,10 @@ namespace WanChaoGuiYi
         public int integration;
         public int annexationPressure;
         public LandStructure landStructure;
+
+        // 风俗系统
+        public string[] customs;
+        public int customStability;
     }
 
     [Serializable]
@@ -119,6 +136,11 @@ namespace WanChaoGuiYi
         public int soldiers;
         public int morale;
         public int movementProgress;
+
+        // 装备系统
+        public string weaponSlot;
+        public string armorSlot;
+        public string specialSlot;
     }
 
     [Serializable]
