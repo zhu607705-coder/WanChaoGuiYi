@@ -45,6 +45,39 @@ namespace WanChaoGuiYi
             return null;
         }
 
+        public RegionOwnerChangedPayload ChangeRegionOwner(string regionId, string newOwnerFactionId)
+        {
+            RegionState region = FindRegion(regionId);
+            if (region == null || string.IsNullOrEmpty(newOwnerFactionId)) return null;
+            if (region.ownerFactionId == newOwnerFactionId) return null;
+
+            string previousOwnerFactionId = region.ownerFactionId;
+            FactionState previousOwner = FindFaction(previousOwnerFactionId);
+            FactionState newOwner = FindFaction(newOwnerFactionId);
+            if (newOwner == null) return null;
+
+            if (previousOwner != null)
+            {
+                previousOwner.regionIds.Remove(regionId);
+            }
+
+            if (!newOwner.regionIds.Contains(regionId))
+            {
+                newOwner.regionIds.Add(regionId);
+            }
+
+            region.ownerFactionId = newOwnerFactionId;
+            region.integration = 25;
+            region.rebellionRisk = Math.Min(100, region.rebellionRisk + 8);
+
+            return new RegionOwnerChangedPayload
+            {
+                regionId = regionId,
+                previousOwnerFactionId = previousOwnerFactionId,
+                newOwnerFactionId = newOwnerFactionId
+            };
+        }
+
         public void AdvanceHalfYear()
         {
             turn++;
@@ -115,6 +148,9 @@ namespace WanChaoGuiYi
         // 风俗系统
         public string[] customs;
         public int customStability;
+
+        // 建筑系统
+        public List<string> buildings;
     }
 
     [Serializable]

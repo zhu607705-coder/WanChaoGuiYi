@@ -541,4 +541,75 @@ namespace WanChaoGuiYi
         public int minTreasuryStability;
         public int maxAnnexationPressure;
     }
+
+    [Serializable]
+    public sealed class GeneralTable
+    {
+        public int schemaVersion;
+        public GeneralDefinition[] items;
+    }
+
+    [Serializable]
+    public sealed class GeneralDefinition
+    {
+        public string id;
+        public string name;
+        public string title;
+        public string era;
+        public int military;
+        public int loyalty;
+        public string specialAbility;
+        public string specialAbilityName;
+        public string specialAbilityDesc;
+        public TerrainBonus terrainBonus;
+        public UnitBonus unitBonus;
+        public string sourceReference;
+    }
+
+    [Serializable]
+    public sealed class TerrainBonus
+    {
+        public int river_plain;
+        public int river_delta;
+        public int mountain;
+        public int mountain_pass;
+        public int open_plain;
+        public int frontier_plain;
+        public int steppe_edge;
+        public int huai_river_plain;
+        public int mountain_coast;
+        public int subtropical;
+    }
+
+    [Serializable]
+    public sealed class UnitBonus
+    {
+        public int infantry;
+        public int cavalry;
+        public int crossbowmen;
+        public int siege_engineer;
+        public int frontier_cavalry;
+        public int garrison;
+        public int river_navy;
+        public int fire_lance_guard;
+    }
+
+    [Serializable]
+    public sealed class BuildingTable
+    {
+        public int schemaVersion;
+        public BuildingDefinition[] items;
+    }
+
+    [Serializable]
+    public sealed class BuildingDefinition
+    {
+        public string id;
+        public string name;
+        public string category;
+        public string requiresTech;
+        public int cost;
+        public EffectSet effects;
+        public string sourceReference;
+    }
 }

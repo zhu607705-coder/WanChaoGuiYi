@@ -21,6 +21,8 @@ namespace WanChaoGuiYi
         [SerializeField] private TextAsset unitsJson;
         [SerializeField] private TextAsset technologiesJson;
         [SerializeField] private TextAsset victoryConditionsJson;
+        [SerializeField] private TextAsset generalsJson;
+        [SerializeField] private TextAsset buildingsJson;
 
         private readonly Dictionary<string, EmperorDefinition> emperors = new Dictionary<string, EmperorDefinition>();
         private readonly Dictionary<string, PortraitDefinition> portraits = new Dictionary<string, PortraitDefinition>();
@@ -33,6 +35,8 @@ namespace WanChaoGuiYi
         private readonly Dictionary<string, UnitDefinition> units = new Dictionary<string, UnitDefinition>();
         private readonly Dictionary<string, TechnologyDefinition> technologies = new Dictionary<string, TechnologyDefinition>();
         private readonly Dictionary<string, VictoryConditionDefinition> victoryConditions = new Dictionary<string, VictoryConditionDefinition>();
+        private readonly Dictionary<string, GeneralDefinition> generals = new Dictionary<string, GeneralDefinition>();
+        private readonly Dictionary<string, BuildingDefinition> buildings = new Dictionary<string, BuildingDefinition>();
 
         public IReadOnlyDictionary<string, EmperorDefinition> Emperors { get { return emperors; } }
         public IReadOnlyDictionary<string, PortraitDefinition> Portraits { get { return portraits; } }
@@ -45,6 +49,8 @@ namespace WanChaoGuiYi
         public IReadOnlyDictionary<string, UnitDefinition> Units { get { return units; } }
         public IReadOnlyDictionary<string, TechnologyDefinition> Technologies { get { return technologies; } }
         public IReadOnlyDictionary<string, VictoryConditionDefinition> VictoryConditions { get { return victoryConditions; } }
+        public IReadOnlyDictionary<string, GeneralDefinition> Generals { get { return generals; } }
+        public IReadOnlyDictionary<string, BuildingDefinition> Buildings { get { return buildings; } }
 
         public bool IsLoaded { get; private set; }
 
@@ -61,6 +67,8 @@ namespace WanChaoGuiYi
             units.Clear();
             technologies.Clear();
             victoryConditions.Clear();
+            generals.Clear();
+            buildings.Clear();
 
             Register(LoadTable<EmperorTable>(emperorsJson, "emperors").items, emperors, "emperor");
             Register(LoadTable<PortraitTable>(portraitsJson, "portraits").items, portraits, "portrait");
@@ -73,6 +81,8 @@ namespace WanChaoGuiYi
             Register(LoadTable<UnitTable>(unitsJson, "units").items, units, "unit");
             Register(LoadTable<TechnologyTable>(technologiesJson, "technologies").items, technologies, "technology");
             Register(LoadTable<VictoryConditionTable>(victoryConditionsJson, "victory_conditions").items, victoryConditions, "victory condition");
+            Register(LoadTable<GeneralTable>(generalsJson, "generals").items, generals, "general");
+            Register(LoadTable<BuildingTable>(buildingsJson, "buildings").items, buildings, "building");
 
             ValidateRegionNeighbors();
             IsLoaded = true;
@@ -208,6 +218,12 @@ namespace WanChaoGuiYi
 
             VictoryConditionDefinition victory = item as VictoryConditionDefinition;
             if (victory != null) return victory.id;
+
+            GeneralDefinition general = item as GeneralDefinition;
+            if (general != null) return general.id;
+
+            BuildingDefinition building = item as BuildingDefinition;
+            if (building != null) return building.id;
 
             return string.Empty;
         }

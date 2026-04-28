@@ -17,11 +17,23 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["relief_grain", "agricultural_recovery"],
-        "events": ["harvest_festival"],
-        "mechanicTags": ["season", "food_security"]
+        "policies": [
+          "relief_grain",
+          "agricultural_recovery"
+        ],
+        "events": [
+          "harvest_festival"
+        ],
+        "mechanicTags": [
+          "season",
+          "food_security"
+        ]
       },
-      "effects": {"food": 40, "populationGrowth": 4, "weatherResilience": 3},
+      "effects": {
+        "food": 40,
+        "populationGrowth": 4,
+        "weatherResilience": 3
+      },
       "uiSummary": "让时间系统和农业收益绑定，玩家能用历法降低灾年波动。"
     },
     {
@@ -38,12 +50,24 @@
         "progressBonus": 40
       },
       "unlocks": {
-        "units": ["garrison"],
-        "policies": ["standardization"],
-        "events": ["armory_breakthrough"],
-        "mechanicTags": ["bronze_weapons", "state_workshop"]
+        "units": [
+          "garrison"
+        ],
+        "policies": [
+          "standardization"
+        ],
+        "events": [
+          "armory_breakthrough"
+        ],
+        "mechanicTags": [
+          "bronze_weapons",
+          "state_workshop"
+        ]
       },
-      "effects": {"weaponQuality": 4, "armyMorale": 2},
+      "effects": {
+        "weaponQuality": 4,
+        "armyMorale": 2
+      },
       "uiSummary": "早期国家工坊和标准化武备入口。"
     },
     {
@@ -52,7 +76,9 @@
       "kind": "technology",
       "era": "classical",
       "cost": 60,
-      "prerequisites": ["bronze_casting"],
+      "prerequisites": [
+        "bronze_casting"
+      ],
       "boost": {
         "id": "win_with_infantry",
         "name": "步军取胜",
@@ -60,12 +86,25 @@
         "progressBonus": 35
       },
       "unlocks": {
-        "units": ["crossbowmen", "siege_engineer"],
-        "policies": ["strict_law"],
-        "events": ["armory_breakthrough"],
-        "mechanicTags": ["iron_weapons", "siege"]
+        "units": [
+          "crossbowmen",
+          "siege_engineer"
+        ],
+        "policies": [
+          "strict_law"
+        ],
+        "events": [
+          "armory_breakthrough"
+        ],
+        "mechanicTags": [
+          "iron_weapons",
+          "siege"
+        ]
       },
-      "effects": {"weaponQuality": 6, "battlePower": 4},
+      "effects": {
+        "weaponQuality": 6,
+        "battlePower": 4
+      },
       "uiSummary": "打开弩兵、攻城和高压法令组合。"
     },
     {
@@ -74,7 +113,9 @@
       "kind": "technology",
       "era": "classical",
       "cost": 70,
-      "prerequisites": ["bronze_casting"],
+      "prerequisites": [
+        "bronze_casting"
+      ],
       "boost": {
         "id": "own_horse_region",
         "name": "掌控马源",
@@ -82,12 +123,25 @@
         "progressBonus": 45
       },
       "unlocks": {
-        "units": ["frontier_cavalry"],
-        "policies": ["horse_policy", "frontier_campaign"],
-        "events": ["border_horse_plague"],
-        "mechanicTags": ["cavalry", "frontier"]
+        "units": [
+          "frontier_cavalry"
+        ],
+        "policies": [
+          "horse_policy",
+          "frontier_campaign"
+        ],
+        "events": [
+          "border_horse_plague"
+        ],
+        "mechanicTags": [
+          "cavalry",
+          "frontier"
+        ]
       },
-      "effects": {"armyMorale": 4, "mobility": 5},
+      "effects": {
+        "armyMorale": 4,
+        "mobility": 5
+      },
       "uiSummary": "让边疆马政变成扩张引擎，同时引入马疫和补给风险。"
     },
     {
@@ -96,7 +150,9 @@
       "kind": "civic",
       "era": "classical",
       "cost": 65,
-      "prerequisites": ["agricultural_calendar"],
+      "prerequisites": [
+        "agricultural_calendar"
+      ],
       "boost": {
         "id": "integrate_three_regions",
         "name": "整合三地",
@@ -105,11 +161,21 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["jun_xian_system", "standardization"],
+        "policies": [
+          "jun_xian_system",
+          "standardization"
+        ],
         "events": [],
-        "mechanicTags": ["law", "centralization", "integration"]
+        "mechanicTags": [
+          "law",
+          "centralization",
+          "integration"
+        ]
       },
-      "effects": {"integrationSpeed": 8, "taxEfficiency": 4},
+      "effects": {
+        "integrationSpeed": 8,
+        "taxEfficiency": 4
+      },
       "uiSummary": "把征服转为制度统一，是秦始皇路线的核心树节点。"
     },
     {
@@ -118,7 +184,10 @@
       "kind": "technology",
       "era": "classical",
       "cost": 75,
-      "prerequisites": ["iron_smelting", "standard_script_law"],
+      "prerequisites": [
+        "iron_smelting",
+        "standard_script_law"
+      ],
       "boost": {
         "id": "build_state_workshop",
         "name": "国家工坊",
@@ -126,12 +195,24 @@
         "progressBonus": 35
       },
       "unlocks": {
-        "units": ["crossbowmen"],
-        "policies": ["military_governance"],
-        "events": ["armory_breakthrough"],
-        "mechanicTags": ["crossbow", "standardized_arms"]
+        "units": [
+          "crossbowmen"
+        ],
+        "policies": [
+          "military_governance"
+        ],
+        "events": [
+          "armory_breakthrough"
+        ],
+        "mechanicTags": [
+          "crossbow",
+          "standardized_arms"
+        ]
       },
-      "effects": {"weaponQuality": 8, "armyMorale": 2},
+      "effects": {
+        "weaponQuality": 8,
+        "armyMorale": 2
+      },
       "uiSummary": "让历史兵器不是皮肤，而是国家标准化能力的战斗表达。"
     },
     {
@@ -140,7 +221,9 @@
       "kind": "technology",
       "era": "medieval",
       "cost": 70,
-      "prerequisites": ["agricultural_calendar"],
+      "prerequisites": [
+        "agricultural_calendar"
+      ],
       "boost": {
         "id": "control_two_river_regions",
         "name": "掌控两处水网",
@@ -148,12 +231,25 @@
         "progressBonus": 40
       },
       "unlocks": {
-        "units": ["river_navy"],
-        "policies": ["border_management"],
-        "events": ["canal_silt"],
-        "mechanicTags": ["river", "navy", "transport"]
+        "units": [
+          "river_navy"
+        ],
+        "policies": [
+          "border_management"
+        ],
+        "events": [
+          "canal_silt"
+        ],
+        "mechanicTags": [
+          "river",
+          "navy",
+          "transport"
+        ]
       },
-      "effects": {"taxEfficiency": 4, "mobility": 4},
+      "effects": {
+        "taxEfficiency": 4,
+        "mobility": 4
+      },
       "uiSummary": "把长江、淮河和江东水网转成移动、粮运和水军优势。"
     },
     {
@@ -162,7 +258,10 @@
       "kind": "technology",
       "era": "medieval",
       "cost": 85,
-      "prerequisites": ["river_transport", "agricultural_calendar"],
+      "prerequisites": [
+        "river_transport",
+        "agricultural_calendar"
+      ],
       "boost": {
         "id": "survive_major_flood",
         "name": "治水经验",
@@ -171,11 +270,25 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["grand_projects", "relief_grain"],
-        "events": ["yellow_river_flood", "canal_silt"],
-        "mechanicTags": ["granary", "canal", "disaster_mitigation"]
+        "policies": [
+          "grand_projects",
+          "relief_grain"
+        ],
+        "events": [
+          "yellow_river_flood",
+          "canal_silt"
+        ],
+        "mechanicTags": [
+          "granary",
+          "canal",
+          "disaster_mitigation"
+        ]
       },
-      "effects": {"food": 60, "disasterMitigation": 5, "treasuryStability": 3},
+      "effects": {
+        "food": 60,
+        "disasterMitigation": 5,
+        "treasuryStability": 3
+      },
       "uiSummary": "用工程和仓储吸收天气波动，代价是工程财政压力。"
     },
     {
@@ -184,7 +297,9 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 90,
-      "prerequisites": ["standard_script_law"],
+      "prerequisites": [
+        "standard_script_law"
+      ],
       "boost": {
         "id": "complete_land_survey",
         "name": "完成清丈",
@@ -193,11 +308,23 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["household_registry", "central_audit", "fiscal_order"],
+        "policies": [
+          "household_registry",
+          "central_audit",
+          "fiscal_order"
+        ],
         "events": [],
-        "mechanicTags": ["bureaucracy", "register", "audit"]
+        "mechanicTags": [
+          "bureaucracy",
+          "register",
+          "audit"
+        ]
       },
-      "effects": {"taxEfficiency": 6, "courtCapacity": 1, "annexationPressure": -3},
+      "effects": {
+        "taxEfficiency": 6,
+        "courtCapacity": 1,
+        "annexationPressure": -3
+      },
       "uiSummary": "让户籍、税基和审计成为中后期王朝稳定工具。"
     },
     {
@@ -206,7 +333,9 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 100,
-      "prerequisites": ["paper_bureaucracy"],
+      "prerequisites": [
+        "paper_bureaucracy"
+      ],
       "boost": {
         "id": "recruit_three_talents",
         "name": "三才入朝",
@@ -215,11 +344,25 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["civil_service", "talent_court", "literati_pacification"],
-        "events": ["harvest_festival"],
-        "mechanicTags": ["literati", "talent", "ritual"]
+        "policies": [
+          "civil_service",
+          "talent_court",
+          "literati_pacification"
+        ],
+        "events": [
+          "harvest_festival"
+        ],
+        "mechanicTags": [
+          "literati",
+          "talent",
+          "ritual"
+        ]
       },
-      "effects": {"talentChance": 8, "factionPressure": -4, "legitimacy": 4},
+      "effects": {
+        "talentChance": 8,
+        "factionPressure": -4,
+        "legitimacy": 4
+      },
       "uiSummary": "提高人才稳定性和合法性，也让士人集团成为需要管理的力量。"
     },
     {
@@ -228,7 +371,10 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 80,
-      "prerequisites": ["agricultural_calendar", "paper_bureaucracy"],
+      "prerequisites": [
+        "agricultural_calendar",
+        "paper_bureaucracy"
+      ],
       "boost": {
         "id": "resolve_sky_omen",
         "name": "处置天象",
@@ -237,11 +383,26 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["remonstrance", "literati_pacification"],
-        "events": ["solar_eclipse", "comet_omen", "guest_star"],
-        "mechanicTags": ["astronomy", "mandate", "calendar"]
+        "policies": [
+          "remonstrance",
+          "literati_pacification"
+        ],
+        "events": [
+          "solar_eclipse",
+          "comet_omen",
+          "guest_star"
+        ],
+        "mechanicTags": [
+          "astronomy",
+          "mandate",
+          "calendar"
+        ]
       },
-      "effects": {"astronomyInsight": 8, "legitimacy": 3, "weatherResilience": 2},
+      "effects": {
+        "astronomyInsight": 8,
+        "legitimacy": 3,
+        "weatherResilience": 2
+      },
       "uiSummary": "把天文事件从随机惩罚变成合法性、历法和谏诤系统的交汇点。"
     },
     {
@@ -250,7 +411,10 @@
       "kind": "technology",
       "era": "early_modern",
       "cost": 125,
-      "prerequisites": ["iron_smelting", "astronomical_bureau"],
+      "prerequisites": [
+        "iron_smelting",
+        "astronomical_bureau"
+      ],
       "boost": {
         "id": "own_workshop_and_saltpeter",
         "name": "工坊与硝石",
@@ -258,12 +422,25 @@
         "progressBonus": 40
       },
       "unlocks": {
-        "units": ["fire_lance_guard"],
-        "policies": ["military_governance"],
-        "events": ["armory_breakthrough"],
-        "mechanicTags": ["gunpowder", "late_weapon"]
+        "units": [
+          "fire_lance_guard"
+        ],
+        "policies": [
+          "military_governance"
+        ],
+        "events": [
+          "armory_breakthrough"
+        ],
+        "mechanicTags": [
+          "gunpowder",
+          "late_weapon"
+        ]
       },
-      "effects": {"weaponQuality": 10, "battlePower": 6, "treasuryPressure": 2},
+      "effects": {
+        "weaponQuality": 10,
+        "battlePower": 6,
+        "treasuryPressure": 2
+      },
       "uiSummary": "提供早期火器优势，同时增加财政和工坊依赖。"
     },
     {
@@ -272,7 +449,10 @@
       "kind": "technology",
       "era": "early_modern",
       "cost": 110,
-      "prerequisites": ["river_transport", "astronomical_bureau"],
+      "prerequisites": [
+        "river_transport",
+        "astronomical_bureau"
+      ],
       "boost": {
         "id": "control_two_coasts",
         "name": "两处海岸",
@@ -280,12 +460,27 @@
         "progressBonus": 45
       },
       "unlocks": {
-        "units": ["river_navy"],
-        "policies": ["border_campaign", "multiethnic_governance"],
-        "events": ["coastal_typhoon"],
-        "mechanicTags": ["maritime", "navigation", "trade"]
+        "units": [
+          "river_navy"
+        ],
+        "policies": [
+          "border_campaign",
+          "multiethnic_governance"
+        ],
+        "events": [
+          "coastal_typhoon"
+        ],
+        "mechanicTags": [
+          "maritime",
+          "navigation",
+          "trade"
+        ]
       },
-      "effects": {"taxEfficiency": 5, "mobility": 3, "frontierIntegration": 3},
+      "effects": {
+        "taxEfficiency": 5,
+        "mobility": 3,
+        "frontierIntegration": 3
+      },
       "uiSummary": "强化东南和岭南的海贸价值，为全球版预留航海扩展接口。"
     },
     {
@@ -294,7 +489,10 @@
       "kind": "technology",
       "era": "early_modern",
       "cost": 105,
-      "prerequisites": ["mounted_warfare", "paper_bureaucracy"],
+      "prerequisites": [
+        "mounted_warfare",
+        "paper_bureaucracy"
+      ],
       "boost": {
         "id": "hold_frontier_regions",
         "name": "稳住边镇",
@@ -302,12 +500,28 @@
         "progressBonus": 45
       },
       "unlocks": {
-        "units": ["frontier_cavalry", "garrison"],
-        "policies": ["border_management", "border_campaign"],
-        "events": ["border_horse_plague"],
-        "mechanicTags": ["frontier", "fortification", "multiethnic"]
+        "units": [
+          "frontier_cavalry",
+          "garrison"
+        ],
+        "policies": [
+          "border_management",
+          "border_campaign"
+        ],
+        "events": [
+          "border_horse_plague"
+        ],
+        "mechanicTags": [
+          "frontier",
+          "fortification",
+          "multiethnic"
+        ]
       },
-      "effects": {"rebellionRisk": -4, "localPower": -2, "armyMorale": 3},
+      "effects": {
+        "rebellionRisk": -4,
+        "localPower": -2,
+        "armyMorale": 3
+      },
       "uiSummary": "把边疆控制从单纯驻军提升为制度化边镇。",
       "sourceReference": "《魏书·食货志》《隋书·地理志》"
     },
@@ -317,7 +531,10 @@
       "kind": "civic",
       "era": "early_modern",
       "cost": 110,
-      "prerequisites": ["paper_bureaucracy", "standard_script_law"],
+      "prerequisites": [
+        "paper_bureaucracy",
+        "standard_script_law"
+      ],
       "boost": {
         "id": "complete_three_reforms",
         "name": "三轮改制",
@@ -326,11 +543,23 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["central_audit", "civil_service", "fiscal_order"],
+        "policies": [
+          "central_audit",
+          "civil_service",
+          "fiscal_order"
+        ],
         "events": [],
-        "mechanicTags": ["bureaucracy", "centralization", "three_departments"]
+        "mechanicTags": [
+          "bureaucracy",
+          "centralization",
+          "three_departments"
+        ]
       },
-      "effects": {"taxEfficiency": 8, "factionPressure": -5, "integrationSpeed": 6},
+      "effects": {
+        "taxEfficiency": 8,
+        "factionPressure": -5,
+        "integrationSpeed": 6
+      },
       "uiSummary": "三省六部制是隋唐中央集权的核心制度框架。",
       "sourceReference": "《隋书·百官志》《旧唐书·职官志》"
     },
@@ -340,7 +569,9 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 85,
-      "prerequisites": ["paper_bureaucracy"],
+      "prerequisites": [
+        "paper_bureaucracy"
+      ],
       "boost": {
         "id": "control_grain_plain",
         "name": "掌控粮仓平原",
@@ -349,11 +580,23 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["household_registry", "agricultural_recovery"],
+        "policies": [
+          "household_registry",
+          "agricultural_recovery"
+        ],
         "events": [],
-        "mechanicTags": ["land_reform", "equal_field", "population_register"]
+        "mechanicTags": [
+          "land_reform",
+          "equal_field",
+          "population_register"
+        ]
       },
-      "effects": {"food": 50, "taxBase": 6, "populationGrowth": 3, "annexationPressure": -4},
+      "effects": {
+        "food": 50,
+        "taxBase": 6,
+        "populationGrowth": 3,
+        "annexationPressure": -4
+      },
       "uiSummary": "均田制是北魏到唐初的土地制度基础，稳定农业和税基。",
       "sourceReference": "《魏书·食货志》《隋书·食货志》"
     },
@@ -363,7 +606,9 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 75,
-      "prerequisites": ["equal_field_system"],
+      "prerequisites": [
+        "equal_field_system"
+      ],
       "boost": {
         "id": "integrate_five_regions",
         "name": "整合五地",
@@ -372,11 +617,22 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["household_registry", "multiethnic_governance"],
+        "policies": [
+          "household_registry",
+          "multiethnic_governance"
+        ],
         "events": [],
-        "mechanicTags": ["local_administration", "population_control", "hanhua"]
+        "mechanicTags": [
+          "local_administration",
+          "population_control",
+          "hanhua"
+        ]
       },
-      "effects": {"taxBase": 5, "integrationSpeed": 8, "localPower": -3},
+      "effects": {
+        "taxBase": 5,
+        "integrationSpeed": 8,
+        "localPower": -3
+      },
       "uiSummary": "三长制用基层行政网络取代宗主督护，是北魏汉化改革的核心。",
       "sourceReference": "《魏书·食货志》《资治通鉴·齐纪》"
     },
@@ -386,7 +642,9 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 70,
-      "prerequisites": ["paper_bureaucracy"],
+      "prerequisites": [
+        "paper_bureaucracy"
+      ],
       "boost": {
         "id": "low_treasury",
         "name": "国库告急",
@@ -395,11 +653,23 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["anti_corruption", "fiscal_order"],
+        "policies": [
+          "anti_corruption",
+          "fiscal_order"
+        ],
         "events": [],
-        "mechanicTags": ["buddhist_recovery", "fiscal", "state_assets"]
+        "mechanicTags": [
+          "buddhist_recovery",
+          "fiscal",
+          "state_assets"
+        ]
       },
-      "effects": {"money": 80, "taxEfficiency": 5, "rebellionRisk": 4, "legitimacy": -3},
+      "effects": {
+        "money": 80,
+        "taxEfficiency": 5,
+        "rebellionRisk": 4,
+        "legitimacy": -3
+      },
       "uiSummary": "灭佛回收寺产人口，是柴荣和宇文邕的财政应急手段。",
       "sourceReference": "《旧五代史·周世宗本纪》《周书·武帝本纪》"
     },
@@ -409,7 +679,10 @@
       "kind": "civic",
       "era": "medieval",
       "cost": 65,
-      "prerequisites": ["canal_granary", "standard_script_law"],
+      "prerequisites": [
+        "canal_granary",
+        "standard_script_law"
+      ],
       "boost": {
         "id": "control_bashu",
         "name": "入主巴蜀",
@@ -418,13 +691,722 @@
       },
       "unlocks": {
         "units": [],
-        "policies": ["local_compromise", "talent_absorption", "light_tax"],
+        "policies": [
+          "local_compromise",
+          "talent_absorption",
+          "light_tax"
+        ],
         "events": [],
-        "mechanicTags": ["shu_governance", "coalition", "local_compromise"]
+        "mechanicTags": [
+          "shu_governance",
+          "coalition",
+          "local_compromise"
+        ]
       },
-      "effects": {"rebellionRisk": -5, "legitimacy": 4, "integrationSpeed": 4, "taxEfficiency": 3},
+      "effects": {
+        "rebellionRisk": -5,
+        "legitimacy": 4,
+        "integrationSpeed": 4,
+        "taxEfficiency": 3
+      },
       "uiSummary": "蜀汉治理以德政和人才凝聚为核心，适合弱势条件下的稳定经营。",
       "sourceReference": "《三国志·先主传》《三国志·诸葛亮传》"
+    },
+    {
+      "id": "granary_system",
+      "name": "仓廪制度",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 50,
+      "prerequisites": [
+        "agricultural_calendar"
+      ],
+      "boost": {
+        "id": "survive_famine",
+        "name": "度过饥荒",
+        "description": "经历一次旱灾后存活。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "relief_grain"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "granary",
+          "food_security"
+        ]
+      },
+      "effects": {
+        "food": 30,
+        "disasterMitigation": 3
+      },
+      "uiSummary": "建立国家粮仓体系，提升灾害抵御能力。",
+      "sourceReference": "《周礼·地官·廪人》"
+    },
+    {
+      "id": "city_wall_tech",
+      "name": "城防工事",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 55,
+      "prerequisites": [
+        "bronze_casting"
+      ],
+      "boost": {
+        "id": "defend_siege",
+        "name": "成功守城",
+        "description": "抵御一次进攻。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [
+          "garrison"
+        ],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "fortification",
+          "defense"
+        ]
+      },
+      "effects": {
+        "rebellionRisk": -3,
+        "armyMorale": 2
+      },
+      "uiSummary": "系统化城防建设，提升区域防御能力。",
+      "sourceReference": "《墨子·备城门》"
+    },
+    {
+      "id": "horse_stable",
+      "name": "马厩建设",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 60,
+      "prerequisites": [
+        "mounted_warfare"
+      ],
+      "boost": {
+        "id": "own_horse_region",
+        "name": "掌控马源",
+        "description": "控制带 horses 资源的地区。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [
+          "cavalry"
+        ],
+        "policies": [
+          "horse_policy"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "cavalry",
+          "stable"
+        ]
+      },
+      "effects": {
+        "armyMorale": 3,
+        "mobility": 4
+      },
+      "uiSummary": "建设马厩系统，提升骑兵组建效率。",
+      "sourceReference": "《汉书·百官公卿表》"
+    },
+    {
+      "id": "arsenal_tech",
+      "name": "武库建设",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 65,
+      "prerequisites": [
+        "iron_smelting"
+      ],
+      "boost": {
+        "id": "standardize_arms",
+        "name": "标准化武备",
+        "description": "执行标准化政策。",
+        "progressBonus": 35
+      },
+      "unlocks": {
+        "units": [
+          "crossbowmen"
+        ],
+        "policies": [
+          "military_governance"
+        ],
+        "events": [
+          "armory_breakthrough"
+        ],
+        "mechanicTags": [
+          "arsenal",
+          "standardized_arms"
+        ]
+      },
+      "effects": {
+        "weaponQuality": 5,
+        "armyMorale": 2
+      },
+      "uiSummary": "建立国家武库，统一兵器标准。",
+      "sourceReference": "《汉书·百官公卿表》"
+    },
+    {
+      "id": "formation_tactics",
+      "name": "阵法战术",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 70,
+      "prerequisites": [
+        "iron_smelting"
+      ],
+      "boost": {
+        "id": "win_battle",
+        "name": "赢得战斗",
+        "description": "赢得一次战斗。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "military_governance"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "formation",
+          "tactics"
+        ]
+      },
+      "effects": {
+        "battlePower": 6,
+        "armyMorale": 3
+      },
+      "uiSummary": "系统化阵法训练，提升军队战斗力。",
+      "sourceReference": "《孙子兵法》"
+    },
+    {
+      "id": "siege_warfare",
+      "name": "攻城术",
+      "kind": "technology",
+      "era": "classical",
+      "cost": 80,
+      "prerequisites": [
+        "iron_smelting",
+        "city_wall_tech"
+      ],
+      "boost": {
+        "id": "capture_city",
+        "name": "攻下城池",
+        "description": "攻下一个区域。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [
+          "siege_engineer"
+        ],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "siege",
+          "engineering"
+        ]
+      },
+      "effects": {
+        "battlePower": 4
+      },
+      "uiSummary": "攻城器械和战术发展，提升围城效率。",
+      "sourceReference": "《墨子·备城门》"
+    },
+    {
+      "id": "naval_warfare",
+      "name": "水战技术",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 75,
+      "prerequisites": [
+        "river_transport"
+      ],
+      "boost": {
+        "id": "win_naval_battle",
+        "name": "水战取胜",
+        "description": "在河流区域赢得战斗。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [
+          "river_navy"
+        ],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "naval",
+          "river_war"
+        ]
+      },
+      "effects": {
+        "battlePower": 5,
+        "mobility": 3
+      },
+      "uiSummary": "水军建设和水战战术。",
+      "sourceReference": "《三国志·周瑜传》"
+    },
+    {
+      "id": "fire_weapon",
+      "name": "火攻术",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 85,
+      "prerequisites": [
+        "gunpowder_formula"
+      ],
+      "boost": {
+        "id": "use_fire_attack",
+        "name": "使用火攻",
+        "description": "在战斗中使用火攻。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [
+          "fire_lance_guard"
+        ],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "fire",
+          "gunpowder"
+        ]
+      },
+      "effects": {
+        "battlePower": 8
+      },
+      "uiSummary": "火药武器和火攻战术。",
+      "sourceReference": "《武经总要》"
+    },
+    {
+      "id": "stirrup_tech",
+      "name": "马镫发明",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 65,
+      "prerequisites": [
+        "mounted_warfare"
+      ],
+      "boost": {
+        "id": "cavalry_victory",
+        "name": "骑兵取胜",
+        "description": "用骑兵赢得战斗。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "cavalry",
+          "stirrup"
+        ]
+      },
+      "effects": {
+        "battlePower": 5,
+        "armyMorale": 3
+      },
+      "uiSummary": "马镫发明使骑兵战斗力飞跃。",
+      "sourceReference": "《资治通鉴》"
+    },
+    {
+      "id": "heavy_cavalry",
+      "name": "重骑兵",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 90,
+      "prerequisites": [
+        "stirrup_tech",
+        "horse_stable"
+      ],
+      "boost": {
+        "id": "elite_cavalry",
+        "name": "组建精锐骑兵",
+        "description": "组建一支骑兵。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "heavy_cavalry",
+          "elite"
+        ]
+      },
+      "effects": {
+        "battlePower": 8,
+        "armyMorale": 4
+      },
+      "uiSummary": "重装骑兵，战场冲击力极强。",
+      "sourceReference": "《资治通鉴》"
+    },
+    {
+      "id": "confucian_education",
+      "name": "儒学教育",
+      "kind": "civic",
+      "era": "classical",
+      "cost": 60,
+      "prerequisites": [
+        "standard_script_law"
+      ],
+      "boost": {
+        "id": "recruit_scholar",
+        "name": "招募儒生",
+        "description": "获得一名人才。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "civil_service",
+          "literati_pacification"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "confucian",
+          "education"
+        ]
+      },
+      "effects": {
+        "legitimacy": 4,
+        "factionPressure": -3
+      },
+      "uiSummary": "以儒学为核心的人才培养体系。",
+      "sourceReference": "《汉书·儒林传》"
+    },
+    {
+      "id": "salt_iron_monopoly",
+      "name": "盐铁官营",
+      "kind": "civic",
+      "era": "classical",
+      "cost": 70,
+      "prerequisites": [
+        "standard_script_law"
+      ],
+      "boost": {
+        "id": "high_revenue",
+        "name": "国库充盈",
+        "description": "金钱超过 500。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "state_monopoly",
+          "fiscal_order"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "monopoly",
+          "fiscal"
+        ]
+      },
+      "effects": {
+        "taxEfficiency": 8,
+        "money": 40
+      },
+      "uiSummary": "国家垄断盐铁经营，大幅提升财政收入。",
+      "sourceReference": "《盐铁论》"
+    },
+    {
+      "id": "historiography",
+      "name": "史官制度",
+      "kind": "civic",
+      "era": "classical",
+      "cost": 55,
+      "prerequisites": [
+        "standard_script_law"
+      ],
+      "boost": {
+        "id": "record_history",
+        "name": "记录历史",
+        "description": "积累 10 个回合日志。",
+        "progressBonus": 35
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "history",
+          "record"
+        ]
+      },
+      "effects": {
+        "legitimacy": 5,
+        "science": 3
+      },
+      "uiSummary": "建立史官制度，记录国家历史，提升合法性。",
+      "sourceReference": "《史记·太史公自序》"
+    },
+    {
+      "id": "water_transport_system",
+      "name": "漕运体系",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 80,
+      "prerequisites": [
+        "canal_granary"
+      ],
+      "boost": {
+        "id": "grain_transport",
+        "name": "漕粮运输",
+        "description": "控制两个产粮区。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "grand_projects"
+        ],
+        "events": [
+          "canal_silt"
+        ],
+        "mechanicTags": [
+          "canal",
+          "transport"
+        ]
+      },
+      "effects": {
+        "food": 40,
+        "taxEfficiency": 4
+      },
+      "uiSummary": "建立漕运体系，南粮北运。",
+      "sourceReference": "《隋书·食货志》"
+    },
+    {
+      "id": "printing_tech",
+      "name": "雕版印刷",
+      "kind": "technology",
+      "era": "medieval",
+      "cost": 75,
+      "prerequisites": [
+        "paper_bureaucracy"
+      ],
+      "boost": {
+        "id": "spread_knowledge",
+        "name": "知识传播",
+        "description": "完成 3 项科技研究。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "printing",
+          "knowledge"
+        ]
+      },
+      "effects": {
+        "science": 8,
+        "taxEfficiency": 3
+      },
+      "uiSummary": "雕版印刷术推动知识传播和行政效率。",
+      "sourceReference": "《旧唐书》"
+    },
+    {
+      "id": "compass_tech",
+      "name": "指南针",
+      "kind": "technology",
+      "era": "early_modern",
+      "cost": 90,
+      "prerequisites": [
+        "maritime_compass"
+      ],
+      "boost": {
+        "id": "naval_expedition",
+        "name": "远洋航行",
+        "description": "控制两个沿海地区。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "border_campaign"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "navigation",
+          "maritime"
+        ]
+      },
+      "effects": {
+        "taxEfficiency": 5,
+        "mobility": 3
+      },
+      "uiSummary": "指南针技术革命性提升航海能力。",
+      "sourceReference": "《梦溪笔谈》"
+    },
+    {
+      "id": "gunpowder_weapon",
+      "name": "火器列装",
+      "kind": "technology",
+      "era": "early_modern",
+      "cost": 120,
+      "prerequisites": [
+        "gunpowder_formula",
+        "arsenal_tech"
+      ],
+      "boost": {
+        "id": "fire_weapon_used",
+        "name": "使用火器",
+        "description": "使用火器赢得战斗。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [
+          "fire_lance_guard"
+        ],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "gunpowder",
+          "firearms"
+        ]
+      },
+      "effects": {
+        "weaponQuality": 10,
+        "battlePower": 6
+      },
+      "uiSummary": "火器正式列装军队，改变战争形态。",
+      "sourceReference": "《武经总要》"
+    },
+    {
+      "id": "cannon_tech",
+      "name": "火炮制造",
+      "kind": "technology",
+      "era": "early_modern",
+      "cost": 140,
+      "prerequisites": [
+        "gunpowder_weapon"
+      ],
+      "boost": {
+        "id": "siege_with_cannon",
+        "name": "火炮攻城",
+        "description": "使用火炮攻城。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [],
+        "events": [],
+        "mechanicTags": [
+          "cannon",
+          "siege"
+        ]
+      },
+      "effects": {
+        "battlePower": 10,
+        "weaponQuality": 8
+      },
+      "uiSummary": "火炮制造技术，彻底改变攻城战。",
+      "sourceReference": "《明史·兵志》"
+    },
+    {
+      "id": "grand_canal",
+      "name": "大运河",
+      "kind": "technology",
+      "era": "early_modern",
+      "cost": 100,
+      "prerequisites": [
+        "water_transport_system"
+      ],
+      "boost": {
+        "id": "canal_complete",
+        "name": "运河贯通",
+        "description": "控制南北各两个地区。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "grand_projects"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "canal",
+          "infrastructure"
+        ]
+      },
+      "effects": {
+        "food": 50,
+        "taxEfficiency": 6
+      },
+      "uiSummary": "大运河连接南北，极大提升漕运效率。",
+      "sourceReference": "《隋书·炀帝本纪》"
+    },
+    {
+      "id": "military_academy",
+      "name": "武学",
+      "kind": "civic",
+      "era": "early_modern",
+      "cost": 85,
+      "prerequisites": [
+        "civil_service_exams"
+      ],
+      "boost": {
+        "id": "train_generals",
+        "name": "培养将领",
+        "description": "获得一名将领人才。",
+        "progressBonus": 40
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "military_governance"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "military_education",
+          "academy"
+        ]
+      },
+      "effects": {
+        "armyMorale": 5,
+        "battlePower": 3
+      },
+      "uiSummary": "建立武学培养军事人才。",
+      "sourceReference": "《宋史·选举志》"
+    },
+    {
+      "id": "new_policy_reform",
+      "name": "变法维新",
+      "kind": "civic",
+      "era": "early_modern",
+      "cost": 110,
+      "prerequisites": [
+        "paper_bureaucracy",
+        "civil_service_exams"
+      ],
+      "boost": {
+        "id": "complete_reform",
+        "name": "完成改革",
+        "description": "完成一项核心改革。",
+        "progressBonus": 45
+      },
+      "unlocks": {
+        "units": [],
+        "policies": [
+          "central_audit",
+          "anti_corruption"
+        ],
+        "events": [],
+        "mechanicTags": [
+          "reform",
+          "modernization"
+        ]
+      },
+      "effects": {
+        "taxEfficiency": 8,
+        "legitimacy": 3
+      },
+      "uiSummary": "系统性制度改革，提升国家治理能力。",
+      "sourceReference": "《宋史·王安石传》"
     }
   ]
 }

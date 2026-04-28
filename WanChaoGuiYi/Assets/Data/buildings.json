@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "granary",
+      "name": "粮仓",
+      "category": "agriculture",
+      "requiresTech": "granary_system",
+      "cost": 30,
+      "effects": {"food": 15, "disasterMitigation": 3},
+      "sourceReference": "《周礼·地官·廪人》"
+    },
+    {
+      "id": "city_wall",
+      "name": "城墙",
+      "category": "defense",
+      "requiresTech": "city_wall_tech",
+      "cost": 40,
+      "effects": {"rebellionRisk": -5, "armyMorale": 3},
+      "sourceReference": "《墨子·备城门》"
+    },
+    {
+      "id": "horse_stable_building",
+      "name": "马厩",
+      "category": "military",
+      "requiresTech": "horse_stable",
+      "cost": 35,
+      "effects": {"armyMorale": 3, "mobility": 5},
+      "sourceReference": "《汉书·百官公卿表》"
+    },
+    {
+      "id": "arsenal",
+      "name": "武库",
+      "category": "military",
+      "requiresTech": "arsenal_tech",
+      "cost": 45,
+      "effects": {"weaponQuality": 5, "armyMorale": 2},
+      "sourceReference": "《汉书·百官公卿表》"
+    },
+    {
+      "id": "academy",
+      "name": "书院",
+      "category": "culture",
+      "requiresTech": "confucian_education",
+      "cost": 35,
+      "effects": {"science": 5, "legitimacy": 3, "talentChance": 5},
+      "sourceReference": "《汉书·儒林传》"
+    },
+    {
+      "id": "market",
+      "name": "市集",
+      "category": "economy",
+      "requiresTech": "salt_iron_monopoly",
+      "cost": 30,
+      "effects": {"taxEfficiency": 5, "money": 10},
+      "sourceReference": "《史记·货殖列传》"
+    },
+    {
+      "id": "temple",
+      "name": "寺庙",
+      "category": "culture",
+      "requiresTech": "historiography",
+      "cost": 25,
+      "effects": {"legitimacy": 4, "rebellionRisk": -2},
+      "sourceReference": "《魏书·释老志》"
+    },
+    {
+      "id": "harbor",
+      "name": "港口",
+      "category": "economy",
+      "requiresTech": "maritime_compass",
+      "cost": 50,
+      "effects": {"taxEfficiency": 6, "money": 15},
+      "sourceReference": "《宋史·食货志》"
+    },
+    {
+      "id": "watchtower",
+      "name": "烽火台",
+      "category": "defense",
+      "requiresTech": "frontier_fortification",
+      "cost": 20,
+      "effects": {"disasterMitigation": 5, "armyMorale": 2},
+      "sourceReference": "《史记·匈奴列传》"
+    },
+    {
+      "id": "workshop",
+      "name": "工坊",
+      "category": "military",
+      "requiresTech": "gunpowder_weapon",
+      "cost": 55,
+      "effects": {"weaponQuality": 8, "battlePower": 3},
+      "sourceReference": "《武经总要》"
+    },
+    {
+      "id": "irrigation",
+      "name": "灌溉工程",
+      "category": "agriculture",
+      "requiresTech": "water_conservancy",
+      "cost": 35,
+      "effects": {"food": 20, "populationGrowth": 2},
+      "sourceReference": "《史记·河渠书》"
+    },
+    {
+      "id": "courier_station",
+      "name": "驿站",
+      "category": "infrastructure",
+      "requiresTech": "paper_bureaucracy",
+      "cost": 25,
+      "effects": {"taxEfficiency": 3, "integrationSpeed": 3},
+      "sourceReference": "《汉书·百官公卿表》"
+    }
+  ]
+}
