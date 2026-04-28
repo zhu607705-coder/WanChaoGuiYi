@@ -371,9 +371,6 @@ namespace WanChaoGuiYi
 
                 // 民心地区民变风险低
                 region.rebellionRisk = Mathf.Max(0, region.rebellionRisk - 1);
-
-                // 但经济效率较低（弱势条件）
-                region.taxOutput = Mathf.Max(0, region.taxOutput - 1);
             }
         }
     }

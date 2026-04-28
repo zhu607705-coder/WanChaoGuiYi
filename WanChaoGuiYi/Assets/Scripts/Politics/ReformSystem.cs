@@ -45,6 +45,8 @@ namespace WanChaoGuiYi
             faction.legitimacy = ClampPercent(faction.legitimacy + effects.legitimacy);
             faction.courtFactionPressure = ClampPercent(faction.courtFactionPressure + effects.factionPressure);
             faction.money += effects.money;
+            faction.food += effects.food;
+            faction.successionRisk = ClampPercent(faction.successionRisk + effects.successionRisk);
         }
 
         private static void ApplyRisks(FactionState faction, RiskSet risks)
@@ -52,6 +54,7 @@ namespace WanChaoGuiYi
             if (risks == null) return;
             faction.courtFactionPressure = ClampPercent(faction.courtFactionPressure + risks.factionPressure);
             faction.legitimacy = ClampPercent(faction.legitimacy - risks.treasuryPressure);
+            faction.successionRisk = ClampPercent(faction.successionRisk + risks.successionRisk);
         }
 
         private static int ClampPercent(int value)

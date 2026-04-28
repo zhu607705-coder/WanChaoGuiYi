@@ -26,21 +26,21 @@ namespace WanChaoGuiYi
 
         public void OnTurnStart(GameContext context)
         {
-            // 根据季节和历史层权重生成天气
             string weather = GenerateWeather(context);
             context.State.currentWeatherId = weather;
 
-            // 应用天气效果到所有区域
             WeatherEffect effect;
             if (!WeatherEffects.TryGetValue(weather, out effect))
             {
                 effect = WeatherEffects["normal"];
             }
 
+            // 从原始数据恢复 foodOutput，再应用天气修正
             for (int i = 0; i < context.State.regions.Count; i++)
             {
                 RegionState region = context.State.regions[i];
-                ApplyWeatherToRegion(context, region, effect);
+                RestoreBaseFoodOutput(context, region);
+                ApplyWeatherToRegion(region, effect);
             }
 
             if (weather != "normal")
@@ -50,16 +50,28 @@ namespace WanChaoGuiYi
             }
         }
 
+        private void RestoreBaseFoodOutput(GameContext context, RegionState region)
+        {
+            RegionDefinition def;
+            if (context.Data.Regions.TryGetValue(region.id, out def))
+            {
+                region.foodOutput = def.foodOutput;
+            }
+        }
+
+        private void ApplyWeatherToRegion(RegionState region, WeatherEffect effect)
+        {
+            region.foodOutput = Mathf.Max(0, region.foodOutput + Mathf.RoundToInt(region.foodOutput * effect.foodModifier / 100f));
+        }
+
         private string GenerateWeather(GameContext context)
         {
-            // 基于季节调整概率
             float droughtWeight = context.State.season == Season.Spring ? 0.08f : 0.12f;
             float floodWeight = context.State.season == Season.Spring ? 0.10f : 0.06f;
             float harvestWeight = context.State.season == Season.Autumn ? 0.15f : 0.03f;
             float coldWeight = context.State.season == Season.Autumn ? 0.08f : 0.04f;
             float plagueWeight = 0.03f;
 
-            // 天气韧性降低灾害概率
             float resilience = GetAverageWeatherResilience(context);
             float resilienceFactor = Mathf.Clamp01(1f - resilience / 200f);
 
@@ -86,13 +98,6 @@ namespace WanChaoGuiYi
             if (roll < cumulative) return "plague";
 
             return "normal";
-        }
-
-        private void ApplyWeatherToRegion(GameContext context, RegionState region, WeatherEffect effect)
-        {
-            // 粮食修正（在 EconomySystem 中读取 weatherModifier）
-            // 这里记录修正值，EconomySystem 会读取
-            region.foodOutput = Mathf.Max(0, region.foodOutput + Mathf.RoundToInt(region.foodOutput * effect.foodModifier / 100f));
         }
 
         private float GetAverageWeatherResilience(GameContext context)

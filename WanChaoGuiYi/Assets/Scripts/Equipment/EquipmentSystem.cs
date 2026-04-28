@@ -5,6 +5,8 @@ namespace WanChaoGuiYi
 {
     public sealed class EquipmentSystem : MonoBehaviour, IGameSystem
     {
+        private readonly HashSet<string> announcedTechs = new HashSet<string>();
+
         private static readonly Dictionary<string, EquipmentDefinition> EquipmentDB = new Dictionary<string, EquipmentDefinition>
         {
             // 先秦
@@ -45,7 +47,11 @@ namespace WanChaoGuiYi
                     continue;
                 }
 
-                // 装备可用，发布事件
+                // 只在科技首次解锁时发布事件，避免每回合刷屏
+                string announceKey = faction.id + ":" + equip.id;
+                if (announcedTechs.Contains(announceKey)) continue;
+                announcedTechs.Add(announceKey);
+
                 context.Events.Publish(new GameEvent(GameEventType.EquipmentUnlocked, faction.id, equip));
             }
         }
