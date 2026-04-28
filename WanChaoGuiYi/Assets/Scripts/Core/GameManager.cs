@@ -49,6 +49,10 @@ namespace WanChaoGuiYi
         {
             return new IGameSystem[]
             {
+                // 天气和天文在回合开始时触发
+                EnsureComponent<WeatherSystem>(),
+                EnsureComponent<CelestialEventSystem>(),
+                // 核心经济和政治
                 EnsureComponent<EconomySystem>(),
                 EnsureComponent<PopulationSystem>(),
                 EnsureComponent<LandSystem>(),
@@ -57,10 +61,17 @@ namespace WanChaoGuiYi
                 EnsureComponent<FactionSystem>(),
                 EnsureComponent<ReformSystem>(),
                 EnsureComponent<RebellionSystem>(),
+                // 军事
                 EnsureComponent<ArmyMovementSystem>(),
                 EnsureComponent<SiegeSystem>(),
+                // 科技、风俗、装备
+                EnsureComponent<TechSystem>(),
+                EnsureComponent<CultureSystem>(),
+                EnsureComponent<EquipmentSystem>(),
+                // 继承和人才
                 EnsureComponent<SuccessionSystem>(),
                 EnsureComponent<TalentSystem>(),
+                // AI 和胜利
                 EnsureComponent<StrategicAI>(),
                 EnsureComponent<VictorySystem>()
             };

@@ -49,6 +49,15 @@ UI panels / Map interaction
 | 地图布局 | `MapSetup`, `CameraController` | 自动摆放区域节点、摄像机平移缩放 |
 | UI | `MainMapUI`, panels | 地图、地区、帝皇、朝廷、事件、战报 |
 
+## 新增数据层
+
+| 表 | 用途 | 第一阶段接入方式 |
+| --- | --- | --- |
+| `portraits.json` | 帝皇立绘原画路径、生成 prompt、UI 裁切规则 | 帝皇面板读取 `emperorId` 对应头像 |
+| `historical_layers.json` | 历史地理、风俗、兵器传统、战略资源、天气权重 | 地区面板显示摘要，事件系统读取权重 |
+| `technologies.json` | 科技/制度树、前置、boost、解锁单位/政策/事件 | 回合系统后续接入研究进度 |
+| `chronicle_events.json` | 时间、天气、天文、风俗、兵器突破事件 | 事件系统按地区标签、时代和科技筛选 |
+
 ## 开发规则
 
 - 新系统优先实现 `IGameSystem`，由 `TurnManager` 调度。

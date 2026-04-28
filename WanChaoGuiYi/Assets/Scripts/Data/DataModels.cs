@@ -23,10 +23,38 @@ namespace WanChaoGuiYi
         public string[] legitimacyTypes;
         public string globalMechanicTag;
         public EmperorStats stats;
+        public EmperorScore score;
         public UniqueMechanicDefinition uniqueMechanic;
         public string[] historicalBurdens;
         public string[] preferredPolicies;
         public AiPersonality aiPersonality;
+        public string sourceReference;
+    }
+
+    [Serializable]
+    public sealed class EmperorScore
+    {
+        public int virtue;
+        public int wisdom;
+        public int physique;
+        public int aesthetics;
+        public int diligence;
+        public int ambition;
+        public int dignity;
+        public int tolerance;
+        public int selfControl;
+        public int personnelManagement;
+        public int nationalPower;
+        public int popularSupport;
+
+        public float CalculateTotal()
+        {
+            return virtue * 0.12f + wisdom * 0.08f + physique * 0.04f +
+                   aesthetics * 0.04f + diligence * 0.05f + ambition * 0.05f +
+                   dignity * 0.08f + tolerance * 0.05f + selfControl * 0.06f +
+                   personnelManagement * 0.10f + nationalPower * 0.15f +
+                   popularSupport * 0.18f;
+        }
     }
 
     [Serializable]
@@ -422,6 +450,7 @@ namespace WanChaoGuiYi
         public UnlockSet unlocks;
         public EffectSet effects;
         public string uiSummary;
+        public string sourceReference;
     }
 
     [Serializable]

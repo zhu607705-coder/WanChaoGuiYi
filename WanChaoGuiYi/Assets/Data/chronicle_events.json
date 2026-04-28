@@ -331,6 +331,502 @@
       ],
       "cooldownTurns": 6,
       "uiSummary": "兵器发展通过事件、科技和地区资源共同触发。"
+    },
+    {
+      "id": "yellow_river_diversion",
+      "name": "河决改道",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 3, "endTurn": 999},
+      "regionScopeTags": ["river_plain", "central_plain"],
+      "requiredTechs": [],
+      "weatherTags": ["flood"],
+      "astronomyTags": [],
+      "triggerWeight": 12,
+      "choices": [
+        {
+          "id": "mobilize_labor_repair",
+          "label": "征发修河",
+          "effects": {"disasterMitigation": 6, "legitimacy": 2},
+          "risks": {"corveePressure": 8, "rebellionRisk": 4},
+          "followUpTags": ["flood_control"]
+        },
+        {
+          "id": "relocate_population",
+          "label": "迁民避水",
+          "effects": {"rebellionRisk": -5},
+          "risks": {"taxEfficiency": -3, "populationGrowth": -2},
+          "followUpTags": ["population_shift"]
+        }
+      ],
+      "cooldownTurns": 10,
+      "uiSummary": "黄河改道是中原最大灾害，治河与迁民是两种应对路径。",
+      "sourceReference": "《汉书·沟洫志》《宋史·河渠志》"
+    },
+    {
+      "id": "plague_outbreak",
+      "name": "大疫",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 4, "endTurn": 999},
+      "regionScopeTags": ["population_core", "river_delta", "subtropical_coast"],
+      "requiredTechs": [],
+      "weatherTags": ["plague"],
+      "astronomyTags": [],
+      "triggerWeight": 10,
+      "choices": [
+        {
+          "id": "quarantine_region",
+          "label": "封隔离疫",
+          "effects": {"disasterMitigation": 5},
+          "risks": {"taxEfficiency": -4, "rebellionRisk": 3},
+          "followUpTags": ["quarantine"]
+        },
+        {
+          "id": "open_medical_relief",
+          "label": "开仓施药",
+          "effects": {"legitimacy": 4, "rebellionRisk": -3},
+          "risks": {"treasuryPressure": 5, "money": -30},
+          "followUpTags": ["medical_relief"]
+        }
+      ],
+      "cooldownTurns": 8,
+      "uiSummary": "大疫影响人口和民心，隔离有效但伤经济，施药亲民但耗财。",
+      "sourceReference": "《后汉书·五行志》《三国志·武帝纪》"
+    },
+    {
+      "id": "locust_plague",
+      "name": "蝗灾",
+      "eventType": "weather",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 3, "endTurn": 999},
+      "regionScopeTags": ["grain_zone", "temperate_loess", "central_plain"],
+      "requiredTechs": [],
+      "weatherTags": ["drought"],
+      "astronomyTags": [],
+      "triggerWeight": 9,
+      "choices": [
+        {
+          "id": "mass_catch_campaign",
+          "label": "组织捕蝗",
+          "effects": {"food": 20, "legitimacy": 2},
+          "risks": {"corveePressure": 4},
+          "followUpTags": ["locust_control"]
+        },
+        {
+          "id": "pray_and_reduce_tax",
+          "label": "减赋祈祷",
+          "effects": {"legitimacy": 5, "rebellionRisk": -4},
+          "risks": {"taxEfficiency": -5, "food": -30},
+          "followUpTags": ["ritual_relief"]
+        }
+      ],
+      "cooldownTurns": 7,
+      "uiSummary": "蝗灾是旱灾连锁反应，捕蝗务实但劳民，减赋亲民但损财政。",
+      "sourceReference": "《汉书·五行志》《旧唐书·五行志》"
+    },
+    {
+      "id": "emperor_aging_crisis",
+      "name": "帝皇老迈",
+      "eventType": "succession",
+      "eraScope": ["classical", "medieval", "early_modern"],
+      "turnWindow": {"startTurn": 10, "endTurn": 999},
+      "regionScopeTags": ["capital_corridor"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 10,
+      "choices": [
+        {
+          "id": "empower_crown_prince",
+          "label": "委政太子",
+          "effects": {"successionRisk": -10, "factionPressure": 5},
+          "risks": {"factionPressure": 8},
+          "followUpTags": ["succession_preparation"]
+        },
+        {
+          "id": "hold_power_tight",
+          "label": "紧握权柄",
+          "effects": {"factionPressure": -3},
+          "risks": {"successionRisk": 10, "legitimacy": -3},
+          "followUpTags": ["power_struggle"]
+        }
+      ],
+      "cooldownTurns": 12,
+      "uiSummary": "帝皇年迈是继承危机的前兆，提前放权可降低风险但引朝臣争斗。",
+      "sourceReference": "《史记·秦始皇本纪》《旧唐书·太宗本纪》"
+    },
+    {
+      "id": "guandu_crisis",
+      "name": "官渡对峙",
+      "eventType": "military",
+      "eraScope": ["classical", "medieval"],
+      "turnWindow": {"startTurn": 5, "endTurn": 999},
+      "regionScopeTags": ["central_plain", "open_plain"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 8,
+      "choices": [
+        {
+          "id": "raid_supply_depot",
+          "label": "奇袭粮道",
+          "effects": {"armyMorale": 10, "battlePower": 8},
+          "risks": {"rebellionRisk": 3, "treasuryPressure": 4},
+          "followUpTags": ["supply_raid"]
+        },
+        {
+          "id": "hold_defensive",
+          "label": "坚守待变",
+          "effects": {"legitimacy": 3},
+          "risks": {"food": -40, "armyMorale": -5},
+          "followUpTags": ["attrition"]
+        }
+      ],
+      "cooldownTurns": 14,
+      "uiSummary": "以弱对强时，奇袭粮道是险招但回报极高，坚守待变消耗国力。",
+      "sourceReference": "《三国志·武帝纪》《资治通鉴·汉纪》"
+    },
+    {
+      "id": "red_cliffs_plague",
+      "name": "赤壁军疫",
+      "eventType": "military",
+      "eraScope": ["classical", "medieval"],
+      "turnWindow": {"startTurn": 4, "endTurn": 999},
+      "regionScopeTags": ["river_plain", "middle_yangtze_humid", "crossroads"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "force_crossing",
+          "label": "强渡决战",
+          "effects": {"armyMorale": -8},
+          "risks": {"rebellionRisk": 5, "populationGrowth": -3},
+          "followUpTags": ["forced_battle"]
+        },
+        {
+          "id": "retreat_and_regroup",
+          "label": "退兵整补",
+          "effects": {"legitimacy": -3, "weatherResilience": 3},
+          "risks": {"factionPressure": 4},
+          "followUpTags": ["strategic_retreat"]
+        }
+      ],
+      "cooldownTurns": 12,
+      "uiSummary": "军队遭遇瘟疫时，强渡可能全军崩溃，退兵保实力但失威望。",
+      "sourceReference": "《三国志·武帝纪》《三国志·周瑜传》"
+    },
+    {
+      "id": "yiling_catastrophe",
+      "name": "夷陵之败",
+      "eventType": "military",
+      "eraScope": ["classical", "medieval"],
+      "turnWindow": {"startTurn": 6, "endTurn": 999},
+      "regionScopeTags": ["river_plain", "mountain_coast"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 6,
+      "choices": [
+        {
+          "id": "take_personal_command",
+          "label": "御驾亲征",
+          "effects": {"armyMorale": 8, "legitimacy": 5},
+          "risks": {"successionRisk": 15, "factionPressure": 8},
+          "followUpTags": ["personal_command"]
+        },
+        {
+          "id": "send_general",
+          "label": "遣将出征",
+          "effects": {"successionRisk": 2},
+          "risks": {"generalLoyalty": -5, "battlePower": -3},
+          "followUpTags": ["delegated_campaign"]
+        }
+      ],
+      "cooldownTurns": 16,
+      "uiSummary": "御驾亲征提升士气但继承风险极高，遣将出征安全但控制力弱。",
+      "sourceReference": "《三国志·先主传》《三国志·陆逊传》"
+    },
+    {
+      "id": "jieting_blunder",
+      "name": "街亭之失",
+      "eventType": "military",
+      "eraScope": ["classical", "medieval"],
+      "turnWindow": {"startTurn": 5, "endTurn": 999},
+      "regionScopeTags": ["mountain_pass", "upland_pass"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 6,
+      "choices": [
+        {
+          "id": "punish_commander",
+          "label": "斩将正法",
+          "effects": {"armyMorale": 3, "legitimacy": 2},
+          "risks": {"generalLoyalty": -8, "factionPressure": 5},
+          "followUpTags": ["military_discipline"]
+        },
+        {
+          "id": "mercy_and_learn",
+          "label": "戴罪立功",
+          "effects": {"generalLoyalty": 5},
+          "risks": {"armyMorale": -4, "legitimacy": -2},
+          "followUpTags": ["mercy_politics"]
+        }
+      ],
+      "cooldownTurns": 10,
+      "uiSummary": "关键战场用人失误后，斩将维护纪律但伤将领忠诚，戴罪立功留隐患。",
+      "sourceReference": "《三国志·马谡传》《三国志·诸葛亮传》"
+    },
+    {
+      "id": "yongjia_catastrophe",
+      "name": "永嘉之乱",
+      "eventType": "catastrophe",
+      "eraScope": ["medieval"],
+      "turnWindow": {"startTurn": 6, "endTurn": 999},
+      "regionScopeTags": ["capital_corridor", "ritual_center"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "flee_south",
+          "label": "南渡建康",
+          "effects": {"legitimacy": -8, "integrationSpeed": -5},
+          "risks": {"localPower": 10, "factionPressure": 10},
+          "followUpTags": ["south_migration"]
+        },
+        {
+          "id": "fight_to_death",
+          "label": "死守京师",
+          "effects": {"legitimacy": 5},
+          "risks": {"populationGrowth": -10, "nationalPower": -15},
+          "followUpTags": ["last_stand"]
+        }
+      ],
+      "cooldownTurns": 20,
+      "uiSummary": "京师陷落时，南渡保命但失法统，死守光荣但可能灭国。",
+      "sourceReference": "《晋书·怀帝纪》《资治通鉴·晋纪》"
+    },
+    {
+      "id": "fei_river_crisis",
+      "name": "淝水之战",
+      "eventType": "military",
+      "eraScope": ["medieval"],
+      "turnWindow": {"startTurn": 6, "endTurn": 999},
+      "regionScopeTags": ["river_plain", "huai_river_plain"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "cross_river_aggressive",
+          "label": "半渡而击",
+          "effects": {"armyMorale": 8, "battlePower": 6},
+          "risks": {"rebellionRisk": 5},
+          "followUpTags": ["aggressive_crossing"]
+        },
+        {
+          "id": "wait_for_retreat",
+          "label": "待其自退",
+          "effects": {"disasterMitigation": 5},
+          "risks": {"armyMorale": -3, "food": -30},
+          "followUpTags": ["defensive_wait"]
+        }
+      ],
+      "cooldownTurns": 14,
+      "uiSummary": "以多打少时，半渡击敌高风险高回报，待其自退保守但可能错失战机。",
+      "sourceReference": "《晋书·谢安传》《资治通鉴·晋纪》"
+    },
+    {
+      "id": "xiaowen_sinicization",
+      "name": "孝文迁都",
+      "eventType": "reform",
+      "eraScope": ["medieval"],
+      "turnWindow": {"startTurn": 8, "endTurn": 999},
+      "regionScopeTags": ["frontier_plain", "plateau_frontier"],
+      "requiredTechs": ["paper_bureaucracy"],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "force_capital_move",
+          "label": "强迁洛阳",
+          "effects": {"integrationSpeed": 10, "legitimacy": 5},
+          "risks": {"localPower": 8, "rebellionRisk": 8, "factionPressure": 10},
+          "followUpTags": ["radical_reform"]
+        },
+        {
+          "id": "gradual_adoption",
+          "label": "渐进汉化",
+          "effects": {"rebellionRisk": -3, "integrationSpeed": 4},
+          "risks": {"legitimacy": -3},
+          "followUpTags": ["moderate_reform"]
+        }
+      ],
+      "cooldownTurns": 16,
+      "uiSummary": "强迁都推进汉化效率极高但引爆旧势力，渐进改革安全但效果慢。",
+      "sourceReference": "《魏书·高祖本纪》《资治通鉴·齐纪》"
+    },
+    {
+      "id": "houjing_rebellion",
+      "name": "侯景之乱",
+      "eventType": "catastrophe",
+      "eraScope": ["medieval"],
+      "turnWindow": {"startTurn": 8, "endTurn": 999},
+      "regionScopeTags": ["river_delta", "craft_towns"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 6,
+      "choices": [
+        {
+          "id": "accept_defector",
+          "label": "纳降侯景",
+          "effects": {"armyMorale": 5, "battlePower": 8},
+          "risks": {"localPower": 10, "rebellionRisk": 12, "factionPressure": 8},
+          "followUpTags": ["defector_risk"]
+        },
+        {
+          "id": "reject_defector",
+          "label": "拒降绝祸",
+          "effects": {"legitimacy": 3},
+          "risks": {"diplomacy": -5},
+          "followUpTags": ["isolation"]
+        }
+      ],
+      "cooldownTurns": 18,
+      "uiSummary": "纳降叛将可获短期战力但长期风险极高，拒降安全但失机会。",
+      "sourceReference": "《梁书·侯景传》《资治通鉴·梁纪》"
+    },
+    {
+      "id": "six_towns_uprising",
+      "name": "六镇兵变",
+      "eventType": "rebellion",
+      "eraScope": ["medieval"],
+      "turnWindow": {"startTurn": 10, "endTurn": 999},
+      "regionScopeTags": ["frontier_plain", "plateau_frontier", "steppe_edge"],
+      "requiredTechs": [],
+      "weatherTags": ["cold"],
+      "astronomyTags": [],
+      "triggerWeight": 8,
+      "choices": [
+        {
+          "id": "suppress_with_force",
+          "label": "武力镇压",
+          "effects": {"armyMorale": 5},
+          "risks": {"populationGrowth": -5, "rebellionRisk": 8, "localPower": 5},
+          "followUpTags": ["military_suppression"]
+        },
+        {
+          "id": "negotiate_concessions",
+          "label": "招安抚恤",
+          "effects": {"rebellionRisk": -6, "legitimacy": 2},
+          "risks": {"treasuryPressure": 6, "localPower": 5},
+          "followUpTags": ["concession_politics"]
+        }
+      ],
+      "cooldownTurns": 14,
+      "uiSummary": "边镇兵变源于制度忽视，镇压立威但激化矛盾，招安缓和但助长骄兵。",
+      "sourceReference": "《魏书·肃宗本纪》《资治通鉴·梁纪》"
+    },
+    {
+      "id": "xuanwu_gate",
+      "name": "玄武门之变",
+      "eventType": "succession",
+      "eraScope": ["medieval", "early_modern"],
+      "turnWindow": {"startTurn": 6, "endTurn": 999},
+      "regionScopeTags": ["capital_corridor"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 6,
+      "choices": [
+        {
+          "id": "preemptive_strike",
+          "label": "先发制人",
+          "effects": {"legitimacy": -10, "successionRisk": -15},
+          "risks": {"factionPressure": 15, "courtSuspicion": 10},
+          "followUpTags": ["usurpation"]
+        },
+        {
+          "id": "submit_and_wait",
+          "label": "隐忍待时",
+          "effects": {"legitimacy": 3},
+          "risks": {"successionRisk": 12, "factionPressure": 8},
+          "followUpTags": ["endurance"]
+        }
+      ],
+      "cooldownTurns": 20,
+      "uiSummary": "继承竞争白热化时，先发制人夺权但合法性重创，隐忍安全但可能被废。",
+      "sourceReference": "《旧唐书·太宗本纪》《资治通鉴·唐纪》"
+    },
+    {
+      "id": "anshi_rebellion",
+      "name": "安史之乱",
+      "eventType": "catastrophe",
+      "eraScope": ["early_modern"],
+      "turnWindow": {"startTurn": 10, "endTurn": 999},
+      "regionScopeTags": ["frontier_plain", "capital_corridor", "northern_frontier_plain"],
+      "requiredTechs": [],
+      "weatherTags": [],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "flee_to_sichuan",
+          "label": "幸蜀避祸",
+          "effects": {"legitimacy": -10},
+          "risks": {"localPower": 10, "nationalPower": -10},
+          "followUpTags": ["exile_government"]
+        },
+        {
+          "id": "mobilize_all_forces",
+          "label": "天下勤王",
+          "effects": {"armyMorale": 8, "legitimacy": 3},
+          "risks": {"localPower": 8, "factionPressure": 10},
+          "followUpTags": ["warlord_empowerment"]
+        }
+      ],
+      "cooldownTurns": 20,
+      "uiSummary": "边将叛乱时，出逃避祸保命但失法统，勤王动员有效但授予地方军权。",
+      "sourceReference": "《旧唐书·安禄山传》《资治通鉴·唐纪》"
+    },
+    {
+      "id": "huang_chao_uprising",
+      "name": "黄巢入京",
+      "eventType": "catastrophe",
+      "eraScope": ["early_modern"],
+      "turnWindow": {"startTurn": 12, "endTurn": 999},
+      "regionScopeTags": ["capital_corridor", "open_plain"],
+      "requiredTechs": [],
+      "weatherTags": ["drought"],
+      "astronomyTags": [],
+      "triggerWeight": 7,
+      "choices": [
+        {
+          "id": "hire_shatuo_mercenaries",
+          "label": "借沙陀兵",
+          "effects": {"armyMorale": 10, "battlePower": 8},
+          "risks": {"localPower": 10, "factionPressure": 8, "legitimacy": -5},
+          "followUpTags": ["mercenary_dependency"]
+        },
+        {
+          "id": "negotiate_peace",
+          "label": "招安封官",
+          "effects": {"rebellionRisk": -5},
+          "risks": {"legitimacy": -8, "localPower": 8},
+          "followUpTags": ["appeasement"]
+        }
+      ],
+      "cooldownTurns": 16,
+      "uiSummary": "流民起义入京时，借外族兵收复但引入新隐患，招安封官缓和但损威望。",
+      "sourceReference": "《旧唐书·黄巢传》《资治通鉴·唐纪》"
     }
   ]
 }

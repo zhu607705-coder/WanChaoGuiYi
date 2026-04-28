@@ -69,7 +69,9 @@ namespace WanChaoGuiYi
                     rebellionRisk = definition.rebellionRisk,
                     integration = 70,
                     annexationPressure = CalculateInitialAnnexation(definition),
-                    landStructure = definition.landStructure != null ? definition.landStructure.Clone() : new LandStructure()
+                    landStructure = definition.landStructure != null ? definition.landStructure.Clone() : new LandStructure(),
+                    customs = DeriveInitialCustoms(data, definition.id),
+                    customStability = 60
                 };
 
                 state.regions.Add(region);
@@ -89,6 +91,61 @@ namespace WanChaoGuiYi
             if (value < 0) return 0;
             if (value > 100) return 100;
             return value;
+        }
+
+        private static string[] DeriveInitialCustoms(DataRepository data, string regionId)
+        {
+            // 从历史层数据推导初始风俗
+            foreach (HistoricalLayerDefinition layer in data.HistoricalLayers.Values)
+            {
+                if (layer.regionId != regionId) continue;
+
+                System.Collections.Generic.List<string> customs = new System.Collections.Generic.List<string>();
+
+                if (layer.geographyTags != null)
+                {
+                    for (int i = 0; i < layer.geographyTags.Length; i++)
+                    {
+                        string tag = layer.geographyTags[i];
+                        if (tag.Contains("frontier") || tag.Contains("steppe")) customs.Add("frontier");
+                        if (tag.Contains("plain") || tag.Contains("basin")) customs.Add("agrarian");
+                        if (tag.Contains("coast") || tag.Contains("trade")) customs.Add("mercantile");
+                        if (tag.Contains("mountain")) customs.Add("martial");
+                    }
+                }
+
+                if (layer.customTags != null)
+                {
+                    for (int i = 0; i < layer.customTags.Length; i++)
+                    {
+                        string tag = layer.customTags[i];
+                        if (tag.Contains("scholar") || tag.Contains("confucian")) customs.Add("scholarly");
+                        if (tag.Contains("multiethnic") || tag.Contains("market")) customs.Add("pluralistic");
+                    }
+                }
+
+                if (customs.Count == 0) customs.Add("agrarian");
+                return RemoveDuplicates(customs);
+            }
+
+            return new string[] { "agrarian" };
+        }
+
+        private static string[] RemoveDuplicates(System.Collections.Generic.List<string> list)
+        {
+            System.Collections.Generic.Dictionary<string, bool> seen = new System.Collections.Generic.Dictionary<string, bool>();
+            System.Collections.Generic.List<string> result = new System.Collections.Generic.List<string>();
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (!seen.ContainsKey(list[i]))
+                {
+                    seen[list[i]] = true;
+                    result.Add(list[i]);
+                }
+            }
+
+            return result.ToArray();
         }
     }
 }
