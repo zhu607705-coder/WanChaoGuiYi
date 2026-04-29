@@ -25,6 +25,10 @@ namespace WanChaoGuiYi
 
         public VictoryCheckResult CheckVictory(GameContext context, FactionState faction)
         {
+            // 使用统一数值公式计算胜利进度
+            NumericContext numericContext = NumericModifierFactory.ForFaction(faction);
+            float victoryProgress = NumericFormulas.CalculateVictoryProgress(faction, numericContext);
+
             foreach (VictoryConditionDefinition vc in context.Data.VictoryConditions.Values)
             {
                 if (CheckCondition(context, faction, vc.requirements))
@@ -34,12 +38,13 @@ namespace WanChaoGuiYi
                         achieved = true,
                         conditionId = vc.id,
                         conditionName = vc.name,
-                        factionId = faction.id
+                        factionId = faction.id,
+                        progress = victoryProgress
                     };
                 }
             }
 
-            return new VictoryCheckResult { achieved = false };
+            return new VictoryCheckResult { achieved = false, progress = victoryProgress };
         }
 
         private static bool CheckCondition(GameContext context, FactionState faction, VictoryRequirement req)
@@ -112,5 +117,6 @@ namespace WanChaoGuiYi
         public string conditionId;
         public string conditionName;
         public string factionId;
+        public float progress;
     }
 }

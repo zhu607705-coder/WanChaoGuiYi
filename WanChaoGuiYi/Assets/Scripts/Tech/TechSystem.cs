@@ -5,7 +5,7 @@ namespace WanChaoGuiYi
 {
     public sealed class TechSystem : MonoBehaviour, IGameSystem
     {
-        [SerializeField] private int baseResearchPerTurn = 8;
+        // 常量已迁移到 NumericTuning
 
         public void Initialize(GameContext context) { }
         public void OnTurnStart(GameContext context) { }
@@ -50,8 +50,10 @@ namespace WanChaoGuiYi
             // 检查 Boost（启发）
             int boostBonus = CheckBoost(context, faction, tech);
 
-            // 检查是否研究完成
-            int effectiveCost = Mathf.Max(1, tech.cost - boostBonus);
+            // 检查是否研究完成（使用统一公式计算科技成本）
+            NumericContext costContext = NumericModifierFactory.ForFaction(faction);
+            int baseCost = NumericFormulas.CalculateTechCost(tech, costContext);
+            int effectiveCost = Mathf.Max(1, baseCost - boostBonus);
             if (faction.researchPoints >= effectiveCost)
             {
                 CompleteTech(context, faction, tech);
@@ -61,16 +63,10 @@ namespace WanChaoGuiYi
         private int CalculateResearchPoints(GameContext context, FactionState faction, TechnologyDefinition tech)
         {
             EmperorDefinition emperor = context.Data.GetEmperor(faction.emperorId);
-            int points = baseResearchPerTurn;
+            NumericContext numericContext = NumericModifierFactory.ForFaction(faction);
 
-            // 帝皇改革属性加成
-            if (emperor != null)
-            {
-                points += emperor.stats.reform / 20;
-            }
-
-            // 人才加成
-            points += faction.talentIds.Count;
+            // 基础研究点数通过统一公式计算
+            int points = NumericFormulas.CalculateResearchPoints(faction, emperor, numericContext);
 
             // 地区历史层科技亲和加成
             for (int i = 0; i < faction.regionIds.Count; i++)
@@ -82,7 +78,7 @@ namespace WanChaoGuiYi
                     {
                         if (layer.techAffinities[j] == tech.id)
                         {
-                            points += 2;
+                            points += NumericTuning.TechAffinityBonus;
                             break;
                         }
                     }
@@ -101,7 +97,7 @@ namespace WanChaoGuiYi
             EmperorDefinition emperor = context.Data.GetEmperor(faction.emperorId);
             if (emperor != null && emperor.stats.reform > 80)
             {
-                return tech.boost.progressBonus / 2;
+                return tech.boost.progressBonus / NumericTuning.ReformBonusDivisor;
             }
 
             return 0;
