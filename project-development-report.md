@@ -1,13 +1,51 @@
 # 《万朝归一：九州帝业》Project Development Report
 
-更新日期：2026-04-28
+更新日期：2026-04-29
 
 ## 当前状态
 
-- 阶段：历史深度系统实现（科技、天气、风俗、装备、天文）。
-- 当前目标：借鉴文明 6 设计思路，为游戏注入历史纵深感。
-- 技术方向：Unity + C#，2D 节点地图，UGUI，JSON 数据表。
+- 阶段：MVP 内容扩展完成，准备进入 Unity 编译验证。
+- 当前目标：所有不依赖 Unity 编译器的工作已完成，等待 Unity 环境编译验证。
+- 技术方向：Unity + C#，2D 节点地图 + 区域面片，UGUI，JSON 数据表。
 - 版本策略：国内版 MVP 先行，全球版只保留数据结构接口。
+
+## 数据规模
+
+| 数据表 | 数量 | 说明 |
+|--------|------|------|
+| 帝皇 | 13 | 8 位 MVP + 5 位扩展 |
+| 区域 | 56 | 从 17 扩展，覆盖全国 |
+| 科技 | 40 | 从 14 扩展，含建筑/军事/文化科技 |
+| 事件 | 200 | 基于渤海小吏五本书的历史事件 |
+| 将领 | 12 | 历史将领，有地形和兵种加成 |
+| 建筑 | 12 | 文明 6 式区域建筑 |
+| 政策 | 35 | 内政/军事/经济/文化政策 |
+| 兵种 | 8 | 步兵/骑兵/弩兵/守军/舟师/攻城/火枪 |
+| 历史层 | 56 | 每个区域的地理/风俗/兵器/资源数据 |
+| 地图面片 | 56 | 区域边界点数据 |
+
+## 系统模块
+
+| 系统 | 状态 | 说明 |
+|------|------|------|
+| 核心框架 | ✅ | GameManager/TurnManager/GameState/EventBus |
+| 地图系统 | ✅ | MapGraph/MapRenderer/MapSetup/CameraController |
+| 区域面片 | ✅ | RegionMeshBuilder + map_region_shapes.json |
+| 帝皇系统 | ✅ | EmperorMechanicSystem + 13 位帝皇机制 |
+| 经济系统 | ✅ | EconomySystem/TaxSystem/PopulationSystem/LandSystem |
+| 政治系统 | ✅ | LegitimacySystem/FactionSystem/ReformSystem/RebellionSystem |
+| 军事系统 | ✅ | ArmyMovementSystem/BattleResolver/SiegeSystem |
+| 科技系统 | ✅ | TechSystem + 40 项科技 |
+| 天气系统 | ✅ | WeatherSystem + 6 种天气 |
+| 风俗系统 | ✅ | CultureSystem + 6 种风俗 |
+| 装备系统 | ✅ | EquipmentSystem + 10 种装备 |
+| 天文系统 | ✅ | CelestialEventSystem + 5 种天文事件 |
+| 将领系统 | ✅ | GeneralSystem + 12 位将领 |
+| 建筑系统 | ✅ | BuildingSystem + 12 种建筑 |
+| AI 系统 | ✅ | StrategicAI/PolicyAI/MilitaryAI |
+| 事件系统 | ✅ | 200 个历史事件 + 27 个编年事件 |
+| UI 系统 | ✅ | 历史文明主题 UI（UITheme/UISetup/各面板） |
+| 存档系统 | ✅ | SaveManager JSON 存档 |
 
 ## 产品目标
 
@@ -196,3 +234,40 @@
 - 区域风俗自动推导，影响兵源质量和税收。
 - 装备科技解锁后可装备军队，提升战力。
 - 天文事件随机触发，影响合法性和朝局。
+
+### Task 7: 动态版图颜色层
+
+**目标：** 高精度地形图保持为底图，势力范围使用独立覆盖层随地区归属变化而变色。
+
+**已创建/更新：**
+- `GameEventType.RegionOwnerChanged`：地区归属变化事件。
+- `RegionOwnerChangedPayload`：记录地区、旧归属、新归属。
+- `GameState.ChangeRegionOwner`：统一更新 `RegionState.ownerFactionId` 和双方 `FactionState.regionIds`。
+- `GameContext.ChangeRegionOwner`：归属变化的推荐入口，负责发事件和写日志。
+- `MapRenderer`：订阅 `RegionOwnerChanged`，只刷新变化地区，并使用 8 位核心帝皇的固定势力色。
+- `BattleResolver`：进攻方胜利后触发地区归属变化。
+- `MapSetup`：自动查找 `MapRenderer`，保证自动生成节点后能刷新颜色。
+
+**验收：**
+- 版图颜色变化机制已完成代码链路：战斗胜利 -> 地区归属变更 -> 发布事件 -> 地图局部刷新。
+- 当前环境缺 Unity/C# 编译器，尚未做 Unity Console 编译验证。
+- 2026-04-28：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=8 regions=56 historical_layers=56 policies=35 units=8 technologies=40 chronicle_events=200`，并提示 5 位新增帝皇尚缺立绘。
+- 2026-04-28：全部 `Assets/Data/*.json` 通过 `python3 -m json.tool` 解析验证。
+
+### Task 8: 地图实际建模第一版
+
+**目标：** 把地图从“原画底图 + 节点”升级为可点击、可染色、可精修的 2D 地区面片模型。
+
+**已创建/更新：**
+- `map_region_shapes.json`：56 个地区全部拥有中心点、标签偏移、渲染顺序和边界点。
+- `MapRegionShapeTable`、`MapRegionShapeDefinition`、`MapPoint`：Unity 可读取的地图面片数据模型。
+- `DataRepository`：读取并索引 `map_region_shapes.json`。
+- `RegionMeshBuilder`：根据边界点生成 Unity `Mesh`，支持后续替换为更精细边界。
+- `MapSetup`：优先使用地区面片生成 `MeshRenderer`、`MeshCollider`、`RegionController`；缺少面片时回退旧节点。
+- `MapRenderer`：同时支持 `SpriteRenderer` 和 `MeshRenderer` 染色。
+- `docs/data-contract.md` 与 `docs/architecture.md`：补充地图建模规则。
+
+**验收：**
+- 2026-04-29：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=8 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 chronicle_events=200`。
+- 2026-04-29：全部 `Assets/Data/*.json` 通过 `python3 -m json.tool` 解析验证。
+- 当前 `map_region_shapes.json` 是 `playable_blockout_v1`，满足交互和染色，不等于最终高精度边界；下一步应在 Unity/矢量工具中按地形底图精修边界点。

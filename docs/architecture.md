@@ -46,6 +46,13 @@ UI panels / Map interaction
 | 人才 | `TalentSystem` | 人才获得和任命入口 |
 | AI | `StrategicAI`, `PolicyAI`, `MilitaryAI` | 政策倾向和扩张目标 |
 | 胜利 | `VictorySystem` | 每回合检查三种胜利条件 |
+| 科技 | `TechSystem` | 研究点积累、科技解锁、Boost 启发 |
+| 天气 | `WeatherSystem` | 季节天气生成、灾害概率、产出修正 |
+| 风俗 | `CultureSystem` | 区域风俗推导、兵源/税收/民变修正 |
+| 装备 | `EquipmentSystem` | 装备数据、科技解锁、战力加成 |
+| 天文 | `CelestialEventSystem` | 天文事件触发、合法性修正 |
+| 将领 | `GeneralSystem` | 将领数据、地形加成、兵种加成 |
+| 建筑 | `BuildingSystem` | 区域建筑建造、效果应用、槽位管理 |
 | 地图布局 | `MapSetup`, `CameraController` | 自动摆放区域节点、摄像机平移缩放 |
 | UI | `MainMapUI`, panels | 地图、地区、帝皇、朝廷、事件、战报 |
 
@@ -57,6 +64,35 @@ UI panels / Map interaction
 | `historical_layers.json` | 历史地理、风俗、兵器传统、战略资源、天气权重 | 地区面板显示摘要，事件系统读取权重 |
 | `technologies.json` | 科技/制度树、前置、boost、解锁单位/政策/事件 | 回合系统后续接入研究进度 |
 | `chronicle_events.json` | 时间、天气、天文、风俗、兵器突破事件 | 事件系统按地区标签、时代和科技筛选 |
+
+## 地图颜色层
+
+高精度地形图只作为底图，不直接染色。势力范围使用独立区域覆盖层：
+
+1. 每个地区节点或地区面片挂 `RegionController` 和 `SpriteRenderer`。
+2. `MapRenderer` 根据 `RegionState.ownerFactionId` 给覆盖层上色。
+3. 归属变化必须通过 `GameContext.ChangeRegionOwner`，它会更新 `FactionState.regionIds`，再发布 `RegionOwnerChanged`。
+4. `MapRenderer` 订阅 `RegionOwnerChanged`，只刷新变化的地区。
+
+后续把圆形节点替换成真实区域多边形 sprite 或 mesh 时，不需要改归属事件链路。
+
+## 地图实际建模
+
+原画只负责视觉方向，实际游戏地图必须拆成三层：
+
+| 层级 | 资产/数据 | 作用 |
+| --- | --- | --- |
+| 地形底图 | 朝代地图原画 PNG | 山脉、河流、海岸、风格氛围 |
+| 地区面片 | `map_region_shapes.json` | 每个地区的中心点、边界点、标签偏移、渲染顺序 |
+| 交互状态 | `RegionController` + `RegionMeshBuilder` + `MapRenderer` | 点击、碰撞、势力染色、归属刷新 |
+
+建模标准：
+
+1. 每个 `regions.json` 地区必须有一个 `map_region_shapes.json` 面片。
+2. 面片边界使用本地地图坐标，不写死到代码里。
+3. 面片必须生成 `MeshRenderer`、`MeshCollider` 和 `RegionController`。
+4. 地形底图不能承担点击和归属逻辑。
+5. 当前可用低精度面片先跑通交互，后续在 Unity 或矢量工具中精修边界点。
 
 ## 开发规则
 

@@ -123,6 +123,35 @@
 }
 ```
 
+## Map Region Shape
+
+地图面片表是“实际建模”的基础。原画只做地形底图，地区点击、归属染色、边界和标签都由 `map_region_shapes.json` 驱动。
+
+```json
+{
+  "id": "shape_guanzhong",
+  "regionId": "guanzhong",
+  "center": {"x": -5.5, "y": 1.1},
+  "labelOffset": {"x": 0.0, "y": -0.35},
+  "renderOrder": 10,
+  "boundary": [
+    {"x": -6.4, "y": 1.5},
+    {"x": -5.4, "y": 1.9},
+    {"x": -4.5, "y": 1.2},
+    {"x": -4.9, "y": 0.4},
+    {"x": -6.1, "y": 0.3}
+  ]
+}
+```
+
+规则：
+
+- `regionId` 必须引用 `regions.json`。
+- `center` 用于地图定位和自动布局。
+- `boundary` 至少 3 个点，按顺时针或逆时针排列。
+- `labelOffset` 控制文字相对中心的位置。
+- 后续精修地图时只改 JSON 边界点，不改渲染代码。
+
 ## Policy
 
 政策必须声明成本、效果、风险和适配帝皇机制。
@@ -220,3 +249,52 @@
   "uiSummary": "天文事件进入合法性系统。"
 }
 ```
+
+## General
+
+将领表存储历史将领数据。每位将领有军事值、忠诚度、特殊技能、地形加成和兵种加成。将领通过人才系统授予势力，影响战斗结果。
+
+```json
+{
+  "id": "guan_yu",
+  "name": "关羽",
+  "title": "武圣",
+  "era": "classical",
+  "military": 96,
+  "loyalty": 95,
+  "specialAbility": "water_attack",
+  "specialAbilityName": "水攻",
+  "specialAbilityDesc": "在河流区域战斗力+30%",
+  "terrainBonus": {"river_plain": 30, "river_delta": 20},
+  "unitBonus": {"infantry": 10, "cavalry": 5},
+  "sourceReference": "《三国志·关羽传》"
+}
+```
+
+规则：
+- `military` 和 `loyalty` 范围 0-100。
+- `terrainBonus` 的 key 必须是合法的 terrain 类型。
+- `unitBonus` 的 key 必须是合法的 unit id。
+- `sourceReference` 必填，引用正史列传。
+
+## Building
+
+建筑表存储区域建筑数据。建筑通过科技解锁，在区域中建造，提供产出加成。每个区域最多 3 个建筑。
+
+```json
+{
+  "id": "granary",
+  "name": "粮仓",
+  "category": "agriculture",
+  "requiresTech": "granary_system",
+  "cost": 30,
+  "effects": {"food": 15, "disasterMitigation": 3},
+  "sourceReference": "《周礼·地官·廪人》"
+}
+```
+
+规则：
+- `requiresTech` 必须引用 `technologies.json` 中的 id。
+- `cost` 为建造所需金钱。
+- `effects` 使用 `EffectSet` 结构。
+- `sourceReference` 必填，引用正史或典籍。
