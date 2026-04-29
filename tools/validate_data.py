@@ -21,6 +21,7 @@ def main():
     emperors = load("emperors.json")["items"]
     portraits = load("portraits.json")["items"]
     regions = load("regions.json")["items"]
+    map_region_shapes = load("map_region_shapes.json")["items"]
     historical_layers = load("historical_layers.json")["items"]
     policies = load("policies.json")["items"]
     events = load("events.json")["items"]
@@ -29,6 +30,8 @@ def main():
     units = load("units.json")["items"]
     technologies = load("technologies.json")["items"]
     victories = load("victory_conditions.json")["items"]
+    generals = load("generals.json")["items"]
+    buildings = load("buildings.json")["items"]
 
     if len(emperors) < 8:
         fail(f"MVP requires at least 8 emperors, got {len(emperors)}")
@@ -36,6 +39,7 @@ def main():
     emperor_ids = assert_unique_ids(emperors, "emperor")
     portrait_ids = assert_unique_ids(portraits, "portrait")
     region_ids = assert_unique_ids(regions, "region")
+    assert_unique_ids(map_region_shapes, "map region shape")
     historical_layer_ids = assert_unique_ids(historical_layers, "historical layer")
     policy_ids = assert_unique_ids(policies, "policy")
     assert_unique_ids(events, "event")
@@ -44,6 +48,8 @@ def main():
     unit_ids = assert_unique_ids(units, "unit")
     technology_ids = assert_unique_ids(technologies, "technology")
     assert_unique_ids(victories, "victory condition")
+    general_ids = assert_unique_ids(generals, "general")
+    building_ids = assert_unique_ids(buildings, "building")
 
     if not portrait_ids:
         fail("portrait table is empty")
@@ -69,6 +75,30 @@ def main():
         for neighbor in region.get("neighbors", []):
             if neighbor not in region_ids:
                 fail(f"region {region['id']} references missing neighbor {neighbor}")
+
+    shape_region_ids = set()
+    for shape in map_region_shapes:
+        region_id = shape.get("regionId")
+        if region_id not in region_ids:
+            fail(f"map region shape {shape['id']} references missing region {region_id}")
+        if region_id in shape_region_ids:
+            fail(f"region {region_id} has duplicate map region shapes")
+        shape_region_ids.add(region_id)
+
+        boundary = shape.get("boundary", [])
+        if len(boundary) < 3:
+            fail(f"map region shape {shape['id']} needs at least 3 boundary points")
+
+        if not shape.get("center"):
+            fail(f"map region shape {shape['id']} missing center")
+
+        area = abs(polygon_area(boundary))
+        if area < 0.05:
+            fail(f"map region shape {shape['id']} has too little polygon area: {area:.3f}")
+
+    missing_shapes = region_ids - shape_region_ids
+    if missing_shapes:
+        fail(f"missing map region shapes for regions: {sorted(missing_shapes)}")
 
     region_by_id = {region["id"]: region for region in regions}
     for region in regions:
@@ -126,6 +156,32 @@ def main():
         if not chronicle_event.get("choices"):
             fail(f"chronicle event {chronicle_event['id']} has no choices")
 
+    # 将领验证
+    valid_terrains = {"river_plain", "river_delta", "mountain", "mountain_pass", "open_plain",
+                      "frontier_plain", "steppe_edge", "huai_river_plain", "mountain_coast", "subtropical"}
+    valid_units = {"infantry", "cavalry", "crossbowmen", "siege_engineer", "frontier_cavalry",
+                   "garrison", "river_navy", "fire_lance_guard"}
+
+    for general in generals:
+        if not general.get("sourceReference"):
+            fail(f"general {general['id']} missing sourceReference")
+        terrain_bonus = general.get("terrainBonus", {})
+        for key in terrain_bonus:
+            if key not in valid_terrains:
+                fail(f"general {general['id']} has invalid terrainBonus key {key}")
+        unit_bonus = general.get("unitBonus", {})
+        for key in unit_bonus:
+            if key not in valid_units:
+                fail(f"general {general['id']} has invalid unitBonus key {key}")
+
+    # 建筑验证
+    for building in buildings:
+        if not building.get("sourceReference"):
+            fail(f"building {building['id']} missing sourceReference")
+        requires_tech = building.get("requiresTech", "")
+        if requires_tech and requires_tech not in technology_ids:
+            fail(f"building {building['id']} requires missing technology {requires_tech}")
+
     print("DATA VALIDATION PASSED")
     print(
         " ".join(
@@ -133,10 +189,13 @@ def main():
                 f"emperors={len(emperors)}",
                 f"portraits={len(portraits)}",
                 f"regions={len(regions)}",
+                f"map_region_shapes={len(map_region_shapes)}",
                 f"historical_layers={len(historical_layers)}",
                 f"policies={len(policies)}",
                 f"units={len(units)}",
                 f"technologies={len(technologies)}",
+                f"generals={len(generals)}",
+                f"buildings={len(buildings)}",
                 f"chronicle_events={len(chronicle_events)}",
             ]
         )
@@ -153,6 +212,15 @@ def assert_unique_ids(items, label):
             fail(f"duplicate {label} id {item_id}")
         ids.add(item_id)
     return ids
+
+
+def polygon_area(points):
+    area = 0.0
+    for i, point in enumerate(points):
+        next_point = points[(i + 1) % len(points)]
+        area += point.get("x", 0) * next_point.get("y", 0)
+        area -= next_point.get("x", 0) * point.get("y", 0)
+    return area / 2.0
 
 
 if __name__ == "__main__":

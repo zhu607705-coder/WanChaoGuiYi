@@ -34,7 +34,8 @@
         "populationGrowth": 4,
         "weatherResilience": 3
       },
-      "uiSummary": "让时间系统和农业收益绑定，玩家能用历法降低灾年波动。"
+      "uiSummary": "让时间系统和农业收益绑定，玩家能用历法降低灾年波动。",
+      "sourceReference": "《礼记·月令》《齐民要术》"
     },
     {
       "id": "bronze_casting",
@@ -68,7 +69,8 @@
         "weaponQuality": 4,
         "armyMorale": 2
       },
-      "uiSummary": "早期国家工坊和标准化武备入口。"
+      "uiSummary": "早期国家工坊和标准化武备入口。",
+      "sourceReference": "《考工记》《史记·封禅书》"
     },
     {
       "id": "iron_smelting",
@@ -105,7 +107,8 @@
         "weaponQuality": 6,
         "battlePower": 4
       },
-      "uiSummary": "打开弩兵、攻城和高压法令组合。"
+      "uiSummary": "打开弩兵、攻城和高压法令组合。",
+      "sourceReference": "《汉书·食货志》《史记·货殖列传》"
     },
     {
       "id": "mounted_warfare",
@@ -142,7 +145,8 @@
         "armyMorale": 4,
         "mobility": 5
       },
-      "uiSummary": "让边疆马政变成扩张引擎，同时引入马疫和补给风险。"
+      "uiSummary": "让边疆马政变成扩张引擎，同时引入马疫和补给风险。",
+      "sourceReference": "《史记·匈奴列传》《汉书·食货志》"
     },
     {
       "id": "standard_script_law",
@@ -176,7 +180,8 @@
         "integrationSpeed": 8,
         "taxEfficiency": 4
       },
-      "uiSummary": "把征服转为制度统一，是秦始皇路线的核心树节点。"
+      "uiSummary": "把征服转为制度统一，是秦始皇路线的核心树节点。",
+      "sourceReference": "《史记·秦始皇本纪》《说文解字》"
     },
     {
       "id": "crossbow_standardization",
@@ -213,7 +218,8 @@
         "weaponQuality": 8,
         "armyMorale": 2
       },
-      "uiSummary": "让历史兵器不是皮肤，而是国家标准化能力的战斗表达。"
+      "uiSummary": "让历史兵器不是皮肤，而是国家标准化能力的战斗表达。",
+      "sourceReference": "《汉书·地理志》《墨子·备城门》"
     },
     {
       "id": "river_transport",
@@ -250,7 +256,8 @@
         "taxEfficiency": 4,
         "mobility": 4
       },
-      "uiSummary": "把长江、淮河和江东水网转成移动、粮运和水军优势。"
+      "uiSummary": "把长江、淮河和江东水网转成移动、粮运和水军优势。",
+      "sourceReference": "《史记·河渠书》《汉书·沟洫志》"
     },
     {
       "id": "canal_granary",
@@ -289,7 +296,8 @@
         "disasterMitigation": 5,
         "treasuryStability": 3
       },
-      "uiSummary": "用工程和仓储吸收天气波动，代价是工程财政压力。"
+      "uiSummary": "用工程和仓储吸收天气波动，代价是工程财政压力。",
+      "sourceReference": "《隋书·食货志》《宋史·河渠志》"
     },
     {
       "id": "paper_bureaucracy",
@@ -325,7 +333,8 @@
         "courtCapacity": 1,
         "annexationPressure": -3
       },
-      "uiSummary": "让户籍、税基和审计成为中后期王朝稳定工具。"
+      "uiSummary": "让户籍、税基和审计成为中后期王朝稳定工具。",
+      "sourceReference": "《后汉书·蔡伦传》《旧唐书·职官志》"
     },
     {
       "id": "civil_service_exams",
@@ -363,7 +372,8 @@
         "factionPressure": -4,
         "legitimacy": 4
       },
-      "uiSummary": "提高人才稳定性和合法性，也让士人集团成为需要管理的力量。"
+      "uiSummary": "提高人才稳定性和合法性，也让士人集团成为需要管理的力量。",
+      "sourceReference": "《旧唐书·选举志》《宋史·选举志》"
     },
     {
       "id": "astronomical_bureau",
@@ -403,7 +413,8 @@
         "legitimacy": 3,
         "weatherResilience": 2
       },
-      "uiSummary": "把天文事件从随机惩罚变成合法性、历法和谏诤系统的交汇点。"
+      "uiSummary": "把天文事件从随机惩罚变成合法性、历法和谏诤系统的交汇点。",
+      "sourceReference": "《汉书·天文志》《旧唐书·天文志》"
     },
     {
       "id": "gunpowder_formula",
@@ -441,7 +452,8 @@
         "battlePower": 6,
         "treasuryPressure": 2
       },
-      "uiSummary": "提供早期火器优势，同时增加财政和工坊依赖。"
+      "uiSummary": "提供早期火器优势，同时增加财政和工坊依赖。",
+      "sourceReference": "《武经总要》《梦溪笔谈》"
     },
     {
       "id": "maritime_compass",
@@ -481,7 +493,8 @@
         "mobility": 3,
         "frontierIntegration": 3
       },
-      "uiSummary": "强化东南和岭南的海贸价值，为全球版预留航海扩展接口。"
+      "uiSummary": "强化东南和岭南的海贸价值，为全球版预留航海扩展接口。",
+      "sourceReference": "《梦溪笔谈》《萍洲可谈》"
     },
     {
       "id": "frontier_fortification",
