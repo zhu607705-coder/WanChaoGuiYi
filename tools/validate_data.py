@@ -63,6 +63,8 @@ def main():
         asset_path = portrait.get("assetPath", "")
         if not asset_path.startswith("Assets/Art/Portraits/") or not asset_path.endswith(".png"):
             fail(f"portrait {portrait['id']} has invalid assetPath {asset_path}")
+        if not (ROOT / "WanChaoGuiYi" / asset_path).exists():
+            fail(f"portrait {portrait['id']} assetPath does not exist: {asset_path}")
         if not portrait.get("prompt"):
             fail(f"portrait {portrait['id']} missing generation prompt")
 
@@ -89,12 +91,35 @@ def main():
         if len(boundary) < 3:
             fail(f"map region shape {shape['id']} needs at least 3 boundary points")
 
-        if not shape.get("center"):
+        center = shape.get("center")
+        if not center:
             fail(f"map region shape {shape['id']} missing center")
+        assert_point(center, f"map region shape {shape['id']} center")
+
+        label_offset = shape.get("labelOffset")
+        if label_offset is None:
+            fail(f"map region shape {shape['id']} missing labelOffset")
+        assert_point(label_offset, f"map region shape {shape['id']} labelOffset")
+
+        for point_index, point in enumerate(boundary):
+            assert_point(point, f"map region shape {shape['id']} boundary[{point_index}]")
+
+        if shape.get("renderOrder", -1) < 0:
+            fail(f"map region shape {shape['id']} has negative renderOrder")
 
         area = abs(polygon_area(boundary))
         if area < 0.05:
             fail(f"map region shape {shape['id']} has too little polygon area: {area:.3f}")
+
+        if not point_in_polygon(center, boundary):
+            fail(f"map region shape {shape['id']} center is outside boundary")
+
+        label_point = {
+            "x": center["x"] + label_offset["x"],
+            "y": center["y"] + label_offset["y"],
+        }
+        if not point_in_polygon(label_point, boundary):
+            fail(f"map region shape {shape['id']} label point is outside boundary")
 
     missing_shapes = region_ids - shape_region_ids
     if missing_shapes:
@@ -221,6 +246,60 @@ def polygon_area(points):
         area += point.get("x", 0) * next_point.get("y", 0)
         area -= next_point.get("x", 0) * point.get("y", 0)
     return area / 2.0
+
+
+def assert_point(point, label):
+    if not isinstance(point, dict):
+        fail(f"{label} must be an object")
+
+    for axis in ["x", "y"]:
+        value = point.get(axis)
+        if not isinstance(value, (int, float)):
+            fail(f"{label} has invalid {axis}: {value}")
+
+
+def point_in_polygon(point, polygon):
+    x = point["x"]
+    y = point["y"]
+    inside = False
+    previous = polygon[-1]
+
+    for current in polygon:
+        xi = current["x"]
+        yi = current["y"]
+        xj = previous["x"]
+        yj = previous["y"]
+
+        if point_on_segment(point, previous, current):
+            return True
+
+        intersects = (yi > y) != (yj > y)
+        if intersects:
+            x_at_y = ((xj - xi) * (y - yi) / (yj - yi)) + xi
+            if x < x_at_y:
+                inside = not inside
+
+        previous = current
+
+    return inside
+
+
+def point_on_segment(point, start, end):
+    px = point["x"]
+    py = point["y"]
+    ax = start["x"]
+    ay = start["y"]
+    bx = end["x"]
+    by = end["y"]
+
+    cross = (py - ay) * (bx - ax) - (px - ax) * (by - ay)
+    if abs(cross) > 1e-6:
+        return False
+
+    return (
+        min(ax, bx) - 1e-6 <= px <= max(ax, bx) + 1e-6
+        and min(ay, by) - 1e-6 <= py <= max(ay, by) + 1e-6
+    )
 
 
 if __name__ == "__main__":

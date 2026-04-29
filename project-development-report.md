@@ -263,11 +263,37 @@
 - `MapRegionShapeTable`、`MapRegionShapeDefinition`、`MapPoint`：Unity 可读取的地图面片数据模型。
 - `DataRepository`：读取并索引 `map_region_shapes.json`。
 - `RegionMeshBuilder`：根据边界点生成 Unity `Mesh`，支持后续替换为更精细边界。
-- `MapSetup`：优先使用地区面片生成 `MeshRenderer`、`MeshCollider`、`RegionController`；缺少面片时回退旧节点。
+- `MapSetup`：使用地区面片生成 `MeshRenderer`、`MeshCollider`、`RegionController`；旧节点仅保留为显式调试 fallback。
 - `MapRenderer`：同时支持 `SpriteRenderer` 和 `MeshRenderer` 染色。
 - `docs/data-contract.md` 与 `docs/architecture.md`：补充地图建模规则。
+- `DataRepository`：新增按 `regionId` 索引地图面片，避免运行时遍历和错把 shape id 当地区 id。
+- `MapSetup`：默认把地区面片作为主地图唯一方案；旧节点 fallback 需要显式开启 `allowNodeFallback`，缺面片时记录错误。
+- `MapSetup`：重建地图前清空 `MapRenderer` 注册表，避免残留旧 controller 影响归属刷新。
+- `MapSetup`：标签改为中心锚点，并把标签排序层级放到面片之上。
+- `tools/validate_data.py`：新增地图面片中心点、标签点、边界点、渲染层级和区域覆盖验证。
 
 **验收：**
 - 2026-04-29：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=8 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 chronicle_events=200`。
 - 2026-04-29：全部 `Assets/Data/*.json` 通过 `python3 -m json.tool` 解析验证。
+- 2026-04-29：确认 56 个 `regions.json` 地区均有可用面片；所有面片中心点和标签点均在边界内，可作为最小点击命中与标签定位假说。
+- 2026-04-29：确认归属变化链路仍为 `BattleResolver -> GameContext.ChangeRegionOwner -> RegionOwnerChanged -> MapRenderer.RefreshRegion`。
+- 2026-04-29：当前本机未发现 `dotnet`、`mcs`、`csc` 或 Unity 安装，仍需进入 Unity Console 做 C# 编译与实际点击验收。
 - 当前 `map_region_shapes.json` 是 `playable_blockout_v1`，满足交互和染色，不等于最终高精度边界；下一步应在 Unity/矢量工具中按地形底图精修边界点。
+
+### Task 9: 视觉资产第一批
+
+**目标：** 补齐 MVP 数据可引用的基础视觉资产，让帝皇、兵种、科技、资源、文化和风险系统有可放入 UI 的 PNG。
+
+**已创建/更新：**
+- `Assets/Art/Portraits/`：新增 13 位帝皇立绘，覆盖 8 位 MVP 帝皇与 5 位扩展帝皇。
+- `Assets/Art/Icons/Units/`：新增 8 个兵种图标。
+- `Assets/Art/Icons/Systems/`：新增 16 个资源、文化和风险图标。
+- `Assets/Art/Icons/Technologies/`：新增 40 个科技/制度图标。
+- `Assets/Art/GeneratedSheets/`：保留 10 张生成母版，方便后续重新裁切或人工精修。
+- `portraits.json`：补齐 13 位帝皇的本地立绘状态，其中 5 位扩展帝皇新增 `assetPath`、视觉身份和生成 prompt。
+
+**验收：**
+- 2026-04-29：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- 2026-04-29：`portraits.json` 解析通过。
+- 2026-04-29：本地文件计数通过：单张资产 77 个，其中立绘 13、兵种 8、系统 16、科技 40；生成母版 10 张。
+- 2026-04-29：已抽查立绘母版和科技图标母版；当前资产属于 concept_v1，后续进入 Unity UI 后再按实际尺寸、裁切和辨识度精修。

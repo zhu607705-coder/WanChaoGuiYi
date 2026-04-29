@@ -1,16 +1,21 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WanChaoGuiYi
 {
     public sealed class BattleResolver : MonoBehaviour
     {
+        [SerializeField] private BattleSetupSystem setupSystem;
+
         public BattleResult Resolve(GameContext context, ArmyState attacker, ArmyState defender)
         {
             UnitDefinition attackerUnit = context.Data.GetUnit(attacker.unitId);
             UnitDefinition defenderUnit = context.Data.GetUnit(defender.unitId);
+            FactionState attackerFaction = context.State.FindFaction(attacker.ownerFactionId);
+            FactionState defenderFaction = context.State.FindFaction(defender.ownerFactionId);
 
-            int attackerPower = CalculatePower(attacker, attackerUnit, true);
-            int defenderPower = CalculatePower(defender, defenderUnit, false);
+            int attackerPower = CalculatePower(attacker, attackerUnit, attackerFaction, true);
+            int defenderPower = CalculatePower(defender, defenderUnit, defenderFaction, false);
             bool attackerWon = attackerPower >= defenderPower;
 
             BattleResult result = new BattleResult
@@ -23,44 +28,208 @@ namespace WanChaoGuiYi
             };
 
             ApplyLosses(attacker, defender, attackerWon);
+            if (attackerWon)
+            {
+                context.ChangeRegionOwner(defender.regionId, attacker.ownerFactionId);
+            }
+
             context.Events.Publish(new GameEvent(GameEventType.BattleResolved, attacker.id, result));
             return result;
         }
 
-        private static int CalculatePower(ArmyState army, UnitDefinition unit, bool attacking)
+        public BattleResult ResolveSemiAuto(GameContext context, BattleSetup setup, List<BattleLog> battleLog)
         {
-            int baseStat = attacking ? unit.stats.attack : unit.stats.defense;
+            if (setup == null) return null;
 
-            // 装备加成
+            FactionState attackerFaction = context.State.FindFaction(setup.attackerFactionId);
+            FactionState defenderFaction = context.State.FindFaction(setup.defenderFactionId);
+            if (attackerFaction == null || defenderFaction == null) return null;
+
+            int attackerPower = CalculateFactionPower(context, attackerFaction, setup.attackerDeployments, true);
+            int defenderPower = CalculateFactionPower(context, defenderFaction, setup.defenderDeployments, false);
+
+            int formationBonus = CalculateFormationBonus(setup.attackerFormationId, setup.defenderFormationId);
+            attackerPower += formationBonus;
+
+            int tacticBonus = CalculateTacticBonus(battleLog);
+            attackerPower += tacticBonus;
+
+            int terrainBonus = CalculateTerrainBonus(context, setup.terrainId);
+            attackerPower += terrainBonus;
+
+            int generalBonus = CalculateGeneralBonus(context, setup.attackerDeployments, setup.defenderDeployments);
+            attackerPower += generalBonus;
+
+            bool attackerWon = attackerPower >= defenderPower;
+
+            BattleResult result = new BattleResult
+            {
+                attackerArmyId = setup.attackerFactionId,
+                defenderArmyId = setup.defenderFactionId,
+                attackerPower = attackerPower,
+                defenderPower = defenderPower,
+                attackerWon = attackerWon,
+                battleLog = battleLog,
+                formationBonus = formationBonus,
+                tacticBonus = tacticBonus,
+                terrainBonus = terrainBonus,
+                generalBonus = generalBonus
+            };
+
+            ApplySemiAutoLosses(context, setup, attackerWon);
+            context.Events.Publish(new GameEvent(GameEventType.BattleResolved, setup.attackerFactionId, result));
+            return result;
+        }
+
+        private static ArmyState FindArmy(GameContext context, string armyId)
+        {
+            for (int j = 0; j < context.State.armies.Count; j++)
+            {
+                if (context.State.armies[j].id == armyId)
+                {
+                    return context.State.armies[j];
+                }
+            }
+            return null;
+        }
+
+        private int CalculateFactionPower(GameContext context, FactionState faction, BattleDeployment[] deployments, bool attacking)
+        {
+            int totalPower = 0;
+            for (int i = 0; i < deployments.Length; i++)
+            {
+                ArmyState army = FindArmy(context, deployments[i].armyId);
+                if (army == null) continue;
+
+                UnitDefinition unit = context.Data.GetUnit(army.unitId);
+                EquipmentBonus equipBonus = GetEquipmentBonus(army);
+                int power = NumericFormulas.CalculateBattlePower(army, unit, faction, equipBonus, attacking);
+                totalPower += power;
+            }
+            return totalPower;
+        }
+
+        private static int CalculatePower(ArmyState army, UnitDefinition unit, FactionState faction, bool attacking)
+        {
             EquipmentBonus equipBonus = GetEquipmentBonus(army);
-            if (attacking)
+            return NumericFormulas.CalculateBattlePower(army, unit, faction, equipBonus, attacking);
+        }
+
+        private int CalculateFormationBonus(string attackerFormationId, string defenderFormationId)
+        {
+            if (setupSystem == null) return 0;
+            return setupSystem.CalculateFormationBonus(attackerFormationId, defenderFormationId);
+        }
+
+        private int CalculateTacticBonus(List<BattleLog> battleLog)
+        {
+            if (battleLog == null) return 0;
+            int bonus = 0;
+            for (int i = 0; i < battleLog.Count; i++)
             {
-                baseStat += equipBonus.attack;
+                bonus += battleLog[i].damageDealt;
             }
-            else
+            return bonus;
+        }
+
+        private int CalculateTerrainBonus(GameContext context, string terrainId)
+        {
+            if (string.IsNullOrEmpty(terrainId)) return 0;
+            RegionDefinition region = context.Data.GetRegion(terrainId);
+            if (region == null) return 0;
+
+            switch (region.terrain)
             {
-                baseStat += equipBonus.defense;
+                case "mountain": return NumericTuning.TerrainMountainAttackPenalty;
+                case "plain": return NumericTuning.TerrainPlainAttackBonus;
+                case "river": return NumericTuning.TerrainRiverAttackPenalty;
+                default: return 0;
+            }
+        }
+
+        private int CalculateGeneralBonus(GameContext context, BattleDeployment[] attackerDeployments, BattleDeployment[] defenderDeployments)
+        {
+            int attackerBonus = 0;
+            int defenderBonus = 0;
+
+            for (int i = 0; i < attackerDeployments.Length; i++)
+            {
+                if (string.IsNullOrEmpty(attackerDeployments[i].generalId)) continue;
+                foreach (var kvp in context.Data.Generals)
+                {
+                    if (kvp.Key == attackerDeployments[i].generalId)
+                    {
+                        attackerBonus += kvp.Value.military / 10;
+                        break;
+                    }
+                }
             }
 
-            return Mathf.RoundToInt(baseStat * Mathf.Max(1, army.soldiers) * Mathf.Clamp01(army.morale / 100f));
+            for (int i = 0; i < defenderDeployments.Length; i++)
+            {
+                if (string.IsNullOrEmpty(defenderDeployments[i].generalId)) continue;
+                foreach (var kvp in context.Data.Generals)
+                {
+                    if (kvp.Key == defenderDeployments[i].generalId)
+                    {
+                        defenderBonus += kvp.Value.military / 10;
+                        break;
+                    }
+                }
+            }
+
+            return attackerBonus - defenderBonus;
+        }
+
+        private void ApplySemiAutoLosses(GameContext context, BattleSetup setup, bool attackerWon)
+        {
+            for (int i = 0; i < setup.attackerDeployments.Length; i++)
+            {
+                ArmyState army = FindArmy(context, setup.attackerDeployments[i].armyId);
+                if (army == null) continue;
+
+                if (attackerWon)
+                {
+                    army.soldiers = Mathf.RoundToInt(army.soldiers * 0.85f);
+                    army.morale = Mathf.Min(100, army.morale + 5);
+                }
+                else
+                {
+                    army.soldiers = Mathf.RoundToInt(army.soldiers * 0.45f);
+                    army.morale = Mathf.Max(0, army.morale - 15);
+                }
+            }
+
+            for (int i = 0; i < setup.defenderDeployments.Length; i++)
+            {
+                ArmyState army = FindArmy(context, setup.defenderDeployments[i].armyId);
+                if (army == null) continue;
+
+                if (attackerWon)
+                {
+                    army.soldiers = Mathf.RoundToInt(army.soldiers * 0.35f);
+                    army.morale = Mathf.Max(0, army.morale - 15);
+                }
+                else
+                {
+                    army.soldiers = Mathf.RoundToInt(army.soldiers * 0.9f);
+                    army.morale = Mathf.Min(100, army.morale + 5);
+                }
+            }
         }
 
         private static EquipmentBonus GetEquipmentBonus(ArmyState army)
         {
             EquipmentBonus bonus = new EquipmentBonus();
-
             ApplyEquipmentSlot(army.weaponSlot, bonus);
             ApplyEquipmentSlot(army.armorSlot, bonus);
             ApplyEquipmentSlot(army.specialSlot, bonus);
-
             return bonus;
         }
 
         private static void ApplyEquipmentSlot(string slotId, EquipmentBonus bonus)
         {
             if (string.IsNullOrEmpty(slotId)) return;
-
-            // 从内置装备库查询
             EquipmentDefinition equip = EquipmentLookup.Get(slotId);
             if (equip == null) return;
 
@@ -96,6 +265,11 @@ namespace WanChaoGuiYi
         public int attackerPower;
         public int defenderPower;
         public bool attackerWon;
+        public List<BattleLog> battleLog;
+        public int formationBonus;
+        public int tacticBonus;
+        public int terrainBonus;
+        public int generalBonus;
     }
 
     internal static class EquipmentLookup

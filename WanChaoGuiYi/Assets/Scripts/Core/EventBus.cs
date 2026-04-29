@@ -9,6 +9,7 @@ namespace WanChaoGuiYi
         TurnStarted,
         TurnEnded,
         RegionSelected,
+        RegionOwnerChanged,
         PolicyApplied,
         BattleResolved,
         EventTriggered,
@@ -33,6 +34,13 @@ namespace WanChaoGuiYi
             EntityId = entityId;
             Payload = payload;
         }
+    }
+
+    public sealed class RegionOwnerChangedPayload
+    {
+        public string regionId;
+        public string previousOwnerFactionId;
+        public string newOwnerFactionId;
     }
 
     public sealed class EventBus

@@ -641,6 +641,108 @@ namespace WanChaoGuiYi
         public string sourceReference;
     }
 
+    // ========== 战役系统数据结构 ==========
+
+    public enum BattlePhase
+    {
+        Preparation,
+        Execution,
+        Resolution
+    }
+
+    [Serializable]
+    public sealed class BattleSetup
+    {
+        public string battleId;
+        public string attackerFactionId;
+        public string defenderFactionId;
+        public string terrainId;
+        public string attackerFormationId;
+        public string defenderFormationId;
+        public BattleDeployment[] attackerDeployments;
+        public BattleDeployment[] defenderDeployments;
+    }
+
+    [Serializable]
+    public sealed class BattleDeployment
+    {
+        public string armyId;
+        public string generalId;
+        public string formationPosition;
+        public int soldierCount;
+    }
+
+    [Serializable]
+    public sealed class FormationDefinition
+    {
+        public string id;
+        public string name;
+        public string description;
+        public int attackBonus;
+        public int defenseBonus;
+        public int mobilityBonus;
+        public string[] effectiveAgainst;
+        public string[] weakAgainst;
+    }
+
+    [Serializable]
+    public sealed class BattleTactic
+    {
+        public string id;
+        public string name;
+        public string description;
+        public int cooldownTurns;
+        public int moraleCost;
+        public EffectSet effects;
+        public string[] requiredFormation;
+    }
+
+    [Serializable]
+    public sealed class BattleAction
+    {
+        public string actionType;
+        public string unitId;
+        public string targetId;
+        public string tacticId;
+        public string newFormationId;
+    }
+
+    [Serializable]
+    public sealed class BattleLog
+    {
+        public int turn;
+        public string actionType;
+        public string actorId;
+        public string targetId;
+        public string description;
+        public int damageDealt;
+        public int damageReceived;
+        public int moraleChange;
+    }
+
+    [Serializable]
+    public sealed class EquipmentDefinition
+    {
+        public string id;
+        public string name;
+        public string slot;
+        public string era;
+        public string requiresTech;
+        public int cost;
+        public int attackBonus;
+        public int defenseBonus;
+        public int mobilityBonus;
+        public int siegeBonus;
+    }
+
+    public struct EquipmentBonus
+    {
+        public int attack;
+        public int defense;
+        public int mobility;
+        public int siege;
+    }
+
     // ========== 电子斗蛐蛐系统数据结构 ==========
 
     [Serializable]

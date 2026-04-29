@@ -69,12 +69,12 @@ UI panels / Map interaction
 
 高精度地形图只作为底图，不直接染色。势力范围使用独立区域覆盖层：
 
-1. 每个地区节点或地区面片挂 `RegionController` 和 `SpriteRenderer`。
+1. 每个地区面片挂 `RegionController`、`MeshRenderer` 和 `MeshCollider`；旧节点 fallback 使用 `SpriteRenderer`。
 2. `MapRenderer` 根据 `RegionState.ownerFactionId` 给覆盖层上色。
 3. 归属变化必须通过 `GameContext.ChangeRegionOwner`，它会更新 `FactionState.regionIds`，再发布 `RegionOwnerChanged`。
 4. `MapRenderer` 订阅 `RegionOwnerChanged`，只刷新变化的地区。
 
-后续把圆形节点替换成真实区域多边形 sprite 或 mesh 时，不需要改归属事件链路。
+当前主地图使用地区面片：每个地区对象挂 `MeshRenderer`、`MeshCollider` 和 `RegionController`。旧圆形节点只作为显式开启的调试 fallback，不能在正式主地图中静默混用。
 
 ## 地图实际建模
 
@@ -92,7 +92,8 @@ UI panels / Map interaction
 2. 面片边界使用本地地图坐标，不写死到代码里。
 3. 面片必须生成 `MeshRenderer`、`MeshCollider` 和 `RegionController`。
 4. 地形底图不能承担点击和归属逻辑。
-5. 当前可用低精度面片先跑通交互，后续在 Unity 或矢量工具中精修边界点。
+5. `MapSetup` 默认要求 56 个地区全部有可用面片；缺面片时记录错误，只有开启 `allowNodeFallback` 才生成旧节点。
+6. 当前可用低精度面片先跑通交互，后续在 Unity 或矢量工具中精修边界点。
 
 ## 开发规则
 

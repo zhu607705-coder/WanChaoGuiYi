@@ -1,0 +1,77 @@
+{
+  "task": "不依赖 Unity 编译器的五项工作",
+  "iteration": 0,
+  "maxIterations": 5,
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "世界观设定文档",
+      "priority": 1,
+      "description": "创建 docs/world-building.md，包含游戏世界观、时代跨度、帝皇选择逻辑、九州概念、法统体系",
+      "acceptanceCriteria": [
+        "docs/world-building.md 文件存在",
+        "包含时代跨度说明（秦→清）",
+        "包含帝皇选择逻辑（为什么选这 13 位）",
+        "包含九州概念定义",
+        "包含法统体系说明",
+        "所有引用有史料出处"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-002",
+      "title": "JSON 数据完整性检查和补全",
+      "priority": 2,
+      "description": "检查所有 JSON 数据表的完整性，补全缺失字段",
+      "acceptanceCriteria": [
+        "所有 13 位帝皇有 score 字段",
+        "所有 56 个区域有完整 historical_layer",
+        "所有 generals.json 条目有 sourceReference",
+        "所有 buildings.json 条目有 sourceReference",
+        "所有 technologies.json 条目有 sourceReference",
+        "validate_data.py 通过"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-003",
+      "title": "validate_data.py 增强",
+      "priority": 3,
+      "description": "增强验证脚本，新增 generals、buildings 表的引用检查",
+      "acceptanceCriteria": [
+        "新增 generals 表加载和 id 唯一性检查",
+        "新增 buildings 表加载和 id 唯一性检查",
+        "新增 buildings 的 requiresTech 引用检查",
+        "新增 generals 的 terrainBonus key 合法性检查",
+        "新增数据完整性报告输出",
+        "python3 tools/validate_data.py 通过"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-004",
+      "title": "文档更新",
+      "priority": 4,
+      "description": "更新 data-contract.md、architecture.md、project-development-report.md",
+      "acceptanceCriteria": [
+        "data-contract.md 新增 General、Building 数据契约",
+        "architecture.md 新增将领系统、建筑系统架构说明",
+        "project-development-report.md 记录最新进展"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-005",
+      "title": "map_region_shapes.json 边界点精修",
+      "priority": 5,
+      "description": "精修 56 个区域的边界点数据",
+      "acceptanceCriteria": [
+        "所有 56 个区域有 boundary 点数据",
+        "boundary 点数量 >= 3",
+        "邻接区域的边界点大致吻合",
+        "validate_data.py 通过"
+      ],
+      "passes": false
+    }
+  ]
+}

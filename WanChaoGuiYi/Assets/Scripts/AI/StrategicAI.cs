@@ -6,6 +6,7 @@ namespace WanChaoGuiYi
     {
         private PolicyAI policyAI;
         private MilitaryAI militaryAI;
+        private DiplomacyAI diplomacyAI;
 
         public void Initialize(GameContext context)
         {
@@ -14,6 +15,9 @@ namespace WanChaoGuiYi
 
             militaryAI = GetComponent<MilitaryAI>();
             if (militaryAI == null) militaryAI = gameObject.AddComponent<MilitaryAI>();
+
+            diplomacyAI = GetComponent<DiplomacyAI>();
+            if (diplomacyAI == null) diplomacyAI = gameObject.AddComponent<DiplomacyAI>();
         }
 
         public void OnTurnStart(GameContext context) { }
@@ -37,6 +41,8 @@ namespace WanChaoGuiYi
                 {
                     context.State.AddLog("ai", faction.name + "关注扩张目标：" + targetRegionId);
                 }
+
+                diplomacyAI.ExecuteAIDiplomacy(context, faction);
             }
         }
     }

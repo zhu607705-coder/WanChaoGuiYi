@@ -71,6 +71,20 @@ namespace WanChaoGuiYi
                 // 继承和人才
                 EnsureComponent<SuccessionSystem>(),
                 EnsureComponent<TalentSystem>(),
+                // 帝皇技能
+                EnsureComponent<EmperorSkillSystem>(),
+                // 外交和谍报
+                EnsureComponent<DiplomacySystem>(),
+                EnsureComponent<EspionageSystem>(),
+                // 事件评估
+                EnsureComponent<EventEvaluationSystem>(),
+                // 战役系统
+                EnsureComponent<BattleSetupSystem>(),
+                EnsureComponent<BattleExecutionSystem>(),
+                EnsureComponent<BattleResolver>(),
+                EnsureComponent<BattleConfigSystem>(),
+                EnsureComponent<BattleSessionSystem>(),
+                EnsureComponent<BattleDisplaySystem>(),
                 // AI 和胜利
                 EnsureComponent<StrategicAI>(),
                 EnsureComponent<VictorySystem>()

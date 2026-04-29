@@ -12,7 +12,7 @@
       "id": "portrait_qin_shi_huang",
       "emperorId": "qin_shi_huang",
       "assetPath": "Assets/Art/Portraits/qin_shi_huang.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "upright imperial posture, severe shoulders, black-gold crown lines",
@@ -29,7 +29,7 @@
       "id": "portrait_liu_bang",
       "emperorId": "liu_bang",
       "assetPath": "Assets/Art/Portraits/liu_bang.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "relaxed founding ruler posture, practical robe, approachable but alert",
@@ -46,7 +46,7 @@
       "id": "portrait_han_wu_di",
       "emperorId": "han_wu_di",
       "assetPath": "Assets/Art/Portraits/han_wu_di.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "expansive imperial posture, forward-leaning command presence",
@@ -63,7 +63,7 @@
       "id": "portrait_cao_cao",
       "emperorId": "cao_cao",
       "assetPath": "Assets/Art/Portraits/cao_cao.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "military statesman, compact armor-robe profile, restless intelligence",
@@ -80,7 +80,7 @@
       "id": "portrait_li_shi_min",
       "emperorId": "li_shi_min",
       "assetPath": "Assets/Art/Portraits/li_shi_min.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "balanced warrior-scholar emperor, open chest line, calm command",
@@ -97,7 +97,7 @@
       "id": "portrait_zhao_kuang_yin",
       "emperorId": "zhao_kuang_yin",
       "assetPath": "Assets/Art/Portraits/zhao_kuang_yin.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "restrained founder, broad but softened military outline",
@@ -114,7 +114,7 @@
       "id": "portrait_zhu_yuan_zhang",
       "emperorId": "zhu_yuan_zhang",
       "assetPath": "Assets/Art/Portraits/zhu_yuan_zhang.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "austere founder, heavy robe mass, hard vertical lines",
@@ -131,7 +131,7 @@
       "id": "portrait_kang_xi",
       "emperorId": "kang_xi",
       "assetPath": "Assets/Art/Portraits/kang_xi.png",
-      "sourceStatus": "gpt_image_generation_requested",
+      "sourceStatus": "gpt_image_2_generated",
       "version": "concept_v1",
       "visualIdentity": {
         "silhouette": "multiethnic imperial ruler, composed horseman-scholar outline",
@@ -143,6 +143,91 @@
       },
       "prompt": "Original game concept art portrait of Kangxi Emperor, vertical half-body multiethnic imperial ruler portrait, Qing court robe with riding sleeves and restrained dragon pattern, frontier map, astronomical instrument, edict scroll, observatory, steppe frontier and southern river map in subtle background, painterly realistic, calm adaptive authority, no text, no watermark.",
       "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_yang_jian",
+      "emperorId": "yang_jian",
+      "assetPath": "Assets/Art/Portraits/yang_jian.png",
+      "sourceStatus": "gpt_image_2_generated",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "stern unifier, structured early Sui court profile",
+        "costume": "early Sui imperial robe with clean dark red and black structure",
+        "props": ["law tablets", "canal planning model", "imperial seal token"],
+        "palette": ["dark red", "black", "refined gold"],
+        "backgroundMotif": "canal engineering and ordered palace geometry",
+        "expression": "controlled, administrative, severe"
+      },
+      "prompt": "Original game concept art portrait of Yang Jian, Sui Wen Emperor, vertical half-body stern unifier portrait, structured early Sui imperial robe, dark red and black with refined gold, law tablets and canal planning motif, painterly realistic, controlled administrative expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.28, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_chai_rong",
+      "emperorId": "chai_rong",
+      "assetPath": "Assets/Art/Portraits/chai_rong.png",
+      "sourceStatus": "gpt_image_2_generated",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "disciplined northern reformer, military-court ruler",
+        "costume": "iron gray robe over lamellar armor accents with muted red sash",
+        "props": ["campaign map", "fiscal tablets", "measuring markers"],
+        "palette": ["iron gray", "muted red", "old gold"],
+        "backgroundMotif": "campaign table and administrative reform tokens",
+        "expression": "focused, reform-minded, restrained"
+      },
+      "prompt": "Original game concept art portrait of Chai Rong, Later Zhou Shizong, vertical half-body reforming emperor portrait, practical northern military-court robe over lamellar armor accents, iron gray, muted red sash, old gold trim, campaign map and fiscal tablets, painterly realistic, focused reform-minded expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.29, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_yuan_hong",
+      "emperorId": "yuan_hong",
+      "assetPath": "Assets/Art/Portraits/yuan_hong.png",
+      "sourceStatus": "gpt_image_2_generated",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "calm reform emperor, hybrid Xianbei-Han court presence",
+        "costume": "Xianbei-Han hybrid court dress with white jade and deep blue layers",
+        "props": ["ritual tablet", "court reform token", "jade ornament"],
+        "palette": ["white jade", "deep blue", "restrained gold"],
+        "backgroundMotif": "sinicizing court ritual and cultural reform atmosphere",
+        "expression": "calm, reformist, deliberate"
+      },
+      "prompt": "Original game concept art portrait of Yuan Hong, Northern Wei Xiaowen Emperor, vertical half-body sinicizing reform ruler portrait, Xianbei-Han hybrid court dress, white jade, deep blue, restrained gold, ritual tablet, subtle cultural reform atmosphere, painterly realistic, calm reformist expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.28, "safeScale": 0.88}
+    },
+    {
+      "id": "portrait_shi_le",
+      "emperorId": "shi_le",
+      "assetPath": "Assets/Art/Portraits/shi_le.png",
+      "sourceStatus": "gpt_image_2_generated",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "frontier cavalry founder, heavy armored authority",
+        "costume": "layered frontier armor under royal robe with fur and leather accents",
+        "props": ["horse tack", "frontier standard", "curved bow"],
+        "palette": ["dark leather", "bronze", "deep teal"],
+        "backgroundMotif": "steppe frontier and cavalry standard",
+        "expression": "intense, pragmatic, hard"
+      },
+      "prompt": "Original game concept art portrait of Shi Le, Later Zhao founder, vertical half-body frontier cavalry ruler portrait, layered armor under royal robe, horse tack and frontier standard motifs, dark leather, bronze, deep teal, painterly realistic, intense pragmatic expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.28, "safeScale": 0.9}
+    },
+    {
+      "id": "portrait_liu_bei",
+      "emperorId": "liu_bei",
+      "assetPath": "Assets/Art/Portraits/liu_bei.png",
+      "sourceStatus": "gpt_image_2_generated",
+      "version": "concept_v1",
+      "visualIdentity": {
+        "silhouette": "humane founding ruler, traveling cloak and sword profile",
+        "costume": "Han robe with green traveling cloak and modest court trim",
+        "props": ["simple sword", "woven travel bundle", "campaign cloak"],
+        "palette": ["muted green", "warm brown", "Han red"],
+        "backgroundMotif": "mountain road and Shu-Han restoration atmosphere",
+        "expression": "benevolent, worried, politically burdened"
+      },
+      "prompt": "Original game concept art portrait of Liu Bei, Shu Han founding ruler, vertical half-body humane but burdened ruler portrait, Han robe and traveling cloak, simple sword, warm brown, muted green, Han red, painterly realistic, benevolent worried expression, no text, no watermark.",
+      "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.29, "safeScale": 0.9}
     }
   ]
 }

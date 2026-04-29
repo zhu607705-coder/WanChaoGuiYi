@@ -149,7 +149,8 @@
 - `regionId` 必须引用 `regions.json`。
 - `center` 用于地图定位和自动布局。
 - `boundary` 至少 3 个点，按顺时针或逆时针排列。
-- `labelOffset` 控制文字相对中心的位置。
+- `center` 必须落在 `boundary` 内，用于点击命中和默认聚焦验证。
+- `labelOffset` 控制文字相对中心的位置，偏移后的标签点也必须落在 `boundary` 内。
 - 后续精修地图时只改 JSON 边界点，不改渲染代码。
 
 ## Policy

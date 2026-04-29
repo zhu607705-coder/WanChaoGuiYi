@@ -13,6 +13,7 @@ namespace WanChaoGuiYi
         [SerializeField] private TextAsset emperorsJson;
         [SerializeField] private TextAsset portraitsJson;
         [SerializeField] private TextAsset regionsJson;
+        [SerializeField] private TextAsset mapRegionShapesJson;
         [SerializeField] private TextAsset historicalLayersJson;
         [SerializeField] private TextAsset policiesJson;
         [SerializeField] private TextAsset eventsJson;
@@ -27,6 +28,8 @@ namespace WanChaoGuiYi
         private readonly Dictionary<string, EmperorDefinition> emperors = new Dictionary<string, EmperorDefinition>();
         private readonly Dictionary<string, PortraitDefinition> portraits = new Dictionary<string, PortraitDefinition>();
         private readonly Dictionary<string, RegionDefinition> regions = new Dictionary<string, RegionDefinition>();
+        private readonly Dictionary<string, MapRegionShapeDefinition> mapRegionShapes = new Dictionary<string, MapRegionShapeDefinition>();
+        private readonly Dictionary<string, MapRegionShapeDefinition> mapRegionShapesByRegionId = new Dictionary<string, MapRegionShapeDefinition>();
         private readonly Dictionary<string, HistoricalLayerDefinition> historicalLayers = new Dictionary<string, HistoricalLayerDefinition>();
         private readonly Dictionary<string, PolicyDefinition> policies = new Dictionary<string, PolicyDefinition>();
         private readonly Dictionary<string, EventDefinition> events = new Dictionary<string, EventDefinition>();
@@ -41,6 +44,8 @@ namespace WanChaoGuiYi
         public IReadOnlyDictionary<string, EmperorDefinition> Emperors { get { return emperors; } }
         public IReadOnlyDictionary<string, PortraitDefinition> Portraits { get { return portraits; } }
         public IReadOnlyDictionary<string, RegionDefinition> Regions { get { return regions; } }
+        public IReadOnlyDictionary<string, MapRegionShapeDefinition> MapRegionShapes { get { return mapRegionShapes; } }
+        public IReadOnlyDictionary<string, MapRegionShapeDefinition> MapRegionShapesByRegionId { get { return mapRegionShapesByRegionId; } }
         public IReadOnlyDictionary<string, HistoricalLayerDefinition> HistoricalLayers { get { return historicalLayers; } }
         public IReadOnlyDictionary<string, PolicyDefinition> Policies { get { return policies; } }
         public IReadOnlyDictionary<string, EventDefinition> Events { get { return events; } }
@@ -59,6 +64,8 @@ namespace WanChaoGuiYi
             emperors.Clear();
             portraits.Clear();
             regions.Clear();
+            mapRegionShapes.Clear();
+            mapRegionShapesByRegionId.Clear();
             historicalLayers.Clear();
             policies.Clear();
             events.Clear();
@@ -73,6 +80,8 @@ namespace WanChaoGuiYi
             Register(LoadTable<EmperorTable>(emperorsJson, "emperors").items, emperors, "emperor");
             Register(LoadTable<PortraitTable>(portraitsJson, "portraits").items, portraits, "portrait");
             Register(LoadTable<RegionTable>(regionsJson, "regions").items, regions, "region");
+            Register(LoadTable<MapRegionShapeTable>(mapRegionShapesJson, "map_region_shapes").items, mapRegionShapes, "map region shape");
+            IndexMapRegionShapesByRegionId();
             Register(LoadTable<HistoricalLayerTable>(historicalLayersJson, "historical_layers").items, historicalLayers, "historical layer");
             Register(LoadTable<PolicyTable>(policiesJson, "policies").items, policies, "policy");
             Register(LoadTable<EventTable>(eventsJson, "events").items, events, "event");
@@ -101,6 +110,16 @@ namespace WanChaoGuiYi
         public RegionDefinition GetRegion(string id)
         {
             return GetById(regions, id, "region");
+        }
+
+        public MapRegionShapeDefinition GetMapRegionShape(string id)
+        {
+            return GetById(mapRegionShapes, id, "map region shape");
+        }
+
+        public bool TryGetMapRegionShapeByRegionId(string regionId, out MapRegionShapeDefinition shape)
+        {
+            return mapRegionShapesByRegionId.TryGetValue(regionId, out shape);
         }
 
         public HistoricalLayerDefinition GetHistoricalLayer(string id)
@@ -195,6 +214,9 @@ namespace WanChaoGuiYi
             RegionDefinition region = item as RegionDefinition;
             if (region != null) return region.id;
 
+            MapRegionShapeDefinition mapRegionShape = item as MapRegionShapeDefinition;
+            if (mapRegionShape != null) return mapRegionShape.id;
+
             HistoricalLayerDefinition historicalLayer = item as HistoricalLayerDefinition;
             if (historicalLayer != null) return historicalLayer.id;
 
@@ -237,6 +259,29 @@ namespace WanChaoGuiYi
             }
 
             return value;
+        }
+
+        private void IndexMapRegionShapesByRegionId()
+        {
+            foreach (MapRegionShapeDefinition shape in mapRegionShapes.Values)
+            {
+                if (shape == null || string.IsNullOrWhiteSpace(shape.regionId))
+                {
+                    throw new InvalidOperationException("Map region shape missing regionId");
+                }
+
+                if (!regions.ContainsKey(shape.regionId))
+                {
+                    throw new InvalidOperationException("Map region shape " + shape.id + " references missing region " + shape.regionId);
+                }
+
+                if (mapRegionShapesByRegionId.ContainsKey(shape.regionId))
+                {
+                    throw new InvalidOperationException("Duplicate map region shape for region: " + shape.regionId);
+                }
+
+                mapRegionShapesByRegionId.Add(shape.regionId, shape);
+            }
         }
 
         private void ValidateRegionNeighbors()

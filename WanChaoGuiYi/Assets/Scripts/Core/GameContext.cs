@@ -12,5 +12,15 @@ namespace WanChaoGuiYi
             Data = data;
             Events = events;
         }
+
+        public RegionOwnerChangedPayload ChangeRegionOwner(string regionId, string newOwnerFactionId)
+        {
+            RegionOwnerChangedPayload ownerChange = State.ChangeRegionOwner(regionId, newOwnerFactionId);
+            if (ownerChange == null) return null;
+
+            State.AddLog("map", ownerChange.regionId + "归属变更。");
+            Events.Publish(new GameEvent(GameEventType.RegionOwnerChanged, ownerChange.regionId, ownerChange));
+            return ownerChange;
+        }
     }
 }

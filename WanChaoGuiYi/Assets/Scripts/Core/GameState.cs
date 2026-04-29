@@ -25,6 +25,12 @@ namespace WanChaoGuiYi
         public string currentWeatherId;
         public string currentCelestialEventId;
 
+        // 外交系统
+        public List<DiplomaticRelation> diplomaticRelations = new List<DiplomaticRelation>();
+
+        // 谍报系统
+        public List<EspionageOperation> activeOperations = new List<EspionageOperation>();
+
         public FactionState FindFaction(string id)
         {
             for (int i = 0; i < factions.Count; i++)
@@ -128,6 +134,16 @@ namespace WanChaoGuiYi
         // 天气系统
         public int weatherResilience;
         public int disasterMitigation;
+
+        // 谍报系统
+        public int espionageDefense;
+
+        // 帝皇被动乘数（由 EmperorSkillSystem 每回合重置，不累积）
+        public float taxMultiplier = 1f;
+        public float foodMultiplier = 1f;
+        public float armyAttackMultiplier = 1f;
+        public float armyDefenseMultiplier = 1f;
+        public float talentMultiplier = 1f;
     }
 
     [Serializable]
@@ -185,5 +201,67 @@ namespace WanChaoGuiYi
         public int turn;
         public string category;
         public string message;
+    }
+
+    // ========== 外交系统 ==========
+
+    public enum DiplomacyStatus
+    {
+        Neutral,
+        NonAggression,
+        Alliance,
+        Vassal,
+        Tributary,
+        AtWar
+    }
+
+    [Serializable]
+    public sealed class DiplomaticRelation
+    {
+        public string factionA;
+        public string factionB;
+        public DiplomacyStatus status;
+        public int opinion;
+        public int turnsRemaining;
+        public int grudge;
+        public bool isPlayerInvolved;
+
+        public string GetOtherFaction(string selfId)
+        {
+            return selfId == factionA ? factionB : factionA;
+        }
+    }
+
+    // ========== 谍报系统 ==========
+
+    public enum EspionageActionType
+    {
+        ScoutIntel,
+        Sabotage,
+        SpreadRumors,
+        Assassinate
+    }
+
+    [Serializable]
+    public sealed class EspionageOperation
+    {
+        public string id;
+        public string agentFactionId;
+        public string targetFactionId;
+        public EspionageActionType actionType;
+        public int progress;
+        public int detectionRisk;
+        public string targetEntityId;
+    }
+
+    [Serializable]
+    public sealed class DiplomacyProposal
+    {
+        public string fromFactionId;
+        public string toFactionId;
+        public DiplomacyStatus proposedStatus;
+        public int moneyOffer;
+        public int foodOffer;
+        public bool isTrap;
     }
 }
