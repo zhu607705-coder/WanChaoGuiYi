@@ -170,6 +170,34 @@ namespace WanChaoGuiYi
     }
 
     [Serializable]
+    public sealed class MapRegionShapeTable
+    {
+        public int schemaVersion;
+        public string mapScope;
+        public string precision;
+        public string designReference;
+        public MapRegionShapeDefinition[] items;
+    }
+
+    [Serializable]
+    public sealed class MapRegionShapeDefinition
+    {
+        public string id;
+        public string regionId;
+        public MapPoint center;
+        public MapPoint labelOffset;
+        public int renderOrder;
+        public MapPoint[] boundary;
+    }
+
+    [Serializable]
+    public sealed class MapPoint
+    {
+        public float x;
+        public float y;
+    }
+
+    [Serializable]
     public sealed class HistoricalLayerTable
     {
         public int schemaVersion;
@@ -611,5 +639,74 @@ namespace WanChaoGuiYi
         public int cost;
         public EffectSet effects;
         public string sourceReference;
+    }
+
+    // ========== 电子斗蛐蛐系统数据结构 ==========
+
+    [Serializable]
+    public sealed class BattleConfig
+    {
+        public string configId;
+        public string emperorId;
+        public string[] generalIds;
+        public string[] unitIds;
+        public string[] equipmentIds;
+        public string formationId;
+        public string[] tacticIds;
+    }
+
+    [Serializable]
+    public sealed class BattleSession
+    {
+        public string sessionId;
+        public string player1Id;
+        public string player2Id;
+        public BattleConfig player1Config;
+        public BattleConfig player2Config;
+        public BattleState state;
+        public int currentTurn;
+        public List<BattleAction> actions;
+        public BattleResult result;
+    }
+
+    public enum BattleState
+    {
+        WaitingForPlayers,
+        Configuration,
+        InProgress,
+        Finished
+    }
+
+    [Serializable]
+    public sealed class BattleSync
+    {
+        public string sessionId;
+        public int turn;
+        public BattleAction player1Action;
+        public BattleAction player2Action;
+        public bool player1Ready;
+        public bool player2Ready;
+    }
+
+    [Serializable]
+    public sealed class BattleReplay
+    {
+        public string sessionId;
+        public BattleConfig player1Config;
+        public BattleConfig player2Config;
+        public List<BattleSync> turns;
+        public BattleResult result;
+        public long timestamp;
+    }
+
+    [Serializable]
+    public sealed class PlayerBattleState
+    {
+        public string playerId;
+        public int[] unitSoldiers;
+        public int[] unitMorale;
+        public string currentFormation;
+        public int[] tacticCooldowns;
+        public bool isReady;
     }
 }
