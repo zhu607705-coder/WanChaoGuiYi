@@ -130,14 +130,14 @@ namespace WanChaoGuiYi
             int grudgeIncrease = 0;
             if (relation.status == DiplomacyStatus.Alliance)
             {
-                attacker.legitimacy = Mathf.Max(0, attacker.legitimacy - 15);
-                grudgeIncrease = 30;
+                attacker.legitimacy = Mathf.Max(0, attacker.legitimacy - NumericTuning.WarAllianceLegitimacyCost);
+                grudgeIncrease = NumericTuning.WarAllianceGrudge;
                 context.State.AddLog("diplomacy", attacker.name + "背弃盟约，向" + defender.name + "宣战！合法性大幅下降。");
             }
             else if (relation.status == DiplomacyStatus.NonAggression)
             {
-                attacker.legitimacy = Mathf.Max(0, attacker.legitimacy - 8);
-                grudgeIncrease = 15;
+                attacker.legitimacy = Mathf.Max(0, attacker.legitimacy - NumericTuning.WarNonAggressionLegitimacyCost);
+                grudgeIncrease = NumericTuning.WarNonAggressionGrudge;
                 context.State.AddLog("diplomacy", attacker.name + "撕毁互不侵犯条约，向" + defender.name + "宣战！");
             }
             else
@@ -166,7 +166,7 @@ namespace WanChaoGuiYi
 
             relation.status = DiplomacyStatus.AtWar;
             relation.turnsRemaining = -1;
-            relation.grudge += 50;
+            relation.grudge += NumericTuning.KillEnvoyGrudge;
             relation.opinion = Mathf.Max(NumericTuning.MinOpinion, relation.opinion - 40);
 
             killer.legitimacy = Mathf.Max(0, killer.legitimacy - 12);
@@ -226,7 +226,7 @@ namespace WanChaoGuiYi
             EmperorDefinition targetEmperor = context.Data.GetEmperor(target.emperorId);
             if (targetEmperor != null)
             {
-                detectionChance += targetEmperor.score.wisdom / 5;
+                detectionChance += targetEmperor.score.wisdom / NumericTuning.TrapWisdomDivisor;
             }
 
             if (relation.opinion < -20) detectionChance += 15;

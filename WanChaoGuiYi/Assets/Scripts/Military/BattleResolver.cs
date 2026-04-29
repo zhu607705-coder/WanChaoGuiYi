@@ -159,7 +159,7 @@ namespace WanChaoGuiYi
                 {
                     if (kvp.Key == attackerDeployments[i].generalId)
                     {
-                        attackerBonus += kvp.Value.military / 10;
+                        attackerBonus += kvp.Value.military / NumericTuning.GeneralMilitaryDivisor;
                         break;
                     }
                 }
@@ -172,7 +172,7 @@ namespace WanChaoGuiYi
                 {
                     if (kvp.Key == defenderDeployments[i].generalId)
                     {
-                        defenderBonus += kvp.Value.military / 10;
+                        defenderBonus += kvp.Value.military / NumericTuning.GeneralMilitaryDivisor;
                         break;
                     }
                 }

@@ -194,6 +194,7 @@ namespace WanChaoGuiYi
         public const int TerrainMountainAttackPenalty = -10;
         public const int TerrainPlainAttackBonus = 5;
         public const int TerrainRiverAttackPenalty = -15;
+        public const int GeneralMilitaryDivisor = 10;
 
         // Diplomacy
         public const int MaxOpinion = 100;
@@ -205,6 +206,12 @@ namespace WanChaoGuiYi
         public const int TributaryDuration = 10;
         public const int TrapDetectionBase = 30;
         public const int DiplomacyAcceptanceBase = 50;
+        public const int WarAllianceGrudge = 30;
+        public const int WarAllianceLegitimacyCost = 15;
+        public const int WarNonAggressionGrudge = 15;
+        public const int WarNonAggressionLegitimacyCost = 8;
+        public const int KillEnvoyGrudge = 50;
+        public const int TrapWisdomDivisor = 5;
 
         // Espionage
         public const int BaseProgressPerTurn = 25;
