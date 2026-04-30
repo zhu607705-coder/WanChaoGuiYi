@@ -49,14 +49,28 @@ namespace WanChaoGuiYi
                     continue;
                 }
 
+                if (IsNewlyFormedThisTurn(context, engagement))
+                {
+                    continue;
+                }
+
                 BattleResult result = battleSimulationSystem.ResolveEngagement(context, mapState, engagement.id);
                 if (result == null) continue;
 
                 occupationSystem.ApplyBattleOccupation(context, mapState, engagement.id);
                 ResolveLoserAfterBattle(context, mapState, engagement);
-                ClearResolvedEngagementArmies(mapState, engagement);
+                DomainEngagementCleanup.ClearResolvedEngagement(mapState, engagement);
                 mapState.RemoveEngagement(engagement.id);
             }
+        }
+
+        private static bool IsNewlyFormedThisTurn(GameContext context, EngagementRuntimeState engagement)
+        {
+            return context != null &&
+                context.State != null &&
+                engagement != null &&
+                engagement.phase == EngagementPhase.Forming &&
+                engagement.createdTurn == context.State.turn;
         }
 
         private static void ResolveLoserAfterBattle(GameContext context, MapState mapState, EngagementRuntimeState engagement)
@@ -102,7 +116,7 @@ namespace WanChaoGuiYi
                 legacyArmy.movementProgress = 0;
             }
 
-            context.State.AddLog("war", army.id + "战败后撤退至" + retreatRegionId + "。");
+            context.State.AddLog("war", army.id + "战败后撤退至" + retreatRegionId + "。原因：部队仍有兵力和士气，且存在己方相邻地区。影响：该部队脱离战场并保留残部。");
         }
 
         private static string FindOwnedNeighborRegion(GameContext context, string regionId, string ownerFactionId)
@@ -135,7 +149,7 @@ namespace WanChaoGuiYi
                 }
             }
 
-            context.State.AddLog("war", armyId + "在" + battleRegionId + reason + "。");
+            context.State.AddLog("war", armyId + "在" + battleRegionId + reason + "。原因：兵力/士气不足或无可用撤退路线。影响：该部队从地图和军队列表移除。");
         }
 
         private static void RemoveArmyFromEngagement(EngagementRuntimeState engagement, string armyId)
@@ -155,30 +169,5 @@ namespace WanChaoGuiYi
             return null;
         }
 
-        private static void ClearResolvedEngagementArmies(MapState mapState, EngagementRuntimeState engagement)
-        {
-            ClearArmyEngagements(mapState, engagement.attackerArmyIds);
-            ClearArmyEngagements(mapState, engagement.defenderArmyIds);
-
-            RegionRuntimeState region;
-            if (mapState.TryGetRegion(engagement.regionId, out region) && region.occupationStatus == OccupationStatus.Contested)
-            {
-                region.occupationStatus = OccupationStatus.Controlled;
-            }
-        }
-
-        private static void ClearArmyEngagements(MapState mapState, List<string> armyIds)
-        {
-            for (int i = 0; i < armyIds.Count; i++)
-            {
-                ArmyRuntimeState army;
-                if (!mapState.TryGetArmy(armyIds[i], out army)) continue;
-                army.engagementId = null;
-                if (army.task == ArmyTask.Attack)
-                {
-                    army.task = ArmyTask.Idle;
-                }
-            }
-        }
     }
 }

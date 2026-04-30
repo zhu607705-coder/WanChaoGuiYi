@@ -41,6 +41,7 @@ namespace WanChaoGuiYi
             RegionState legacyRegion = context.State.FindRegion(engagement.regionId);
             if (legacyRegion != null)
             {
+                legacyRegion.occupationStatus = runtimeRegion.occupationStatus;
                 runtimeRegion.integration = legacyRegion.integration;
                 runtimeRegion.rebellionRisk = legacyRegion.rebellionRisk;
             }
@@ -53,7 +54,7 @@ namespace WanChaoGuiYi
                 engagementId = engagement.id
             };
 
-            context.State.AddLog("war", engagement.regionId + "被" + newOwnerFactionId + "占领。");
+            context.State.AddLog("war", engagement.regionId + "被" + newOwnerFactionId + "占领。原因：胜利方与原地区归属不同。影响：地区归属改变，并进入新占领治理折损。");
             context.Events.Publish(new GameEvent(GameEventType.RegionOccupied, engagement.regionId, payload));
 
             if (governanceImpactSystem != null)

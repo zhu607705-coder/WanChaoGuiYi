@@ -29,6 +29,9 @@ namespace WanChaoGuiYi
             runtimeRegion.annexationPressure = DomainMath.Min(100, runtimeRegion.annexationPressure + AnnexationPressureIncrease);
 
             legacyRegion.integration = runtimeRegion.integration;
+            legacyRegion.occupationStatus = runtimeRegion.occupationStatus;
+            legacyRegion.taxContributionPercent = runtimeRegion.taxContributionPercent;
+            legacyRegion.foodContributionPercent = runtimeRegion.foodContributionPercent;
             legacyRegion.rebellionRisk = runtimeRegion.rebellionRisk;
             legacyRegion.localPower = runtimeRegion.localPower;
             legacyRegion.annexationPressure = runtimeRegion.annexationPressure;

@@ -1,6 +1,6 @@
 # 《万朝归一：九州帝业》Project Development Report
 
-更新日期：2026-04-29
+更新日期：2026-04-30
 
 ## 当前状态
 
@@ -403,7 +403,7 @@
   - 提供非 Unity 版本 `BattleResult` 与 `EquipmentLookup`，避免 CLI harness 为这两个类型依赖 `BattleResolver : MonoBehaviour`。
 - 新增 `tools/headless_runner/WanChaoGuiYiHeadless/Program.cs`
   - 默认数据目录：`WanChaoGuiYi/Assets/Data`。
-  - 默认玩家势力：`faction_qin_shihuang`。
+  - 默认玩家势力：`faction_qin_shi_huang`。
   - 调用 `NonUnityJsonDataRepository.Load()` 后执行 `HeadlessSimulationRunner.RunSingleLaneWar()`。
   - 输出 `passed`、`turnsExecuted` 与日志。
   - 成功返回 0，runner 失败返回 1，异常返回 2。
@@ -511,3 +511,158 @@ tools/run_headless_simulation.sh
 
 - 当前仍未验证 Unity Console 编译、PlayMode 和场景绑定。Unity 中必须重新导入并检查移动过的脚本文件是否保留/重建了可接受的 asset 引用。
 - 下一步建议补一个 headless simulation runner 或 Domain smoke test：从 `GameStateFactory.CreateDefault()` 创建新局，构建 `WorldState`，调用 `MapCommandService.MoveArmy()`，连续执行 `DomainArmyMovementSystem`、`DomainMapWarResolutionSystem`、`DomainEconomySystem`，断言出现接敌、战斗、占领、治理折损和经济日志。
+
+## 2026-04-30 Headless 战争闭环修复
+
+### 已完成
+
+- 统一 headless 默认玩家势力 id 为 `faction_qin_shi_huang`。
+- `GameStateFactory.CreateDefault()` 对未知玩家势力 id 直接抛出 `InvalidOperationException`，取消静默 fallback 到首个势力。
+- `GameState.ChangeRegionOwner()` 只负责归属和 `FactionState.regionIds` 维护；占领后的整合度、民变、地方势力、兼并压力继续由 `DomainGovernanceImpactSystem` 处理。
+- `DomainEngagementDetector` 只标记 `engagementId`，不再把防守军或增援军强行改为 `ArmyTask.Attack`。
+- `DomainMapWarResolutionSystem` 将战后地区状态恢复拆成独立方法，并在战斗结束后统一清理参战军队的 `targetRegionId`、`route`、`task` 和 `engagementId`。
+- `MapCommandService` 构造参数移除未使用的 `WorldState`。
+- `HeadlessSimulationRunner` 在经济结算前后抓取势力 `money/food` 快照，并断言实际资源差值等于公式期望值。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- `tools/verify_headless_war.sh` 通过，4 个场景全部 `scenarioPassed=True`。
+- `tools/run_headless_simulation.sh WanChaoGuiYi/Assets/Data faction_missing` 返回退出码 `2`，错误信息包含 `Unknown player faction id: faction_missing`，确认无声 fallback 已取消。
+
+## 2026-04-30 Headless 战争闭环继续修复
+
+### 已完成
+
+- 新增 `DomainEngagementCleanup`，统一处理接敌成员移除、空边接敌清理、战后参战军队清理和 contested 地区恢复。
+- `DomainArmyMovementSystem` 主动撤退路径复用统一接敌清理逻辑，减少移动系统内的战后状态职责。
+- `DomainMapWarResolutionSystem` 战斗结算后改为调用统一清理 helper。
+- `DomainEngagementDetector` 修正既有接敌的增援分边：新到达部队优先按既有双方阵营归类，避免敌方增援被 initiating army 误分到进攻方。
+- `HeadlessSimulationRunner` 新增 `defender_reinforcement_joins_existing_engagement` 场景，并断言防守军在接敌和增援过程中保持 `ArmyTask.Idle`。
+- `ArmyMovementSystem`、`MapWarResolutionSystem`、`EconomySystem` Unity adapter 增加 `WorldState` 绑定检查，避免二次 `StartNewGame()` 后继续使用旧 Domain 实例。
+- `GameStateFactory.CreateDefault()` 在创建 factions 后立即校验玩家势力 id，进一步前置未知 id 报错。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- `tools/verify_headless_war.sh` 通过，5 个场景全部 `scenarioPassed=True`。
+- `tools/run_headless_simulation.sh WanChaoGuiYi/Assets/Data faction_missing` 返回退出码 `2`，错误信息包含 `Unknown player faction id: faction_missing`。
+
+## 2026-04-30 Unity PlayMode 验证入口补齐
+
+### 已完成
+
+- 新增 `com.unity.test-framework` 依赖，为 Unity Test Runner 提供 PlayMode 测试能力。
+- 新增 `WanChaoGuiYi.PlayModeTests` asmdef。
+- 新增 `GameManagerPlayModeSmokeTests`：
+  - 在 PlayMode 中动态创建 `GameManager`。
+  - 断言 `DataRepository`、`GameState`、`WorldState`、`MapQueryService`、`MapCommandService` 完成 bootstrap。
+  - 运行 `RunSingleLaneWarSmokeTest()` 和 `NextTurn()`，断言出现 `战斗结束` 与 `收入 金钱`。
+  - 二次调用 `StartNewGame()`，断言 `WorldState` 已替换，并再次跑战争烟测，用于覆盖 Unity adapter 重绑逻辑。
+- 新增 `tools/unity/run_playmode_tests.sh`，统一以 batchmode 运行 PlayMode tests，支持通过 `UNITY_BIN` 指定 Unity Editor。
+
+### 验证
+
+- `python3 -m json.tool` 验证 `manifest.json` 与 PlayMode asmdef JSON 可解析。
+- `tools/unity/run_playmode_tests.sh` 已执行，当前本机返回 `127`：`Unity editor executable not found. Set UNITY_BIN=/path/to/Unity or install Unity 2022.3.0f1.`。
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- `tools/verify_headless_war.sh` 通过，5 个场景全部 `scenarioPassed=True`。
+
+### 限制与下一步
+
+- 当前机器未安装 Unity Editor，PlayMode 测试入口已补，但实际 PlayMode 结果仍未完成。
+- 当前仓库没有 `.unity` 场景文件，因此还没有可验证的保存场景绑定；新增 PlayMode 测试验证的是运行时 bootstrap 与二次开局重绑，不等同于实际 Demo 场景序列化绑定。
+- 下一步需要在装有 Unity 2022.3.0f1 的环境运行：`UNITY_BIN=/path/to/Unity tools/unity/run_playmode_tests.sh`。
+
+## 2026-04-30 第二轮审查问题修复
+
+### 已完成
+
+- `DomainMapWarResolutionSystem` 不再结算本回合刚形成的接敌，让玩家/AI 在下一回合前拥有增援或主动撤退窗口。
+- `HeadlessSimulationRunner` 的战争、增援、主动撤退场景改成两回合语义，和 `TurnManager` 的真实系统顺序一致。
+- 新增 headless 场景：
+  - `engaged_army_rejects_non_retreat_commands`
+  - `same_faction_contact_does_not_create_engagement`
+- `DomainEngagementDetector` 先确认存在敌对双方再注册 engagement，避免同势力多军同区留下无效接敌。
+- `MapCommandService` 拒绝已接敌军队的普通移动、增援、围攻和停止命令，只允许撤退。
+- `RegionState` 增加 `occupationStatus`、`taxContributionPercent`、`foodContributionPercent`，占领治理结果可通过 `GameState` 保存并重建到 `WorldState`。
+- `HeadlessSimulationRunner` 增加占领状态重建断言，确认新占领地区在重建 `WorldState` 后仍保持 `Occupied` 和 35% 税粮贡献。
+- `tools/run_headless_simulation.sh` 支持 `net8.0`/`net10.0` 双目标，按本机 runtime 自动选择。
+- 新增 `tools/unity/preflight_without_unity.py`，在无 Unity Editor 机器上检查数据表、地图面片、asmdef、包依赖和 PlayMode 入口。
+- 新增 `docs/unity-handoff-checklist.md`，记录另一台 Unity 机器的验收命令和期望。
+- PlayMode smoke 断言更新为第一回合只接敌、第二回合结算战斗。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- `python3 tools/unity/preflight_without_unity.py` 通过。
+- `tools/run_headless_simulation.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang` 通过，7 个场景全部 `scenarioPassed=True`。
+- `git diff --check` 通过。
+
+### 限制与下一步
+
+- 当前机器仍未安装 Unity Editor，真实 PlayMode 和场景序列化绑定需在另一台 Unity 机器运行 `tools/unity/run_playmode_tests.sh`。
+
+## 2026-04-30 地图战争四场景最小全链路升级
+
+### 目标
+
+- 将 headless 地图战争验收收束为 4 个核心场景：
+  - `defender_holds_and_attacker_retreats`
+  - `attacker_wins_and_occupies`
+  - `reinforcement_joins_existing_engagement`
+  - `active_retreat_leaves_engagement`
+- 命令行证明战争命令、行军、接敌、战斗、占领/防守、撤退/溃散、治理折损和经济结算形成连续链路。
+- 当前便携电脑完成 Unity Editor 之前的 Domain、headless、报告和迁移准备工作。
+
+### 已完成
+
+- `HeadlessSimulationRunner.RunAllScenarios()` 对外只运行 4 个验收场景，输出 `scenarioCount=4`。
+- 新增结构化报告模型：
+  - `HeadlessWarReport`
+  - `HeadlessScenarioReport`
+  - `HeadlessPhaseResult`
+  - `HeadlessAssertionResult`
+  - `HeadlessKeyDelta`
+  - `HeadlessExplanation`
+- `Program.cs` 现在输出人读摘要，并固定写入机器报告：`tools/headless_runner/latest-war-report.json`。
+- `tools/verify_headless_war.sh` 在运行后校验 JSON：`runName=headless_war_four_scenarios`、`passed=true`、`scenarioCount=4`、`passedCount=4`、`failedCount=0`。
+- 四场景 JSON 覆盖关键阶段：
+  - `command`
+  - `movement`
+  - `engagement`
+  - `battle`
+  - `outcome`
+  - `governance`
+  - `economy`
+- `attacker_wins_and_occupies` 明确断言：
+  - `economy.money_delta_matches_runtime_contribution`
+  - `economy.food_delta_matches_runtime_contribution`
+- `reinforcement_joins_existing_engagement` 明确断言增援前后 attacker membership 变化，并记录增援前后进攻方战力。
+- `active_retreat_leaves_engagement` 明确断言撤退后无残留 engagement，且后续 war resolution 不触发战斗。
+- 战争关键日志保留原关键词，并补充原因和影响说明，方便玩家理解。
+
+### 验证
+
+- `tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang` 通过：
+  - `passed=True`
+  - `scenarioCount=4`
+  - 四个场景全部 `[PASS]`
+- `python3 tools/unity/preflight_without_unity.py` 通过。
+- 额外脚本检查 4 个场景的必需 assertion 均存在且 `passed=true`。
+- `git diff --check` 通过。
+
+### Unity 迁移下一步
+
+- 在另一台 Unity 机器运行：
+
+```bash
+tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang
+tools/unity/run_playmode_tests.sh
+```
+
+- Unity 验证时优先对照 `tools/headless_runner/latest-war-report.json`，确认场景内 UI/日志呈现与 headless 断言一致。

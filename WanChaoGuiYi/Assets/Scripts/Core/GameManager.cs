@@ -45,7 +45,7 @@ namespace WanChaoGuiYi
             worldState = WorldStateFactory.Create(State, dataRepository);
             mapQueryService = new MapQueryService(worldState.Map, mapGraph);
             context = new GameContext(State, dataRepository, Events);
-            mapCommandService = new MapCommandService(worldState, mapQueryService, context);
+            mapCommandService = new MapCommandService(mapQueryService, context);
             turnManager.Configure(context, CollectSystems());
             Events.Publish(new GameEvent(GameEventType.GameStarted, playerFactionId, State));
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace WanChaoGuiYi
@@ -15,6 +16,7 @@ namespace WanChaoGuiYi
             };
 
             CreateFactions(state, data);
+            FindRequiredPlayerFaction(state, playerFactionId);
             AssignRegions(state, data);
             CreateInitialArmies(state, data, playerFactionId);
             state.AddLog("system", "新局初始化完成。");
@@ -69,6 +71,9 @@ namespace WanChaoGuiYi
                     localPower = definition.localPower,
                     rebellionRisk = definition.rebellionRisk,
                     integration = 70,
+                    occupationStatus = OccupationStatus.Controlled,
+                    taxContributionPercent = 70,
+                    foodContributionPercent = 70,
                     annexationPressure = CalculateInitialAnnexation(definition),
                     landStructure = definition.landStructure != null ? definition.landStructure.Clone() : new LandStructure(),
                     customs = DeriveInitialCustoms(data, definition.id),
@@ -91,7 +96,7 @@ namespace WanChaoGuiYi
         {
             if (state.factions.Count < 2 || data.Units.Count == 0 || data.Regions.Count == 0) return;
 
-            FactionState playerFaction = state.FindFaction(playerFactionId) ?? state.factions[0];
+            FactionState playerFaction = FindRequiredPlayerFaction(state, playerFactionId);
             FactionState enemyFaction = FindFirstNonPlayerFaction(state, playerFaction.id);
             if (enemyFaction == null) return;
 
@@ -108,6 +113,22 @@ namespace WanChaoGuiYi
             state.armies.Add(CreateArmy("army_player_1", playerFaction.id, playerRegionId, unitId, 3000, 70));
             state.armies.Add(CreateArmy("army_enemy_1", enemyFaction.id, enemyRegionId, unitId, 2600, 65));
             state.AddLog("war", "初始军队已部署：" + playerRegionId + " 与 " + enemyRegionId + "。");
+        }
+
+        private static FactionState FindRequiredPlayerFaction(GameState state, string playerFactionId)
+        {
+            if (string.IsNullOrEmpty(playerFactionId))
+            {
+                throw new InvalidOperationException("Player faction id is required.");
+            }
+
+            FactionState playerFaction = state.FindFaction(playerFactionId);
+            if (playerFaction == null)
+            {
+                throw new InvalidOperationException("Unknown player faction id: " + playerFactionId);
+            }
+
+            return playerFaction;
         }
 
         private static FactionState FindFirstNonPlayerFaction(GameState state, string playerFactionId)

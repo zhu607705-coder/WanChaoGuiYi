@@ -7,6 +7,8 @@ namespace WanChaoGuiYi
         [SerializeField] private GameManager gameManager;
 
         private DomainArmyMovementSystem domain;
+        private WorldState boundWorldState;
+        private MapCommandService boundMapCommandService;
 
         public void Initialize(GameContext context)
         {
@@ -45,11 +47,13 @@ namespace WanChaoGuiYi
                 gameManager = GetComponent<GameManager>();
             }
 
-            if (domain != null) return;
-
             WorldState worldState = gameManager != null ? gameManager.World : null;
             MapCommandService mapCommandService = gameManager != null ? gameManager.MapCommands : null;
+            if (domain != null && boundWorldState == worldState && boundMapCommandService == mapCommandService) return;
+
             domain = new DomainArmyMovementSystem(worldState, mapCommandService, new DomainEngagementDetector());
+            boundWorldState = worldState;
+            boundMapCommandService = mapCommandService;
         }
     }
 }

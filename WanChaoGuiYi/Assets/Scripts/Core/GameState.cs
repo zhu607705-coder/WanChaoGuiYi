@@ -73,8 +73,6 @@ namespace WanChaoGuiYi
             }
 
             region.ownerFactionId = newOwnerFactionId;
-            region.integration = 25;
-            region.rebellionRisk = Math.Min(100, region.rebellionRisk + 8);
 
             return new RegionOwnerChangedPayload
             {
@@ -158,6 +156,9 @@ namespace WanChaoGuiYi
         public int localPower;
         public int rebellionRisk;
         public int integration;
+        public OccupationStatus occupationStatus;
+        public int taxContributionPercent;
+        public int foodContributionPercent;
         public int annexationPressure;
         public LandStructure landStructure;
 

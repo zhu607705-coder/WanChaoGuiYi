@@ -19,10 +19,10 @@ namespace WanChaoGuiYi
                 {
                     id = region.id,
                     ownerFactionId = region.ownerFactionId,
-                    occupationStatus = OccupationStatus.Controlled,
+                    occupationStatus = region.occupationStatus,
                     integration = region.integration,
-                    taxContributionPercent = CalculateContributionPercent(region.integration),
-                    foodContributionPercent = CalculateContributionPercent(region.integration),
+                    taxContributionPercent = ResolveContributionPercent(region.taxContributionPercent, region.integration),
+                    foodContributionPercent = ResolveContributionPercent(region.foodContributionPercent, region.integration),
                     rebellionRisk = region.rebellionRisk,
                     localPower = region.localPower,
                     annexationPressure = region.annexationPressure
@@ -52,11 +52,12 @@ namespace WanChaoGuiYi
             return new WorldState(gameState, mapState);
         }
 
-        private static int CalculateContributionPercent(int integration)
+        private static int ResolveContributionPercent(int contributionPercent, int integration)
         {
-            if (integration < 0) return 0;
-            if (integration > 100) return 100;
-            return integration;
+            int value = contributionPercent > 0 ? contributionPercent : integration;
+            if (value < 0) return 0;
+            if (value > 100) return 100;
+            return value;
         }
 
         private static int ResolveMovementPoints(ArmyState army, IDataRepository data)

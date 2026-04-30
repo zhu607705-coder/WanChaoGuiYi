@@ -7,6 +7,7 @@ namespace WanChaoGuiYi
         [SerializeField] private GameManager gameManager;
 
         private DomainEconomySystem domain;
+        private WorldState boundWorldState;
 
         public void Initialize(GameContext context)
         {
@@ -39,8 +40,11 @@ namespace WanChaoGuiYi
                 gameManager = GetComponent<GameManager>();
             }
 
-            if (domain != null || gameManager == null) return;
+            if (gameManager == null) return;
+            if (domain != null && boundWorldState == gameManager.World) return;
+
             domain = new DomainEconomySystem(gameManager.World);
+            boundWorldState = gameManager.World;
         }
     }
 }

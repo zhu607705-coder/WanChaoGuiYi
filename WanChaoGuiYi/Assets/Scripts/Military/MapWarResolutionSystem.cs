@@ -7,6 +7,7 @@ namespace WanChaoGuiYi
         [SerializeField] private GameManager gameManager;
 
         private DomainMapWarResolutionSystem domain;
+        private WorldState boundWorldState;
 
         public void Initialize(GameContext context)
         {
@@ -39,13 +40,15 @@ namespace WanChaoGuiYi
                 gameManager = GetComponent<GameManager>();
             }
 
-            if (domain != null || gameManager == null || gameManager.World == null) return;
+            if (gameManager == null || gameManager.World == null) return;
+            if (domain != null && boundWorldState == gameManager.World) return;
 
             domain = new DomainMapWarResolutionSystem(
                 gameManager.World,
                 new DomainEngagementDetector(),
                 new DomainBattleSimulationSystem(),
                 new DomainOccupationSystem(new DomainGovernanceImpactSystem()));
+            boundWorldState = gameManager.World;
         }
     }
 }

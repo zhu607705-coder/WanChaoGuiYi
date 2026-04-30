@@ -247,6 +247,7 @@ namespace WanChaoGuiYi
         public List<string> defenderArmyIds = new List<string>();
         public string initiatingArmyId;
         public string initiatingFactionId;
+        public int createdTurn;
         public BattleResult result;
     }
 }

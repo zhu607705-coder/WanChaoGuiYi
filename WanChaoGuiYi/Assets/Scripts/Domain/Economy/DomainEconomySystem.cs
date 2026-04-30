@@ -51,7 +51,7 @@ namespace WanChaoGuiYi
                 }
 
                 context.State.AddLog("economy", faction.name + "收入 金钱+" + tax + " 粮食+" + food +
-                    " 军费-" + moneyUpkeep + " 军粮-" + foodUpkeep + "。");
+                    " 军费-" + moneyUpkeep + " 军粮-" + foodUpkeep + "。原因：地区贡献率折算产出后扣除军队和治理成本。影响：金钱和粮食立即更新。");
             }
         }
 

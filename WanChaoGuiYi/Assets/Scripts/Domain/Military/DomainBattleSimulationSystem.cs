@@ -33,7 +33,7 @@ namespace WanChaoGuiYi
             engagement.result = result;
             engagement.phase = EngagementPhase.Resolved;
 
-            context.State.AddLog("war", engagement.regionId + "战斗结束：" + (attackerWon ? "进攻方获胜" : "防守方获胜") + "。");
+            context.State.AddLog("war", engagement.regionId + "战斗结束：" + (attackerWon ? "进攻方获胜" : "防守方获胜") + "。原因：自动结算比较双方兵力、士气和攻防修正。影响：胜负会驱动占领、防守、撤退或溃散结果。");
             context.Events.Publish(new GameEvent(GameEventType.BattleResolved, engagement.id, result));
             return result;
         }

@@ -70,16 +70,16 @@ namespace WanChaoGuiYi
                     task = army.task.ToString()
                 };
 
-                context.State.AddLog("war", army.id + "抵达" + nextRegionId + "。");
+                context.State.AddLog("war", army.id + "抵达" + nextRegionId + "。原因：行军路线推进到下一节点。影响：系统会检查当地是否存在敌对部队并触发接敌。");
                 context.Events.Publish(new GameEvent(GameEventType.ArmyArrived, army.id, payload));
 
                 if (army.task == ArmyTask.Retreat && army.engagementId != null)
                 {
                     string retreatEngagementId = army.engagementId;
-                    RemoveArmyFromEngagement(mapState, retreatEngagementId, army.id);
-                    ClearEngagementIfSideEmpty(mapState, retreatEngagementId);
+                    DomainEngagementCleanup.RemoveArmyFromEngagement(mapState, retreatEngagementId, army.id);
+                    DomainEngagementCleanup.ClearEngagementIfSideEmpty(mapState, retreatEngagementId);
                     army.engagementId = null;
-                    context.State.AddLog("war", army.id + "脱离接敌并撤退至" + nextRegionId + "。");
+                    context.State.AddLog("war", army.id + "脱离接敌并撤退至" + nextRegionId + "。原因：撤退命令在行军阶段生效。影响：原接敌若缺少一方会被清理。");
                 }
 
                 if (engagementDetector != null)
@@ -122,50 +122,6 @@ namespace WanChaoGuiYi
             {
                 legacyArmy.regionId = regionId;
                 legacyArmy.movementProgress = 100;
-            }
-        }
-
-        private static void RemoveArmyFromEngagement(MapState mapState, string engagementId, string armyId)
-        {
-            if (mapState == null || string.IsNullOrEmpty(engagementId) || string.IsNullOrEmpty(armyId)) return;
-
-            EngagementRuntimeState engagement;
-            if (!mapState.EngagementsById.TryGetValue(engagementId, out engagement) || engagement == null) return;
-
-            engagement.attackerArmyIds.Remove(armyId);
-            engagement.defenderArmyIds.Remove(armyId);
-        }
-
-        private static void ClearEngagementIfSideEmpty(MapState mapState, string engagementId)
-        {
-            if (mapState == null || string.IsNullOrEmpty(engagementId)) return;
-
-            EngagementRuntimeState engagement;
-            if (!mapState.EngagementsById.TryGetValue(engagementId, out engagement) || engagement == null) return;
-            if (engagement.attackerArmyIds.Count > 0 && engagement.defenderArmyIds.Count > 0) return;
-
-            ClearArmyEngagements(mapState, engagement.attackerArmyIds);
-            ClearArmyEngagements(mapState, engagement.defenderArmyIds);
-            mapState.RemoveEngagement(engagementId);
-
-            RegionRuntimeState region;
-            if (mapState.TryGetRegion(engagement.regionId, out region) && region.occupationStatus == OccupationStatus.Contested)
-            {
-                region.occupationStatus = OccupationStatus.Controlled;
-            }
-        }
-
-        private static void ClearArmyEngagements(MapState mapState, System.Collections.Generic.List<string> armyIds)
-        {
-            if (mapState == null || armyIds == null) return;
-
-            for (int i = 0; i < armyIds.Count; i++)
-            {
-                ArmyRuntimeState army;
-                if (mapState.TryGetArmy(armyIds[i], out army))
-                {
-                    army.engagementId = null;
-                }
             }
         }
 

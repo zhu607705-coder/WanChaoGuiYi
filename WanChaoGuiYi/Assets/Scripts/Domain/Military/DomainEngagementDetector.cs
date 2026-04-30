@@ -17,29 +17,13 @@ namespace WanChaoGuiYi
             List<ArmyRuntimeState> armies = mapState.GetArmiesInRegion(regionId);
             if (armies.Count < 2) return null;
 
+            EngagementRuntimeState engagement;
+            bool existingEngagement = mapState.TryGetEngagementInRegion(regionId, out engagement);
             ArmyRuntimeState initiatingArmy = FindInitiatingArmy(armies, initiatingArmyId);
             ArmyRuntimeState attackerSeed = initiatingArmy != null ? initiatingArmy : FindAttackerSeed(armies, regionId);
-            if (attackerSeed == null) return null;
+            if (!existingEngagement && attackerSeed == null) return null;
 
-            List<string> attackerArmyIds = new List<string>();
-            List<string> defenderArmyIds = new List<string>();
-
-            for (int i = 0; i < armies.Count; i++)
-            {
-                if (armies[i].ownerFactionId == attackerSeed.ownerFactionId)
-                {
-                    AddUnique(attackerArmyIds, armies[i].id);
-                }
-                else
-                {
-                    AddUnique(defenderArmyIds, armies[i].id);
-                }
-            }
-
-            if (attackerArmyIds.Count == 0 || defenderArmyIds.Count == 0) return null;
-
-            EngagementRuntimeState engagement;
-            if (!mapState.TryGetEngagementInRegion(regionId, out engagement))
+            if (!existingEngagement)
             {
                 engagement = new EngagementRuntimeState
                 {
@@ -47,8 +31,27 @@ namespace WanChaoGuiYi
                     regionId = regionId,
                     phase = EngagementPhase.Forming,
                     initiatingArmyId = attackerSeed.id,
-                    initiatingFactionId = attackerSeed.ownerFactionId
+                    initiatingFactionId = attackerSeed.ownerFactionId,
+                    createdTurn = context.State != null ? context.State.turn : 0
                 };
+            }
+
+            List<string> attackerArmyIds = new List<string>();
+            List<string> defenderArmyIds = new List<string>();
+            ClassifyArmies(mapState, engagement, armies, attackerSeed, existingEngagement, attackerArmyIds, defenderArmyIds);
+
+            if (attackerArmyIds.Count == 0 || defenderArmyIds.Count == 0)
+            {
+                if (existingEngagement)
+                {
+                    DomainEngagementCleanup.ClearEngagementIfSideEmpty(mapState, engagement.id);
+                }
+
+                return null;
+            }
+
+            if (!existingEngagement)
+            {
                 mapState.AddEngagement(engagement);
             }
 
@@ -62,7 +65,7 @@ namespace WanChaoGuiYi
             if (!hasNewMembership) return engagement;
 
             EngagementPayload payload = CreatePayload(engagement);
-            context.State.AddLog("war", regionId + "发生接敌：" + engagement.attackerArmyIds.Count + " 支部队对 " + engagement.defenderArmyIds.Count + " 支部队。");
+            context.State.AddLog("war", regionId + "发生接敌：" + engagement.attackerArmyIds.Count + " 支部队对 " + engagement.defenderArmyIds.Count + " 支部队。原因：敌对部队位于同一地区。影响：地区进入争夺，下一回合可增援、撤退或结算战斗。");
             context.Events.Publish(new GameEvent(GameEventType.ContactDetected, engagement.id, payload));
             context.Events.Publish(new GameEvent(GameEventType.EngagementStarted, engagement.id, payload));
             return engagement;
@@ -96,7 +99,6 @@ namespace WanChaoGuiYi
             if (mapState.TryGetArmy(armyId, out army))
             {
                 army.engagementId = engagementId;
-                army.task = ArmyTask.Attack;
             }
         }
 
@@ -163,6 +165,61 @@ namespace WanChaoGuiYi
             }
 
             return armies.Count > 0 ? armies[0] : null;
+        }
+
+        private static void ClassifyArmies(
+            MapState mapState,
+            EngagementRuntimeState engagement,
+            List<ArmyRuntimeState> armies,
+            ArmyRuntimeState attackerSeed,
+            bool useExistingSides,
+            List<string> attackerArmyIds,
+            List<string> defenderArmyIds)
+        {
+            for (int i = 0; i < armies.Count; i++)
+            {
+                ArmyRuntimeState army = armies[i];
+                if (useExistingSides)
+                {
+                    if (IsArmyOnSide(mapState, engagement.attackerArmyIds, army))
+                    {
+                        AddUnique(attackerArmyIds, army.id);
+                        continue;
+                    }
+
+                    if (IsArmyOnSide(mapState, engagement.defenderArmyIds, army))
+                    {
+                        AddUnique(defenderArmyIds, army.id);
+                        continue;
+                    }
+                }
+
+                if (attackerSeed != null && army.ownerFactionId == attackerSeed.ownerFactionId)
+                {
+                    AddUnique(attackerArmyIds, army.id);
+                }
+                else
+                {
+                    AddUnique(defenderArmyIds, army.id);
+                }
+            }
+        }
+
+        private static bool IsArmyOnSide(MapState mapState, List<string> sideArmyIds, ArmyRuntimeState army)
+        {
+            if (sideArmyIds == null || army == null) return false;
+            if (sideArmyIds.Contains(army.id)) return true;
+
+            for (int i = 0; i < sideArmyIds.Count; i++)
+            {
+                ArmyRuntimeState sideArmy;
+                if (mapState.TryGetArmy(sideArmyIds[i], out sideArmy) && sideArmy.ownerFactionId == army.ownerFactionId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AddUnique(List<string> target, string value)

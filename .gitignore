@@ -25,3 +25,10 @@ WanChaoGuiYi/sysinfo.txt
 # Rider / VS Code
 .idea/
 .vscode/
+
+# Local agent/worktree metadata
+.claude/worktrees/
+
+# Headless runner build outputs
+tools/headless_runner/WanChaoGuiYiHeadless/bin/
+tools/headless_runner/WanChaoGuiYiHeadless/obj/
