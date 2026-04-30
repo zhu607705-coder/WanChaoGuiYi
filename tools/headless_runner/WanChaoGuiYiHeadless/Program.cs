@@ -16,22 +16,19 @@ namespace WanChaoGuiYi
                 repository.Load(dataDirectory);
 
                 HeadlessSimulationRunner runner = new HeadlessSimulationRunner();
-                HeadlessSimulationResult result = runner.RunSingleLaneWar(repository, playerFactionId);
+                HeadlessSimulationSuiteResult suite = runner.RunAllScenarios(repository, playerFactionId);
 
                 Console.WriteLine("dataDirectory=" + dataDirectory);
                 Console.WriteLine("playerFactionId=" + playerFactionId);
-                Console.WriteLine("passed=" + result.passed);
-                Console.WriteLine("turnsExecuted=" + result.turnsExecuted);
+                Console.WriteLine("passed=" + suite.passed);
+                Console.WriteLine("scenarioCount=" + suite.scenarios.Count);
 
-                if (!result.passed)
+                for (int i = 0; i < suite.scenarios.Count; i++)
                 {
-                    Console.WriteLine("failureReason=" + result.failureReason);
-                    PrintLogs(result.state);
-                    return 1;
+                    PrintScenario(suite.scenarios[i]);
                 }
 
-                PrintLogs(result.state);
-                return 0;
+                return suite.passed ? 0 : 1;
             }
             catch (Exception ex)
             {
@@ -55,6 +52,20 @@ namespace WanChaoGuiYi
             }
 
             return Path.Combine(Directory.GetCurrentDirectory(), "WanChaoGuiYi", "Assets", "Data");
+        }
+
+        private static void PrintScenario(HeadlessSimulationResult result)
+        {
+            if (result == null) return;
+            Console.WriteLine("scenario=" + result.scenarioName);
+            Console.WriteLine("scenarioPassed=" + result.passed);
+            Console.WriteLine("turnsExecuted=" + result.turnsExecuted);
+            if (!result.passed)
+            {
+                Console.WriteLine("failureReason=" + result.failureReason);
+            }
+
+            PrintLogs(result.state);
         }
 
         private static void PrintLogs(GameState state)
