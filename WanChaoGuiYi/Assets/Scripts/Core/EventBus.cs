@@ -19,7 +19,13 @@ namespace WanChaoGuiYi
         WeatherChanged,
         CelestialEventOccurred,
         CustomEventOccurred,
-        EquipmentUnlocked
+        EquipmentUnlocked,
+        ArmyMoveStarted,
+        ArmyArrived,
+        ContactDetected,
+        EngagementStarted,
+        RegionOccupied,
+        GovernanceImpactApplied
     }
 
     public sealed class GameEvent
@@ -41,6 +47,43 @@ namespace WanChaoGuiYi
         public string regionId;
         public string previousOwnerFactionId;
         public string newOwnerFactionId;
+    }
+
+    public sealed class MapArmyMovementPayload
+    {
+        public string armyId;
+        public string ownerFactionId;
+        public string fromRegionId;
+        public string toRegionId;
+        public string[] route;
+        public string task;
+    }
+
+    public sealed class EngagementPayload
+    {
+        public string engagementId;
+        public string regionId;
+        public string[] attackerArmyIds;
+        public string[] defenderArmyIds;
+    }
+
+    public sealed class RegionOccupiedPayload
+    {
+        public string regionId;
+        public string previousOwnerFactionId;
+        public string newOwnerFactionId;
+        public string engagementId;
+    }
+
+    public sealed class GovernanceImpactPayload
+    {
+        public string regionId;
+        public int integration;
+        public int taxContributionPercent;
+        public int foodContributionPercent;
+        public int rebellionRisk;
+        public int localPower;
+        public int annexationPressure;
     }
 
     public sealed class EventBus

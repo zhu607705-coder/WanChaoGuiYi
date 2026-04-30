@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace WanChaoGuiYi
 {
-    public sealed class MapGraph : MonoBehaviour
+    public sealed class MapGraph : MonoBehaviour, IMapGraphData
     {
         private readonly Dictionary<string, HashSet<string>> adjacency = new Dictionary<string, HashSet<string>>();
 

@@ -7,7 +7,7 @@ using UnityEditor;
 
 namespace WanChaoGuiYi
 {
-    public sealed class DataRepository : MonoBehaviour
+    public sealed class DataRepository : MonoBehaviour, IDataRepository
     {
         [Header("JSON Tables")]
         [SerializeField] private TextAsset emperorsJson;

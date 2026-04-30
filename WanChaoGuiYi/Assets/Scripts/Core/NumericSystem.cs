@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace WanChaoGuiYi
 {
@@ -156,7 +155,7 @@ namespace WanChaoGuiYi
 
             result.finalValue = result.hasOverride
                 ? result.overrideValue
-                : (result.baseValue + result.additive) * Mathf.Max(0f, result.multiplier);
+                : (result.baseValue + result.additive) * DomainMath.Max(0f, result.multiplier);
 
             return result;
         }
@@ -253,13 +252,13 @@ namespace WanChaoGuiYi
             context.Add(NumericDomain.Military, NumericStat.ArmyDefense, NumericModifierType.Multiplicative, faction.armyDefenseMultiplier - 1f, "faction_army_defense_multiplier");
             context.Add(NumericDomain.Emperor, NumericStat.TalentGain, NumericModifierType.Multiplicative, faction.talentMultiplier - 1f, "faction_talent_multiplier");
 
-            float expansionPressure = Mathf.Max(0, faction.regionIds.Count - 3);
+            float expansionPressure = DomainMath.Max(0, faction.regionIds.Count - 3);
             context.Add(NumericDomain.Economy, NumericStat.FiscalPressure, NumericModifierType.Additive,
                 expansionPressure * NumericTuning.ExpansionGovernancePressurePerRegion, "region_count_governance_pressure");
             context.Add(NumericDomain.Economy, NumericStat.MoneyUpkeep, NumericModifierType.Additive,
-                Mathf.Max(0, faction.regionIds.Count - 1) * NumericTuning.GovernanceMoneyCostPerRegion, "region_count_money_governance_cost");
+                DomainMath.Max(0, faction.regionIds.Count - 1) * NumericTuning.GovernanceMoneyCostPerRegion, "region_count_money_governance_cost");
             context.Add(NumericDomain.Economy, NumericStat.FoodUpkeep, NumericModifierType.Additive,
-                Mathf.Max(0, faction.regionIds.Count - 1) * NumericTuning.GovernanceFoodCostPerRegion, "region_count_food_governance_cost");
+                DomainMath.Max(0, faction.regionIds.Count - 1) * NumericTuning.GovernanceFoodCostPerRegion, "region_count_food_governance_cost");
             context.Add(NumericDomain.Emperor, NumericStat.SuccessionRisk, NumericModifierType.Additive,
                 expansionPressure * NumericTuning.ExpansionSuccessionPressurePerRegion, "region_count_succession_pressure");
 
@@ -280,7 +279,7 @@ namespace WanChaoGuiYi
         {
             if (region == null || numericContext == null) return 0;
             float baseValue = region.taxOutput * CalculateGovernanceEfficiency(region, true);
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.TaxIncome, baseValue).finalValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.TaxIncome, baseValue).finalValue));
         }
 
         public static int CalculateRegionalFood(RegionState region, FactionState faction)
@@ -292,7 +291,7 @@ namespace WanChaoGuiYi
         {
             if (region == null || numericContext == null) return 0;
             float baseValue = region.foodOutput * CalculateGovernanceEfficiency(region, false);
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FoodIncome, baseValue).finalValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FoodIncome, baseValue).finalValue));
         }
 
         public static int CalculateArmyUpkeep(ArmyState army, UnitDefinition unit, FactionState faction, bool food)
@@ -305,8 +304,8 @@ namespace WanChaoGuiYi
             if (army == null || unit == null || unit.upkeep == null || numericContext == null) return 0;
             int unitUpkeep = food ? unit.upkeep.food : unit.upkeep.money;
             NumericStat stat = food ? NumericStat.FoodUpkeep : NumericStat.MoneyUpkeep;
-            float baseValue = Mathf.CeilToInt(army.soldiers / 1000f) * unitUpkeep;
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, stat, baseValue).finalValue));
+            float baseValue = DomainMath.CeilToInt(army.soldiers / 1000f) * unitUpkeep;
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, stat, baseValue).finalValue));
         }
 
         public static int CalculateTreasuryReserveDrag(FactionState faction, bool food)
@@ -315,7 +314,7 @@ namespace WanChaoGuiYi
             int value = food ? faction.food : faction.money;
             int softCap = food ? NumericTuning.TreasurySoftCapFood : NumericTuning.TreasurySoftCapMoney;
             float dragRate = food ? NumericTuning.FoodReserveDragRate : NumericTuning.MoneyReserveDragRate;
-            return Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(0, value - softCap) * dragRate));
+            return DomainMath.Max(0, DomainMath.RoundToInt(DomainMath.Max(0, value - softCap) * dragRate));
         }
 
         public static int CalculateGovernanceUpkeep(FactionState faction, bool food)
@@ -327,7 +326,7 @@ namespace WanChaoGuiYi
         {
             if (numericContext == null) return 0;
             NumericStat stat = food ? NumericStat.FoodUpkeep : NumericStat.MoneyUpkeep;
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, stat, 0f).finalValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, stat, 0f).finalValue));
         }
 
         // ========== Military ==========
@@ -344,17 +343,17 @@ namespace WanChaoGuiYi
             int baseStat = attacking ? unit.stats.attack : unit.stats.defense;
             baseStat += attacking ? equipmentBonus.attack : equipmentBonus.defense;
 
-            float soldierMultiplier = Mathf.Log10(Mathf.Max(1, army.soldiers)) / NumericTuning.BattleSoldierLogDivisor;
+            float soldierMultiplier = DomainMath.Log10(DomainMath.Max(1, army.soldiers)) / NumericTuning.BattleSoldierLogDivisor;
             if (soldierMultiplier < NumericTuning.BattleMinimumSoldierMultiplier)
             {
                 soldierMultiplier = NumericTuning.BattleMinimumSoldierMultiplier;
             }
 
-            float moraleMultiplier = Mathf.Clamp01(army.morale / 100f);
+            float moraleMultiplier = DomainMath.Clamp01(army.morale / 100f);
             float baseValue = baseStat * soldierMultiplier * moraleMultiplier * NumericTuning.BattlePowerScale;
 
             NumericStat stat = attacking ? NumericStat.ArmyAttack : NumericStat.ArmyDefense;
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Military, stat, baseValue).finalValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Military, stat, baseValue).finalValue));
         }
 
         // ========== Emperor ==========
@@ -367,7 +366,7 @@ namespace WanChaoGuiYi
         public static int CalculateFiscalLegitimacyPenalty(NumericContext numericContext)
         {
             if (numericContext == null) return 0;
-            return Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FiscalPressure,
+            return DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FiscalPressure,
                 NumericTuning.FiscalDeficitLegitimacyPenalty).finalValue);
         }
 
@@ -379,7 +378,7 @@ namespace WanChaoGuiYi
         public static int CalculateFiscalCourtPressure(NumericContext numericContext)
         {
             if (numericContext == null) return 0;
-            return Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FiscalPressure,
+            return DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Economy, NumericStat.FiscalPressure,
                 NumericTuning.FiscalDeficitCourtPressure).finalValue);
         }
 
@@ -391,14 +390,14 @@ namespace WanChaoGuiYi
         public static int CalculateExpansionSuccessionPressure(NumericContext numericContext)
         {
             if (numericContext == null) return 0;
-            return Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Emperor, NumericStat.SuccessionRisk, 0f).finalValue);
+            return DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Emperor, NumericStat.SuccessionRisk, 0f).finalValue);
         }
 
         public static int CalculateRegionalTaxBase(RegionState region)
         {
             if (region == null) return 0;
             float baseValue = region.taxOutput * CalculateGovernanceEfficiency(region, true);
-            return Mathf.Max(0, Mathf.RoundToInt(baseValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(baseValue));
         }
 
         // ========== Diplomacy ==========
@@ -407,7 +406,7 @@ namespace WanChaoGuiYi
         {
             if (proposer == null || target == null || numericContext == null) return 0;
             float baseValue = NumericTuning.DiplomacyAcceptanceBase;
-            return Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.DiplomacyAcceptance, baseValue).finalValue);
+            return DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.DiplomacyAcceptance, baseValue).finalValue);
         }
 
         public static int CalculateTreatyDuration(string treatyType, NumericContext numericContext)
@@ -423,13 +422,13 @@ namespace WanChaoGuiYi
                 default: baseDuration = NumericTuning.NonAggressionDuration; break;
             }
             if (baseDuration < 0) return -1;
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.TreatyDuration, baseDuration).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.TreatyDuration, baseDuration).finalValue));
         }
 
         public static int CalculateGrudgeDecay(DiplomaticRelation relation, NumericContext numericContext)
         {
             if (relation == null || numericContext == null) return 0;
-            return Mathf.Max(0, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.GrudgeDecay, NumericTuning.GrudgeDecayPerTurn).finalValue));
+            return DomainMath.Max(0, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Diplomacy, NumericStat.GrudgeDecay, NumericTuning.GrudgeDecayPerTurn).finalValue));
         }
 
         // ========== Espionage ==========
@@ -437,7 +436,7 @@ namespace WanChaoGuiYi
         public static int CalculateEspionageProgress(EspionageOperation operation, NumericContext numericContext)
         {
             if (operation == null || numericContext == null) return 0;
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageProgress, NumericTuning.BaseProgressPerTurn).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageProgress, NumericTuning.BaseProgressPerTurn).finalValue));
         }
 
         public static int CalculateEspionageDetectionRisk(FactionState agent, FactionState target, NumericContext numericContext)
@@ -445,7 +444,7 @@ namespace WanChaoGuiYi
             if (numericContext == null) return 0;
             float baseRisk = NumericTuning.BaseDetectionRisk;
             if (target != null) baseRisk -= target.espionageDefense;
-            return Mathf.Clamp(Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageRisk, baseRisk).finalValue), 5, 95);
+            return DomainMath.Clamp(DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageRisk, baseRisk).finalValue), 5, 95);
         }
 
         public static int CalculateEspionageCost(string actionType, NumericContext numericContext)
@@ -460,7 +459,7 @@ namespace WanChaoGuiYi
                 case "assassinate": baseCost = NumericTuning.AssassinateCost; break;
                 default: baseCost = NumericTuning.IntelCost; break;
             }
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageCost, baseCost).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Espionage, NumericStat.EspionageCost, baseCost).finalValue));
         }
 
         // ========== Technology ==========
@@ -471,13 +470,13 @@ namespace WanChaoGuiYi
             float basePoints = NumericTuning.BaseResearchPerTurn;
             if (emperor != null) basePoints += emperor.stats.reform / (float)NumericTuning.ReformBonusDivisor;
             basePoints += faction.talentIds.Count;
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Technology, NumericStat.ResearchPoints, basePoints).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Technology, NumericStat.ResearchPoints, basePoints).finalValue));
         }
 
         public static int CalculateTechCost(TechnologyDefinition tech, NumericContext numericContext)
         {
             if (tech == null || numericContext == null) return 0;
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Technology, NumericStat.TechCost, tech.cost).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Technology, NumericStat.TechCost, tech.cost).finalValue));
         }
 
         // ========== Event ==========
@@ -485,13 +484,13 @@ namespace WanChaoGuiYi
         public static float CalculateEventTriggerChance(NumericContext numericContext)
         {
             if (numericContext == null) return 0f;
-            return Mathf.Clamp01(numericContext.Evaluate(NumericDomain.Event, NumericStat.EventTriggerChance, NumericTuning.BaseTriggerChance).finalValue);
+            return DomainMath.Clamp01(numericContext.Evaluate(NumericDomain.Event, NumericStat.EventTriggerChance, NumericTuning.BaseTriggerChance).finalValue);
         }
 
         public static int CalculateEventCooldown(NumericContext numericContext)
         {
             if (numericContext == null) return 0;
-            return Mathf.Max(1, Mathf.RoundToInt(numericContext.Evaluate(NumericDomain.Event, NumericStat.EventCooldown, NumericTuning.EventCooldownDefault).finalValue));
+            return DomainMath.Max(1, DomainMath.RoundToInt(numericContext.Evaluate(NumericDomain.Event, NumericStat.EventCooldown, NumericTuning.EventCooldownDefault).finalValue));
         }
 
         // ========== Ai ==========
@@ -519,7 +518,7 @@ namespace WanChaoGuiYi
         public static float CalculateVictoryProgress(FactionState faction, NumericContext numericContext)
         {
             if (faction == null || numericContext == null) return 0f;
-            return Mathf.Clamp01(numericContext.Evaluate(NumericDomain.Victory, NumericStat.VictoryProgress, 0f).finalValue / NumericTuning.VictoryProgressScale);
+            return DomainMath.Clamp01(numericContext.Evaluate(NumericDomain.Victory, NumericStat.VictoryProgress, 0f).finalValue / NumericTuning.VictoryProgressScale);
         }
 
         // ========== Private Helpers ==========
@@ -533,7 +532,7 @@ namespace WanChaoGuiYi
             float localPowerPenalty = tax ? region.localPower * NumericTuning.LocalPowerTaxPenaltyPerPoint : 0f;
             float annexationPenalty = region.annexationPressure * NumericTuning.AnnexationOutputPenaltyPerPoint;
 
-            return Mathf.Clamp(integrationFactor - rebellionPenalty - localPowerPenalty - annexationPenalty, 0.10f, 1.25f);
+            return DomainMath.Clamp(integrationFactor - rebellionPenalty - localPowerPenalty - annexationPenalty, 0.10f, 1.25f);
         }
     }
 }

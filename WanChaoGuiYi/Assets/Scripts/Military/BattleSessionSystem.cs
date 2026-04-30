@@ -206,12 +206,7 @@ namespace WanChaoGuiYi
                 defenderDeployments = CreateDeploymentsFromConfig(session.player2Config)
             };
 
-            GameContext context = new GameContext
-            {
-                State = gameManager.State,
-                Data = gameManager.Data,
-                Events = gameManager.Events
-            };
+            GameContext context = new GameContext(gameManager.State, gameManager.Data, gameManager.Events);
 
             List<BattleLog> battleLog = new List<BattleLog>();
             session.result = battleResolver.ResolveSemiAuto(context, setup, battleLog);

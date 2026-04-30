@@ -125,26 +125,4 @@ namespace WanChaoGuiYi
             return equip;
         }
     }
-
-    public sealed class EquipmentDefinition
-    {
-        public string id;
-        public string name;
-        public string slot;
-        public string era;
-        public string requiresTech;
-        public int cost;
-        public int attackBonus;
-        public int defenseBonus;
-        public int mobilityBonus;
-        public int siegeBonus;
-    }
-
-    public sealed class EquipmentBonus
-    {
-        public int attack;
-        public int defense;
-        public int mobility;
-        public int siege;
-    }
 }
