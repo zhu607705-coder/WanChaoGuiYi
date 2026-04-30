@@ -4,7 +4,7 @@ namespace WanChaoGuiYi
 {
     public static class GameStateFactory
     {
-        public static GameState CreateDefault(DataRepository data, string playerFactionId)
+        public static GameState CreateDefault(IDataRepository data, string playerFactionId)
         {
             GameState state = new GameState
             {
@@ -16,11 +16,12 @@ namespace WanChaoGuiYi
 
             CreateFactions(state, data);
             AssignRegions(state, data);
+            CreateInitialArmies(state, data, playerFactionId);
             state.AddLog("system", "新局初始化完成。");
             return state;
         }
 
-        private static void CreateFactions(GameState state, DataRepository data)
+        private static void CreateFactions(GameState state, IDataRepository data)
         {
             foreach (EmperorDefinition emperor in data.Emperors.Values)
             {
@@ -48,7 +49,7 @@ namespace WanChaoGuiYi
             }
         }
 
-        private static void AssignRegions(GameState state, DataRepository data)
+        private static void AssignRegions(GameState state, IDataRepository data)
         {
             List<FactionState> factions = state.factions;
             if (factions.Count == 0) return;
@@ -86,6 +87,90 @@ namespace WanChaoGuiYi
             return ClampToPercent((int)(definition.landStructure.localElites * 100f));
         }
 
+        private static void CreateInitialArmies(GameState state, IDataRepository data, string playerFactionId)
+        {
+            if (state.factions.Count < 2 || data.Units.Count == 0 || data.Regions.Count == 0) return;
+
+            FactionState playerFaction = state.FindFaction(playerFactionId) ?? state.factions[0];
+            FactionState enemyFaction = FindFirstNonPlayerFaction(state, playerFaction.id);
+            if (enemyFaction == null) return;
+
+            string playerRegionId = ResolveFirstOwnedRegion(playerFaction, data);
+            string enemyRegionId = ResolveFirstOwnedNeighbor(playerRegionId, enemyFaction, data);
+            if (string.IsNullOrEmpty(enemyRegionId))
+            {
+                enemyRegionId = ResolveFirstOwnedRegion(enemyFaction, data);
+            }
+
+            string unitId = ResolveDefaultUnitId(data);
+            if (string.IsNullOrEmpty(playerRegionId) || string.IsNullOrEmpty(enemyRegionId) || string.IsNullOrEmpty(unitId)) return;
+
+            state.armies.Add(CreateArmy("army_player_1", playerFaction.id, playerRegionId, unitId, 3000, 70));
+            state.armies.Add(CreateArmy("army_enemy_1", enemyFaction.id, enemyRegionId, unitId, 2600, 65));
+            state.AddLog("war", "初始军队已部署：" + playerRegionId + " 与 " + enemyRegionId + "。");
+        }
+
+        private static FactionState FindFirstNonPlayerFaction(GameState state, string playerFactionId)
+        {
+            for (int i = 0; i < state.factions.Count; i++)
+            {
+                if (state.factions[i].id != playerFactionId) return state.factions[i];
+            }
+
+            return null;
+        }
+
+        private static string ResolveFirstOwnedRegion(FactionState faction, IDataRepository data)
+        {
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                if (data.Regions.ContainsKey(faction.regionIds[i])) return faction.regionIds[i];
+            }
+
+            return null;
+        }
+
+        private static string ResolveFirstOwnedNeighbor(string regionId, FactionState faction, IDataRepository data)
+        {
+            if (string.IsNullOrEmpty(regionId) || faction == null) return null;
+
+            RegionDefinition region;
+            if (!data.Regions.TryGetValue(regionId, out region) || region.neighbors == null) return null;
+
+            for (int i = 0; i < region.neighbors.Length; i++)
+            {
+                if (faction.regionIds.Contains(region.neighbors[i])) return region.neighbors[i];
+            }
+
+            return null;
+        }
+
+        private static string ResolveDefaultUnitId(IDataRepository data)
+        {
+            if (data.Units.ContainsKey("infantry")) return "infantry";
+
+            foreach (string unitId in data.Units.Keys)
+            {
+                return unitId;
+            }
+
+            return null;
+        }
+
+        private static ArmyState CreateArmy(string id, string ownerFactionId, string regionId, string unitId, int soldiers, int morale)
+        {
+            return new ArmyState
+            {
+                id = id,
+                ownerFactionId = ownerFactionId,
+                regionId = regionId,
+                unitId = unitId,
+                soldiers = soldiers,
+                morale = morale,
+                movementProgress = 0
+            };
+        }
+
         private static int ClampToPercent(int value)
         {
             if (value < 0) return 0;
@@ -93,7 +178,7 @@ namespace WanChaoGuiYi
             return value;
         }
 
-        private static string[] DeriveInitialCustoms(DataRepository data, string regionId)
+        private static string[] DeriveInitialCustoms(IDataRepository data, string regionId)
         {
             // 从历史层数据推导初始风俗
             foreach (HistoricalLayerDefinition layer in data.HistoricalLayers.Values)

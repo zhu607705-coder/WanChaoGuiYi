@@ -6,6 +6,7 @@ namespace WanChaoGuiYi
     public sealed class BattleResolver : MonoBehaviour
     {
         [SerializeField] private BattleSetupSystem setupSystem;
+        [SerializeField] private bool allowLegacyOwnershipChange = false;
 
         public BattleResult Resolve(GameContext context, ArmyState attacker, ArmyState defender)
         {
@@ -28,9 +29,13 @@ namespace WanChaoGuiYi
             };
 
             ApplyLosses(attacker, defender, attackerWon);
-            if (attackerWon)
+            if (attackerWon && allowLegacyOwnershipChange)
             {
                 context.ChangeRegionOwner(defender.regionId, attacker.ownerFactionId);
+            }
+            else if (attackerWon)
+            {
+                context.State.AddLog("war", "旧战斗结算未改变地区归属；地图主导战争需通过 OccupationSystem 占领。");
             }
 
             context.Events.Publish(new GameEvent(GameEventType.BattleResolved, attacker.id, result));
