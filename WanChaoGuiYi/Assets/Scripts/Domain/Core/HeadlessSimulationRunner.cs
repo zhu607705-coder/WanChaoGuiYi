@@ -21,6 +21,8 @@ namespace WanChaoGuiYi
     public sealed class HeadlessSimulationRunner
     {
         private const int MaxTurns = 24;
+        private const int OccupiedIntegration = 25;
+        private const int OccupiedContributionPercent = 35;
 
         public HeadlessSimulationSuiteResult RunAllScenarios(IDataRepository data, string playerFactionId)
         {
@@ -28,6 +30,7 @@ namespace WanChaoGuiYi
             suite.scenarios.Add(RunSingleLaneWar(data, playerFactionId));
             suite.scenarios.Add(RunAttackerOccupation(data, playerFactionId));
             suite.scenarios.Add(RunReinforcementMembership(data, playerFactionId));
+            suite.scenarios.Add(RunActiveRetreatFromEngagement(data, playerFactionId));
 
             suite.passed = true;
             for (int i = 0; i < suite.scenarios.Count; i++)
@@ -119,6 +122,13 @@ namespace WanChaoGuiYi
 
             string failure = ValidateCommonWarLogs(runtime.state, true, false);
             if (!string.IsNullOrEmpty(failure)) return Fail(result, runtime.state, runtime.worldState, failure);
+
+            failure = ValidateCapturedRegionState(runtime, targetRegionId, originalOwnerFactionId, playerArmy.ownerFactionId);
+            if (!string.IsNullOrEmpty(failure)) return Fail(result, runtime.state, runtime.worldState, failure);
+
+            failure = ValidateEconomyContributionState(runtime, targetRegionId, playerArmy.ownerFactionId);
+            if (!string.IsNullOrEmpty(failure)) return Fail(result, runtime.state, runtime.worldState, failure);
+
             if (!HasLogContaining(runtime.state, "进攻方获胜")) return Fail(result, runtime.state, runtime.worldState, "Expected attacker victory wording.");
             if (!HasLogContaining(runtime.state, "新占领")) return Fail(result, runtime.state, runtime.worldState, "Expected governance impact for newly occupied region.");
 
@@ -184,6 +194,26 @@ namespace WanChaoGuiYi
                 return Fail(result, runtime.state, runtime.worldState, "Reinforce command failed for reinforcement scenario.");
             }
 
+            if (reinforcement.task != ArmyTask.Reinforce)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Reinforce command did not set ArmyTask.Reinforce.");
+            }
+
+            if (reinforcement.targetRegionId != targetRegionId)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Reinforce command did not retain target engagement region.");
+            }
+
+            if (reinforcement.route == null || reinforcement.route.Count < 2 || reinforcement.route[reinforcement.route.Count - 1] != targetRegionId)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Reinforce command did not create a route to the engagement region.");
+            }
+
+            if (!HasLogContaining(runtime.state, "增援") || !HasLogContaining(runtime.state, "加入当地接敌"))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Expected reinforcement intent logs.");
+            }
+
             runtime.movementSystem.ExecuteTurn(runtime.context);
 
             if (!runtime.worldState.Map.TryGetEngagementInRegion(targetRegionId, out engagement))
@@ -213,6 +243,100 @@ namespace WanChaoGuiYi
 
             string failure = ValidateCommonWarLogs(runtime.state, HasLogContaining(runtime.state, "占领"), !HasLogContaining(runtime.state, "占领"));
             if (!string.IsNullOrEmpty(failure)) return Fail(result, runtime.state, runtime.worldState, failure);
+
+            return Pass(result, runtime.state, runtime.worldState);
+        }
+
+        public HeadlessSimulationResult RunActiveRetreatFromEngagement(IDataRepository data, string playerFactionId)
+        {
+            HeadlessSimulationResult result = CreateResult("active_retreat_leaves_engagement");
+            SimulationRuntime runtime;
+            if (!TryCreateRuntime(data, playerFactionId, result, out runtime)) return result;
+
+            ArmyRuntimeState playerArmy;
+            ArmyRuntimeState enemyArmy;
+            if (!TryGetSmokeArmies(result, runtime.worldState, out playerArmy, out enemyArmy)) return result;
+
+            string originRegionId = playerArmy.locationRegionId;
+            string targetRegionId = enemyArmy.locationRegionId;
+            if (!runtime.commands.MoveArmy(playerArmy.id, targetRegionId))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Initial move command failed for retreat scenario.");
+            }
+
+            runtime.movementSystem.ExecuteTurn(runtime.context);
+
+            EngagementRuntimeState engagement;
+            if (!runtime.worldState.Map.TryGetEngagementInRegion(targetRegionId, out engagement))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Expected engagement before active retreat.");
+            }
+
+            if (playerArmy.engagementId == null || !engagement.attackerArmyIds.Contains(playerArmy.id))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Moving army did not enter engagement before retreat.");
+            }
+
+            if (!runtime.commands.RetreatArmy(playerArmy.id, originRegionId))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreat command failed for engaged army.");
+            }
+
+            if (playerArmy.task != ArmyTask.Retreat)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreat command did not set ArmyTask.Retreat.");
+            }
+
+            if (playerArmy.targetRegionId != originRegionId)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreat command did not retain retreat target region.");
+            }
+
+            runtime.movementSystem.ExecuteTurn(runtime.context);
+            result.turnsExecuted = 1;
+
+            if (playerArmy.locationRegionId != originRegionId)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreating army did not move to retreat region while engaged.");
+            }
+
+            if (playerArmy.engagementId != null)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreating army kept stale engagementId after retreat movement.");
+            }
+
+            if (playerArmy.task != ArmyTask.Idle || playerArmy.targetRegionId != null || playerArmy.route.Count != 0)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Retreating army did not return to idle state after reaching retreat target.");
+            }
+
+            ArmyState legacyArmy = FindLegacyArmy(runtime.context, playerArmy.id);
+            if (legacyArmy == null || legacyArmy.regionId != originRegionId)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Legacy army region did not mirror retreat movement.");
+            }
+
+            if (runtime.worldState.Map.TryGetEngagementInRegion(targetRegionId, out engagement))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Engagement remained after attacker actively retreated.");
+            }
+
+            RegionRuntimeState battleRegion;
+            if (!runtime.worldState.Map.TryGetRegion(targetRegionId, out battleRegion) || battleRegion.occupationStatus != OccupationStatus.Controlled)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Battle region did not return to controlled state after active retreat.");
+            }
+
+            runtime.warResolutionSystem.ExecuteTurn(runtime.context);
+            if (HasLogContaining(runtime.state, "战斗结束"))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "War resolution should not resolve a battle after active retreat cleared the engagement.");
+            }
+
+            if (!HasLogContaining(runtime.state, "尝试脱离接敌") || !HasLogContaining(runtime.state, "脱离接敌并撤退"))
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Expected active retreat intent and completion logs.");
+            }
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -303,6 +427,81 @@ namespace WanChaoGuiYi
             return null;
         }
 
+        private static string ValidateCapturedRegionState(SimulationRuntime runtime, string regionId, string previousOwnerFactionId, string expectedOwnerFactionId)
+        {
+            RegionRuntimeState runtimeRegion;
+            if (!runtime.worldState.Map.TryGetRegion(regionId, out runtimeRegion)) return "Captured runtime region is missing.";
+            if (runtimeRegion.ownerFactionId != expectedOwnerFactionId) return "Runtime region owner did not change to attacker faction.";
+            if (runtimeRegion.occupationStatus != OccupationStatus.Occupied) return "Captured runtime region is not marked Occupied.";
+            if (runtimeRegion.integration != OccupiedIntegration) return "Captured runtime region integration should be 25.";
+            if (runtimeRegion.taxContributionPercent != OccupiedContributionPercent) return "Captured runtime region tax contribution should be 35%.";
+            if (runtimeRegion.foodContributionPercent != OccupiedContributionPercent) return "Captured runtime region food contribution should be 35%.";
+            if (runtimeRegion.rebellionRisk < 20) return "Captured runtime region rebellion risk did not include occupation pressure.";
+            if (runtimeRegion.localPower < 8) return "Captured runtime region local power did not include occupation pressure.";
+            if (runtimeRegion.annexationPressure < 10) return "Captured runtime region annexation pressure did not include occupation pressure.";
+
+            RegionState legacyRegion = runtime.state.FindRegion(regionId);
+            if (legacyRegion == null) return "Captured legacy region is missing.";
+            if (legacyRegion.ownerFactionId != expectedOwnerFactionId) return "Legacy region owner did not mirror occupation.";
+            if (legacyRegion.integration != runtimeRegion.integration) return "Legacy region integration did not mirror runtime governance impact.";
+            if (legacyRegion.rebellionRisk != runtimeRegion.rebellionRisk) return "Legacy region rebellion risk did not mirror runtime governance impact.";
+            if (legacyRegion.localPower != runtimeRegion.localPower) return "Legacy region local power did not mirror runtime governance impact.";
+            if (legacyRegion.annexationPressure != runtimeRegion.annexationPressure) return "Legacy region annexation pressure did not mirror runtime governance impact.";
+
+            FactionState previousOwner = runtime.state.FindFaction(previousOwnerFactionId);
+            if (previousOwner != null && previousOwner.regionIds.Contains(regionId)) return "Previous owner still lists captured region.";
+
+            FactionState newOwner = runtime.state.FindFaction(expectedOwnerFactionId);
+            if (newOwner == null) return "Capturing faction is missing.";
+            if (!newOwner.regionIds.Contains(regionId)) return "Capturing faction does not list captured region.";
+
+            return null;
+        }
+
+        private static string ValidateEconomyContributionState(SimulationRuntime runtime, string regionId, string ownerFactionId)
+        {
+            FactionState faction = runtime.state.FindFaction(ownerFactionId);
+            RegionState region = runtime.state.FindRegion(regionId);
+            RegionRuntimeState runtimeRegion;
+            if (faction == null || region == null || !runtime.worldState.Map.TryGetRegion(regionId, out runtimeRegion))
+            {
+                return "Cannot validate economy contribution state for captured region.";
+            }
+
+            NumericContext numericContext = NumericModifierFactory.ForFaction(faction);
+            int baseTax = NumericFormulas.CalculateRegionalTax(region, numericContext);
+            int baseFood = NumericFormulas.CalculateRegionalFood(region, numericContext);
+            int effectiveTax = DomainMath.RoundToInt(baseTax * runtimeRegion.taxContributionPercent / 100f);
+            int effectiveFood = DomainMath.RoundToInt(baseFood * runtimeRegion.foodContributionPercent / 100f);
+
+            if (runtimeRegion.taxContributionPercent != OccupiedContributionPercent || runtimeRegion.foodContributionPercent != OccupiedContributionPercent)
+            {
+                return "Captured region contribution percent is not the occupied 35% value.";
+            }
+
+            if (effectiveTax > baseTax || effectiveFood > baseFood)
+            {
+                return "Captured region effective economy contribution exceeds base output.";
+            }
+
+            if (baseTax > 0 && effectiveTax >= baseTax)
+            {
+                return "Captured region tax contribution was not reduced by runtime occupation multiplier.";
+            }
+
+            if (baseFood > 0 && effectiveFood >= baseFood)
+            {
+                return "Captured region food contribution was not reduced by runtime occupation multiplier.";
+            }
+
+            if (!HasLogContaining(runtime.state, "收入 金钱"))
+            {
+                return "Economy settlement log missing after captured contribution validation.";
+            }
+
+            return null;
+        }
+
         private static bool HasDuplicateContactLogWithoutMembershipChange(GameState state)
         {
             Dictionary<string, bool> seen = new Dictionary<string, bool>();
@@ -368,6 +567,18 @@ namespace WanChaoGuiYi
                 army.unitId = runtimeArmy.unitId;
                 return;
             }
+        }
+
+        private static ArmyState FindLegacyArmy(GameContext context, string armyId)
+        {
+            if (context == null || context.State == null) return null;
+
+            for (int i = 0; i < context.State.armies.Count; i++)
+            {
+                if (context.State.armies[i].id == armyId) return context.State.armies[i];
+            }
+
+            return null;
         }
 
         private sealed class SimulationRuntime

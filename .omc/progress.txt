@@ -557,3 +557,34 @@
 
 - 当前环境仍无法运行 Unity/C# 编译器，因此本轮只能证明 Domain 边界和数据解析正确，不能证明 Unity Console 编译、MonoBehaviour 生命周期、Scene/Prefab 绑定无误。
 - 下一步最有价值的长期方向是补 headless simulation runner：用纯 C# 或脚本驱动 Domain Core 跑新局、单路行军、接敌、战斗、占领、经济结算，不再依赖 Unity PlayMode 才能验证核心闭环。
+
+## 2026-04-30 Headless Suite Iteration 2 / 增援撤退与状态一致断言
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Core/HeadlessSimulationRunner.cs`
+  - `RunAllScenarios()` 从 3 个默认场景扩展为 4 个，新增 `active_retreat_leaves_engagement`。
+  - 强化 `reinforcement_joins_existing_engagement`，新增断言：`ArmyTask.Reinforce`、目标接敌区域、路线终点、增援意图日志、抵达后 attacker membership 增长。
+  - 强化 `attacker_wins_and_occupies`，新增 runtime/legacy 状态一致性断言：owner、`OccupationStatus.Occupied`、integration、税粮贡献倍率、民变/地方势力/兼并压力、Faction regionIds 转移。
+  - 新增经济贡献断言：占领后的 `taxContributionPercent/foodContributionPercent = 35`，有效税粮贡献低于基础税粮贡献，确认 economy 读取 runtime 贡献倍率。
+  - 新增主动撤退场景：接敌后调用 `RetreatArmy()`，验证接敌军队能移动回撤退目标、清空 `engagementId`、回到 Idle、legacy army region 同步、原 engagement 清理且不会再被战斗系统结算。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Military/DomainArmyMovementSystem.cs`
+  - `ArmyTask.Retreat` 移动后同步从 engagement attacker/defender 列表移除该军队。
+  - 若撤退导致任一方为空，清理 engagement，并将 contested region 恢复为 controlled，避免空 engagement 后续被误结算。
+
+验证：
+
+- `tools/verify_headless_war.sh` 通过。
+- 验证输出：`DATA VALIDATION PASSED`、`[domain-core] OK`、`passed=True`、`scenarioCount=4`。
+- 四个场景全部 `scenarioPassed=True`：
+  - `defender_holds_and_attacker_retreats`
+  - `attacker_wins_and_occupies`
+  - `reinforcement_joins_existing_engagement`
+  - `active_retreat_leaves_engagement`
+
+经验：
+
+- 增援语义现在不只是“发路线命令”，而是有可验证的任务状态、路线意图和接敌成员变化。
+- 主动撤退需要同步清理 engagement 成员关系；只清空军队自身 `engagementId` 会留下空侧 engagement，后续 war resolution 可能误触发战斗。
+- 占领验收不能只看 `占领/新占领/收入` 日志，必须同时验证 runtime state、legacy mirror 与 faction ownership 索引。
+

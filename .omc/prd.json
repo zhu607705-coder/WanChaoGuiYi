@@ -1,60 +1,79 @@
 {
-  "task": "地图主导战争闭环长线重写与 Headless CLI Harness - Iteration 6",
-  "iteration": 6,
+  "task": "地图主导战争闭环 Headless Suite Iteration 2 - 增援撤退与状态一致断言",
+  "iteration": 7,
   "maxIterations": 12,
   "stories": [
     {
-      "id": "US-022",
-      "title": "非 Unity JSON Repository",
+      "id": "US-026",
+      "title": "强化增援玩法语义验收",
       "priority": 1,
-      "description": "新增命令行环境可用的数据仓库，直接从 Assets/Data/*.json 加载 headless 模拟需要的数据表。",
+      "description": "让 headless 场景验证 ReinforceArmy 不只是普通路线命令，而是保留增援任务、目标接敌区域、路线意图，并在抵达后加入既有 engagement。",
       "acceptanceCriteria": [
-        "NonUnityJsonDataRepository 实现 IDataRepository",
-        "Repository 使用 System.Text.Json IncludeFields 解析 Unity 风格字段模型",
-        "Repository 从传入 dataDirectory 加载 emperors、regions、historical_layers、policies、events、talents、units、technologies、victory_conditions、generals、buildings",
-        "Repository 注册 id 字典并对缺表、空 items、缺 id、重复 id 给出异常",
-        "Headless project 不引用 Unity DataRepository、TextAsset 或 JsonUtility"
+        "HeadlessSimulationRunner.RunAllScenarios 包含 reinforcement_joins_existing_engagement 场景",
+        "reinforcement_joins_existing_engagement 断言 ReinforceArmy 设置 ArmyTask.Reinforce",
+        "reinforcement_joins_existing_engagement 断言 reinforcement.targetRegionId 等于目标接敌区域",
+        "reinforcement_joins_existing_engagement 断言 reinforcement.route 的终点等于目标接敌区域",
+        "reinforcement_joins_existing_engagement 断言增援抵达后加入 attackerArmyIds 且 attacker 数量增加",
+        "reinforcement_joins_existing_engagement 断言新增 membership 只产生一次额外接敌日志"
       ],
       "passes": true
     },
     {
-      "id": "US-023",
-      "title": "Headless CLI Harness",
+      "id": "US-027",
+      "title": "补主动撤退 headless 场景",
       "priority": 2,
-      "description": "新增 .NET CLI 工程和运行脚本，命令行加载 JSON 后直接调用 HeadlessSimulationRunner.RunSingleLaneWar()。",
+      "description": "新增确定性场景验证已接敌军队能主动撤退、脱离 engagement、同步 legacy army region，并避免撤退后空 engagement 被战斗系统误结算。",
       "acceptanceCriteria": [
-        "tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj 存在并链接 Domain/Core/World/Map/Military/Economy/Governance 所需源码",
-        "Program.cs 支持可选 data-dir 与 player-faction-id 参数，默认使用 WanChaoGuiYi/Assets/Data 和 faction_qin_shihuang",
-        "Program.cs 调用 repository.Load(dataDirectory) 与 runner.RunSingleLaneWar(repository, playerFactionId)",
-        "CLI 成功时输出 passed、turnsExecuted 和日志并返回 0",
-        "CLI 失败时输出 failureReason 和日志并返回非 0"
+        "HeadlessSimulationRunner.RunAllScenarios 包含 active_retreat_leaves_engagement 场景",
+        "active_retreat_leaves_engagement 先制造接敌，再对已接敌军队调用 RetreatArmy",
+        "active_retreat_leaves_engagement 断言 RetreatArmy 设置 ArmyTask.Retreat 与撤退目标区域",
+        "active_retreat_leaves_engagement 断言撤退军队在接敌状态下仍能移动到撤退区域",
+        "active_retreat_leaves_engagement 断言撤退后 army.engagementId 清空且任务回到 Idle",
+        "active_retreat_leaves_engagement 断言 legacy ArmyState.regionId 同步到撤退区域",
+        "active_retreat_leaves_engagement 断言原 engagement 被清理且后续 war resolution 不产生战斗结束日志"
       ],
       "passes": true
     },
     {
-      "id": "US-024",
-      "title": "Headless 运行脚本与验证",
+      "id": "US-028",
+      "title": "撤退清理 engagement 成员关系",
       "priority": 3,
-      "description": "提供稳定命令入口并运行当前环境可执行的验证；当前缺少 dotnet 时明确提示安装要求。",
+      "description": "DomainArmyMovementSystem 在 Retreat 移动完成后同步从 engagement 双方成员列表移除撤退军队，并在任一方为空时清理 engagement 和 contested 状态。",
       "acceptanceCriteria": [
-        "tools/run_headless_simulation.sh 存在且可执行",
-        "运行脚本会检查 dotnet SDK，缺失时返回 127 并提示安装 .NET SDK 8+",
-        "静态验证确认 CLI 调用 RunSingleLaneWar(repository, playerFactionId)",
-        "静态验证确认 headless csproj 不包含 Unity adapter 文件",
-        "python3 tools/validate_data.py 和 python3 tools/validate_domain_core.py 通过"
+        "DomainArmyMovementSystem 在 ArmyTask.Retreat 移动后调用 RemoveArmyFromEngagement",
+        "RemoveArmyFromEngagement 同时从 attackerArmyIds 和 defenderArmyIds 移除撤退军队",
+        "ClearEngagementIfSideEmpty 在任一方为空时移除 engagement",
+        "ClearEngagementIfSideEmpty 将 contested runtime region 恢复为 OccupationStatus.Controlled",
+        "active_retreat_leaves_engagement 通过 CLI 验证证明撤退后没有残留 engagement 被误结算"
       ],
       "passes": true
     },
     {
-      "id": "US-025",
-      "title": "Headless CLI 记录与限制",
+      "id": "US-029",
+      "title": "占领治理经济状态一致断言",
       "priority": 4,
-      "description": "把本轮 CLI harness 的用法、验证结果和当前 dotnet 缺失限制写入项目记录。",
+      "description": "把 attacker_wins_and_occupies 从日志断言升级为 runtime state、legacy mirror、faction ownership 和经济贡献倍率的一致性验收。",
       "acceptanceCriteria": [
-        ".omc/progress.txt 记录新增 repository、CLI harness、运行脚本和验证结果",
-        "project-development-report.md 记录如何运行 tools/run_headless_simulation.sh",
-        "记录当前环境 dotnet/csc/mcs 均不可用，无法实际执行 C# harness",
-        "记录下一步是在安装 dotnet SDK 后运行真实 headless smoke 并修复编译/运行错误"
+        "attacker_wins_and_occupies 调用 ValidateCapturedRegionState",
+        "ValidateCapturedRegionState 断言 runtime owner、OccupationStatus.Occupied、integration=25、taxContributionPercent=35、foodContributionPercent=35",
+        "ValidateCapturedRegionState 断言 legacy RegionState owner/integration/rebellionRisk/localPower/annexationPressure 镜像 runtime state",
+        "ValidateCapturedRegionState 断言 previous owner 不再持有 region 且 capturing faction 持有 region",
+        "attacker_wins_and_occupies 调用 ValidateEconomyContributionState",
+        "ValidateEconomyContributionState 断言占领后有效税粮贡献低于基础税粮贡献",
+        "tools/verify_headless_war.sh 输出 passed=True 且 scenarioCount=4"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-030",
+      "title": "记录 headless suite 本轮进度",
+      "priority": 5,
+      "description": "把本轮增援、撤退、状态一致断言和 CLI 验证结果写入 OMC progress 与项目权威开发报告。",
+      "acceptanceCriteria": [
+        ".omc/progress.txt 记录 Headless Suite Iteration 2 的实现文件、验证结果和经验",
+        "project-development-report.md 记录 Headless Scenario Suite Iteration 2 的目标、完成内容、验证和限制",
+        "记录 tools/verify_headless_war.sh 的 fresh 输出包含 DATA VALIDATION PASSED、[domain-core] OK、passed=True、scenarioCount=4",
+        "记录 Unity Console / PlayMode 仍是后续限制"
       ],
       "passes": true
     }

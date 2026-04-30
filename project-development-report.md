@@ -343,6 +343,45 @@
 - 当前仍是 headless/Domain 验证，Unity Console 和 PlayMode 尚未验证。
 - 场景仍属于确定性 smoke suite，不是完整测试框架；下一步可以继续把断言拆得更细，或进入增援/撤退玩法语义扩展。
 
+## 2026-04-30 Headless Scenario Suite Iteration 2 记录
+
+### 目标
+
+把地图战争 headless 验收从“日志存在”推进到“状态一致”。用户价值是：后续改战争、治理或经济数值时，CLI 不只告诉我们发生了战斗，还能确认归属、占领治理折损、撤退脱战和经济贡献倍率真的落到状态里。
+
+### 已完成
+
+- `HeadlessSimulationRunner.RunAllScenarios()` 默认场景数从 3 个扩展为 4 个：
+  - 新增 `active_retreat_leaves_engagement`：验证已接敌军队可以发出 `RetreatArmy()`，在行军阶段脱离 engagement 并回到撤退目标区域。
+- 强化 `reinforcement_joins_existing_engagement`：
+  - 断言 `ReinforceArmy()` 设置 `ArmyTask.Reinforce`。
+  - 断言 `targetRegionId` 和路线终点保留为目标接敌区域。
+  - 断言增援意图日志包含“增援”和“加入当地接敌”。
+  - 保留抵达后 attacker membership 从 `1` 增至 `2` 的断言。
+- 强化 `attacker_wins_and_occupies`：
+  - 断言 runtime region owner 改为进攻方。
+  - 断言 runtime `occupationStatus = Occupied`。
+  - 断言 `integration = 25`，`taxContributionPercent = 35`，`foodContributionPercent = 35`。
+  - 断言 legacy `RegionState` 镜像 owner / integration / rebellionRisk / localPower / annexationPressure。
+  - 断言旧 owner faction 不再持有该 region，新 owner faction 已持有该 region。
+  - 断言占领后有效税粮贡献低于基础税粮贡献，确认 runtime 贡献倍率进入经济闭环。
+- `DomainArmyMovementSystem` 在撤退军队移动后同步从 engagement attacker/defender 列表移除该军队；若任一方为空，则清理 engagement，并把 contested region 复原为 controlled，避免撤退后残留空 engagement 被战斗系统误结算。
+
+### 验证
+
+- `tools/verify_headless_war.sh` 通过。
+- 输出：`passed=True`、`scenarioCount=4`。
+- 四个场景全部 `scenarioPassed=True`：
+  - `defender_holds_and_attacker_retreats`
+  - `attacker_wins_and_occupies`
+  - `reinforcement_joins_existing_engagement`
+  - `active_retreat_leaves_engagement`
+
+### 限制与下一步
+
+- 仍属于 CLI/headless 验证；Unity Console、PlayMode 和场景内按钮/地图交互尚未验证。
+- 下一步建议把这 4 个场景拆为更接近测试框架的独立断言输出，或进入 Unity 手动验收 `RunSingleLaneWarSmokeTest()` 与 UI 日志/地图颜色同步。
+
 ## 2026-04-30 Headless CLI Harness 记录
 
 ### 目标
