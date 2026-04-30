@@ -1,0 +1,590 @@
+# Ralph Progress: 地图主导战争闭环长线重写
+
+## 2026-04-29 Iteration 1 初始化
+
+- 原始任务：后续持续自己想出优化路径与新机制开发，长时间运行。
+- 当前主线：执行 `.omc/plans/complete-architecture-map-led-war-rewrite-consensus.md`，围绕地图主导战争闭环分批推进。
+- 约束：保留 JSON 数据资产；C# 运行层允许重写；优先地图、行军、接敌、战斗、占领、治理联动、UI/日志反馈；外交/多人/复杂实时战术不抢占当前闭环。
+- 已将旧 `.omc/prd.json` 从无关的“五项不依赖 Unity 编译器工作”替换为本轮地图主导战争闭环 PRD。
+
+## 2026-04-30 Iteration 1 / US-001 地图命令与路线行军首片
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Map/MapCommandService.cs`
+  - 提供 `MoveArmy`、`StopArmy`、`RetreatArmy`、`ReinforceArmy`、`SiegeRegion`。
+  - `MoveArmy` 通过 `MapQueryService.FindRoute` 生成路线，失败时返回 false，不写状态。
+  - 成功后写入 `ArmyRuntimeState.targetRegionId`、`route`、`task`，并写 `GameState.turnLog`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/EventBus.cs`
+  - 新增 `ArmyMoveStarted`、`ArmyArrived`。
+  - 新增 `MapArmyMovementPayload`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/GameManager.cs`
+  - 新增 `MapCommandService` 字段和 `MapCommands` 属性。
+  - `StartNewGame()` 创建 `mapCommandService`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Military/ArmyMovementSystem.cs`
+  - 优先走 `gameManager.World.Map` 的地图主导移动。
+  - 每回合沿 `ArmyRuntimeState.route` 推进一步。
+  - 同步 legacy `ArmyState.regionId`，保证现有 UI/经济系统仍可工作。
+  - 抵达时写日志并发布 `ArmyArrived`。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- 静态 grep 确认 `ArmyMoveStarted`、`ArmyArrived`、`MapCommandService`、`MoveArmy`、`FindRoute` 已落位。
+
+经验：
+
+- 当前旧 `GameState.armies` 可能尚未有初始化军队数据；地图主导状态已支持军队索引，但后续验收单路闭环前需要确认或补一条可测试初始军队创建路径。
+- `ArmyMovementSystem` 仍保留 legacy fallback，避免新世界状态缺失时破坏旧路径。
+
+## 2026-04-30 Iteration 1 / US-002 地图接敌检测首片
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Military/EngagementDetector.cs`
+  - 从 `MapState.GetArmiesInRegion()` 查询同区域军队。
+  - 按第一个军队势力聚合 attacker，其他势力聚合 defender。
+  - 同一区域已存在 engagement 时复用并合并军队 id。
+  - 设置 `ArmyRuntimeState.engagementId` 和 `RegionRuntimeState.occupationStatus = Contested`。
+  - 写入 `GameState.turnLog`，发布 `ContactDetected` 与 `EngagementStarted`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/EventBus.cs`
+  - 新增 `ContactDetected`、`EngagementStarted`。
+  - 新增 `EngagementPayload`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/World/WorldState.cs`
+  - 新增 `RemoveEngagement`，为后续战斗结算清理 engagement 做准备。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Military/ArmyMovementSystem.cs`
+  - 初始化并持有 `EngagementDetector`。
+  - 军队抵达区域后立即检测接敌。
+  - 已接敌军队停止继续路线推进。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态 grep 确认 `EngagementDetector`、`GetArmiesInRegion`、`TryGetEngagementInRegion`、`OccupationStatus.Contested`、`ContactDetected`、`EngagementStarted`、`engagementId` 已落位。
+
+经验：
+
+- 当前敌我划分先按“第一个进入 engagement 的军队势力 vs 其他势力”处理，足以支撑两方战争首片；多阵营混战后续需要 WarState 明确参战方关系。
+
+## 2026-04-30 Iteration 1 / US-003 地图战斗结算首片
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Military/BattleSimulationSystem.cs`
+  - 从 `MapState.EngagementsById` 读取 `EngagementRuntimeState`。
+  - 使用 `attackerArmyIds` / `defenderArmyIds` 聚合战力。
+  - 使用现有 `NumericFormulas.CalculateBattlePower`，保持数值公式延续。
+  - 对所有参战军队应用士兵损失和士气变化，并同步 legacy `ArmyState`。
+  - 设置 `EngagementRuntimeState.phase = Resolved`，保存 `BattleResult`。
+  - 发布 `BattleResolved`，写入 `GameState.turnLog`。
+  - 不调用 `GameContext.ChangeRegionOwner`，控制权变化留给后续 `OccupationSystem`。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态 grep 确认 `BattleSimulationSystem` 使用 engagement 双方军队列表、设置 `EngagementPhase.Resolved`、发布 `BattleResolved`。
+- 静态 grep 确认 `BattleSimulationSystem.cs` 不包含 `ChangeRegionOwner`。
+
+经验：
+
+- `BattleResult.attackerArmyId/defenderArmyId` 当前用逗号拼接多军 id 兼容旧结构，后续最好新增 `BattleRuntimeResult` 专门表达多军战斗。
+
+## 2026-04-30 Iteration 1 / US-004 占领与治理联动首片
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Military/OccupationSystem.cs`
+  - 作为新路径中唯一负责战后区域控制权变化的入口。
+  - 从 resolved engagement 判断胜方军队所属势力。
+  - 通过 `GameContext.ChangeRegionOwner` 更新 legacy `GameState` 与地图颜色事件链。
+  - 同步 `RegionRuntimeState.ownerFactionId` 与占领状态。
+  - 发布 `RegionOccupied` 并写入战争日志。
+- 新增 `WanChaoGuiYi/Assets/Scripts/Governance/GovernanceImpactSystem.cs`
+  - 新占领区域整合度降至不高于 25。
+  - 税粮贡献倍率降至不高于 35%。
+  - 提高 `rebellionRisk`、`localPower`、`annexationPressure`。
+  - 同步 legacy `RegionState`，发布 `GovernanceImpactApplied`，写入治理日志。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/EventBus.cs`
+  - 新增 `RegionOccupied`、`GovernanceImpactApplied`。
+  - 新增 `RegionOccupiedPayload`、`GovernanceImpactPayload`。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态 grep 确认 `OccupationSystem`、`GovernanceImpactSystem`、`RegionOccupied`、`GovernanceImpactApplied`、整合度/民变/地方势力/兼并压力更新已落位。
+
+经验：
+
+- `OccupationSystem` 目前仍调用 `GameContext.ChangeRegionOwner` 来复用旧地图颜色刷新链；这是兼容桥，不应让旧 `BattleResolver` 继续直接改归属。
+- 税粮贡献倍率目前只存在 runtime state，旧经济系统仍按 `RegionState.taxOutput/foodOutput` 结算；后续需要让 EconomySystem 读取 runtime contribution percent，或者把有效产出单独建成查询服务。
+
+## 2026-04-30 Iteration 1 / US-005 地图战争反馈与开发记录
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/EventBus.cs`
+  - 本轮新增事件完整覆盖：`ArmyMoveStarted`、`ArmyArrived`、`ContactDetected`、`EngagementStarted`、`RegionOccupied`、`GovernanceImpactApplied`。
+  - 本轮新增 payload 完整覆盖：`MapArmyMovementPayload`、`EngagementPayload`、`RegionOccupiedPayload`、`GovernanceImpactPayload`。
+- 修改 `project-development-report.md`
+  - 记录 Ralph Iteration 1 完成的地图战争闭环首片、验证输出和 Unity 编译待办。
+- 确认 `MainMapUI -> CourtPanel` 仍读取 `GameState.turnLog`，本轮新系统均用 `State.AddLog()` 写入战争/治理日志，因此现有朝廷日志面板可继续展示关键变化。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态 grep 确认新增事件、payload、UI turnLog 读取链路存在。
+
+## 2026-04-30 Post-review / Deslop
+
+- 由于当前 token 无法访问 Ralph 默认 reviewer agent 模型，已改用本地静态审查与验证：确认无新增类型重复、无 C# 编译器可用、数据验证通过。
+- ai-slop-cleaner 范围限定在 Ralph 修改文件：移除 `MapCommandService` 未使用的 `worldState` 字段与无意义空检查；避免 `OccupationSystem` 重复调用 `FindRegion(...).字段` 的潜在空引用。
+- Post-deslop regression：`python3 tools/validate_data.py` 通过；静态 grep 确认风险模式已移除。
+
+## 2026-04-30 Iteration 2 / US-006 初始军队测试种子
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/GameStateFactory.cs`
+  - `CreateDefault()` 在创建势力和分配地区后调用 `CreateInitialArmies()`。
+  - 新局至少创建 `army_player_1` 与 `army_enemy_1`。
+  - 初始兵种通过 `ResolveDefaultUnitId()` 从 `data.Units` 读取，优先 `infantry`，不存在时使用数据表首个兵种。
+  - 初始地区通过势力已拥有地区和 `RegionDefinition.neighbors` 解析，优先把敌军放在玩家首个区域的敌方相邻区域。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- 静态 grep 确认 `CreateInitialArmies`、`army_player_1`、`army_enemy_1`、`ResolveFirstOwnedNeighbor`、`ResolveDefaultUnitId` 已落位。
+
+经验：
+
+- 初始军队现在能支撑单路闭环测试；下一步需要 Unity 内手动命令玩家军队移动到敌军区域，验证 `WorldStateFactory.Create()` 的 runtime army 索引和行军链路。
+
+## 2026-04-30 Iteration 2 / US-007 战斗到占领执行顺序串联
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Military/MapWarResolutionSystem.cs`
+  - 实现 `IGameSystem`。
+  - 每回合执行 `EngagementDetector.DetectAll()`，再按 engagement id 顺序调用 `BattleSimulationSystem.ResolveEngagement()` 和 `OccupationSystem.ApplyBattleOccupation()`。
+  - 结算后清理参战军队 `engagementId`，攻击任务回到 Idle，并从 `MapState` 移除已处理 engagement，避免同一个 engagement 重复结算。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/GameManager.cs`
+  - 在回合系统中注册 `MapWarResolutionSystem`。
+  - 顺序调整为 `ArmyMovementSystem -> MapWarResolutionSystem -> SiegeSystem -> EconomySystem`，让战后占领和治理折损能进入同回合经济结算。
+  - 旧 battle session 组件继续作为服务初始化，不再作为常规回合系统注册。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态检查确认 `MapWarResolutionSystem` 已在 `GameManager.CollectSystems()` 注册。
+- 静态检查确认 `BattleSimulationSystem.cs` 不包含 `ChangeRegionOwner`，控制权变化仍由 `OccupationSystem` 负责。
+
+风险：
+
+- 当前战后没有败军撤退/销毁规则；如果敌我幸存军队仍在同一区域，下一回合可能重新被 `EngagementDetector` 接敌。下一轮应优先加入败方撤退、低兵力溃散或 engagement cooldown。
+
+## 2026-04-30 Iteration 2 / US-008 新占领税粮折损进入经济结算
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Economy/EconomySystem.cs`
+  - 初始化时获取 `GameManager`。
+  - 区域税收通过 `CalculateEffectiveRegionalTax()` 计算。
+  - 区域粮食通过 `CalculateEffectiveRegionalFood()` 计算。
+  - 存在 `GameManager.World.Map` 且能找到 `RegionRuntimeState` 时，分别应用 `taxContributionPercent` 与 `foodContributionPercent`。
+  - 找不到 runtime region 时保留 legacy `NumericFormulas.CalculateRegionalTax/Food()` 路径。
+  - 经济日志继续使用实际结算后的 `tax` 与 `food`，避免 UI 日志和资源变化脱节。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- 静态 grep 确认 `EconomySystem` 读取 `taxContributionPercent` 与 `foodContributionPercent`。
+
+经验：
+
+- 占领治理后果现在会影响玩家资源，而不只是存在于 runtime state；这让“扩张带来治理代价”从策划规则进入数值闭环。
+
+## 2026-04-30 Iteration 2 / US-009 验证限制与下一轮 PRD 方向
+
+验证：
+
+- 数据验证命令：`python3 tools/validate_data.py`，结果通过。
+- 静态验收：确认初始军队创建、战争解析系统注册、BattleSimulation 不改归属、Economy runtime 折损均已落位。
+- 环境限制：当前工作区仍没有 Unity/C# 编译器，无法执行 Unity Console 编译、PlayMode 测试或场景手动验收。下一次进入 Unity 后，需要优先验证新局初始军队、单路移动到接敌、战斗占领、经济折损日志四步闭环。
+
+下一轮建议 PRD：
+
+1. 单路自动验收辅助：新增开发期命令或最小测试入口，一键让 `army_player_1` 攻向 `army_enemy_1` 所在区域，并输出移动、接敌、战斗、占领、经济折损关键日志。
+2. 战后残军处理：实现败方撤退、低兵力溃散或俘虏规则，避免幸存敌我军队留在同一区域导致重复接敌。
+3. 多军增援/撤退实装：让 `ReinforceArmy` 与 `RetreatArmy` 不只是路线命令，而能影响 engagement 参战方和战后状态。
+4. 旧 BattleResolver 隔离：把旧 BattleSession/BattleResolver 明确标记为 legacy 或从主回合链彻底隔离，避免未来两个战斗入口同时改变状态。
+
+## 2026-04-30 Iteration 3 / US-010 单路自动验收辅助
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/GameManager.cs`
+  - 新增 `RunSingleLaneWarSmokeTest()` 开发期入口。
+  - 查找 `army_player_1` 与 `army_enemy_1` 的 runtime army state。
+  - 通过 `MapCommandService.MoveArmy()` 发起玩家军队向敌军所在地移动，不直接改位置。
+  - 写入战争日志，记录起点、目标和命令是否成功。
+
+验证：
+
+- 静态 grep 确认 `RunSingleLaneWarSmokeTest` 存在并调用 `mapCommandService.MoveArmy`。
+- `python3 tools/validate_data.py` 通过。
+
+## 2026-04-30 Iteration 3 / US-011 战后败方撤退或溃散
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/World/WorldState.cs`
+  - `MapState` 新增 `RemoveArmy(string armyId)`，移除 runtime 军队并同步清理地区索引。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Military/MapWarResolutionSystem.cs`
+  - 战斗与占领后调用 `ResolveLoserAfterBattle()`。
+  - 根据 `BattleResult.attackerWon` 找出败方军队。
+  - 低于 `RoutSoldierThreshold` 或士气为 0 的败军从 runtime `MapState` 和 legacy `GameState.armies` 移除。
+  - 可撤退败军移动到同势力拥有的相邻地区，并同步 legacy `ArmyState.regionId`。
+  - 撤退或溃散写入战争日志。
+  - 撤退或移除败军时同步从 engagement 参战列表移除，避免后续清理继续访问已离场军队。
+
+验证：
+
+- 静态 grep 确认 `RemoveArmy`、`ResolveLoserAfterBattle`、`FindOwnedNeighborRegion`、`RoutSoldierThreshold` 已落位。
+- `python3 tools/validate_data.py` 通过。
+
+风险：
+
+- 撤退目标目前只选择第一个同势力相邻地区；后续可按补给、距离首都、敌军压力做更合理选择。
+
+## 2026-04-30 Iteration 3 / US-012 增援与撤退接敌语义
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Military/ArmyMovementSystem.cs`
+  - 接敌军队默认仍停止，但 `ArmyTask.Retreat` 允许继续沿路线撤退。
+  - 撤退移动后清理 `engagementId`，并写入脱离接敌日志。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Map/MapCommandService.cs`
+  - `RetreatArmy()` 发出路线命令后追加撤退会在行军阶段生效的日志。
+  - `ReinforceArmy()` 发出路线命令后追加抵达后加入当地接敌的日志。
+
+验证：
+
+- 静态 grep 确认 `ArmyTask.Retreat` 在 `ArmyMovementSystem` 中允许接敌军队移动。
+- `python3 tools/validate_data.py` 通过。
+
+## 2026-04-30 Iteration 3 / US-013 旧 BattleResolver 隔离
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Military/BattleResolver.cs`
+  - 新增 `[SerializeField] private bool allowLegacyOwnershipChange = false;`。
+  - `Resolve()` 只有显式打开该开关时才调用 `context.ChangeRegionOwner()`。
+  - 默认旧战斗胜利只写日志提示：地区归属不由旧路径改变，地图主导战争需通过 `OccupationSystem` 占领。
+
+验证：
+
+- 静态 grep 确认 `allowLegacyOwnershipChange` 已落位。
+- 静态 grep 确认 `BattleSimulationSystem.cs` 仍不调用 `ChangeRegionOwner`。
+- `python3 tools/validate_data.py` 通过。
+
+环境限制：
+
+- 当前环境仍无法运行 Unity/C# 编译器，因此尚未验证 C# 编译和 PlayMode 行为。Unity 中下一步必须调用 `RunSingleLaneWarSmokeTest()` 后推进多回合，确认不会重复刷同一 engagement。
+
+## 下一轮建议
+
+1. 补初始军队创建/测试种子，否则单路闭环没有稳定可操作对象。
+2. 把 `BattleSimulationSystem -> OccupationSystem` 串进明确回合顺序，而不是只提供服务类。
+3. 让 `EconomySystem` 读取 runtime 贡献倍率，真正体现新占领税粮折损。
+4. 做 Unity 编译验证，重点检查新增 `Governance` 目录是否符合 asmdef 与命名空间约束。
+
+## 2026-04-30 Iteration 6 / US-022 非 Unity JSON Repository
+
+实现文件：
+
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/NonUnityJsonDataRepository.cs`
+  - 实现 `IDataRepository`。
+  - 使用 `System.Text.Json.JsonSerializer`，配置 `IncludeFields = true` 与 `PropertyNameCaseInsensitive = true`，适配当前 `DataModels.cs` 的 public field 数据模型。
+  - 从传入 `dataDirectory` 加载：
+    - `emperors.json`
+    - `regions.json`
+    - `historical_layers.json`
+    - `policies.json`
+    - `events.json`
+    - `talents.json`
+    - `units.json`
+    - `technologies.json`
+    - `victory_conditions.json`
+    - `generals.json`
+    - `buildings.json`
+  - 复用 DataRepository 的注册思路：空 items、缺 id、重复 id、缺表都会抛出明确异常。
+
+验证：
+
+- 静态检查确认 headless repository 不引用 Unity `DataRepository`、`TextAsset` 或 `JsonUtility`。
+- `grep -R "UnityEngine|MonoBehaviour|SerializeField|GetComponent|Mathf\." tools/headless_runner` 无输出。
+
+## 2026-04-30 Iteration 6 / US-023 Headless CLI Harness
+
+实现文件：
+
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj`
+  - .NET 8 console project。
+  - 关闭默认 compile items，显式链接 headless 所需源码：
+    - `DataModels.cs`
+    - `GameState.cs`
+    - `GameContext.cs`
+    - `EventBus.cs`
+    - `GameStateFactory.cs`
+    - `NumericSystem.cs`
+    - `Domain/Core`、`Domain/World`、`Domain/Map`、`Domain/Military`、`Domain/Governance`、`Domain/Economy` 的相关文件。
+  - 不链接 Unity adapter：`DataRepository.cs`、`MapGraph.cs`、`BattleResolver.cs`、`EconomySystem.cs`、`ArmyMovementSystem.cs`。
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/HeadlessBattleTypes.cs`
+  - 为 CLI harness 提供非 Unity 版本 `BattleResult` 与 `EquipmentLookup`，避免为了这两个类型链接 `BattleResolver : MonoBehaviour`。
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/Program.cs`
+  - 参数 1：可选 data directory，默认自动查找 `WanChaoGuiYi/Assets/Data`。
+  - 参数 2：可选 player faction id，默认 `faction_qin_shihuang`。
+  - 调用 `repository.Load(dataDirectory)`。
+  - 调用 `HeadlessSimulationRunner.RunSingleLaneWar(repository, playerFactionId)`。
+  - 输出 `passed`、`turnsExecuted` 和 turnLog。
+  - 成功返回 0；runner 失败返回 1；异常返回 2。
+
+验证：
+
+- 静态脚本确认 `Program.cs` 包含 `repository.Load(dataDirectory)` 与 `runner.RunSingleLaneWar(repository, playerFactionId)`。
+- 静态脚本确认 csproj 不包含 Unity adapter 文件。
+
+## 2026-04-30 Iteration 6 / US-024 Headless 运行脚本与验证
+
+实现文件：
+
+- 新增 `tools/run_headless_simulation.sh`
+  - 默认运行：`tools/run_headless_simulation.sh`
+  - 可指定数据目录和玩家势力：`tools/run_headless_simulation.sh WanChaoGuiYi/Assets/Data faction_qin_shihuang`
+  - 检查 `dotnet` 是否存在；缺失时返回 127，并提示安装 .NET SDK 8+。
+  - 存在 dotnet 时执行：`dotnet run --project tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj -- <data-dir> <player-faction-id>`。
+
+验证：
+
+- 2026-04-30 环境修复：通过 Homebrew 清华镜像安装 .NET SDK `10.0.107`。
+- 为适配当前已安装 SDK，将 `WanChaoGuiYiHeadless.csproj` 目标框架从 `net8.0` 调整为 `net10.0`；headless harness 代码仍不依赖 .NET 10 专属 API。
+- 修复真实编译暴露的问题：`DataModels.cs` 补 `System.Collections.Generic`；`MapGraphData.GetNeighbors()` 返回类型改为 `IEnumerable<string>` 以匹配 `IMapGraphData`。
+- `tools/run_headless_simulation.sh` 已真实运行通过，输出 `passed=True`、`turnsExecuted=1`。
+- 本次 headless 日志确认闭环：初始军队部署 → 行军 → 抵达 → 接敌 → 战斗结束 → 占领 → 新占领治理折损 → 败军溃散 → 经济收入。
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- 追加验证：headless csproj 的 26 个 `<Compile Include=...>` 链接文件全部存在。
+- 追加验证：headless csproj 的显式 compile item 未链接 Unity adapter 基名：`DataRepository.cs`、`MapGraph.cs`、`BattleResolver.cs`、`EconomySystem.cs`、`ArmyMovementSystem.cs`。
+- 追加验证：`tools/headless_runner` 与 `WanChaoGuiYi/Assets/Scripts/Domain` 均未检出 `using UnityEngine`、`MonoBehaviour`、`SerializeField`、`GetComponent`、`gameObject`、`Mathf.`。
+- 验证工具限制：当前 Python 3.14 的 `xml.etree.ElementTree` 受本机 `pyexpat/libexpat` 链接问题影响不可用；已改用正则解析 csproj 完成同等静态检查。
+
+## 2026-04-30 Iteration 6 / US-025 Headless CLI 记录与限制
+
+当前状态：
+
+- CLI harness 已落位，并已在本机通过真实 .NET SDK 编译/运行。
+- 当前环境完成了数据验证、Domain 边界验证、脚本 wiring 验证、csproj 组成验证和 headless 单路战争闭环运行验证。
+
+限制：
+
+- 当前验证使用的是 Homebrew 安装的 .NET SDK `10.0.107`，因此 headless csproj 当前目标框架为 `net10.0`；若团队/CI 固定 .NET 8 LTS，需要另装 .NET 8 SDK 或把目标框架改回 `net8.0` 后验证。
+- Unity Console 编译与 PlayMode 场景绑定仍未验证；下一步进入 Unity 后重点检查 Domain 移动文件后的脚本引用、adapter 绑定和地图点击/颜色刷新。
+
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Domain/Core/IDataRepository.cs`
+  - 把 `GameContext.Data` 需要的数据表与 `GetEmperor/GetRegion/GetPolicy/GetUnit` 抽成接口。
+  - `DataRepository` 实现该接口，Unity 数据加载路径保持不变。
+- 修改 `GameStateFactory.cs`、`WorldStateFactory.cs`、`GameContext.cs`
+  - 构造新局、runtime world 与上下文时改用 `IDataRepository`，为非 Unity 数据仓库预留入口。
+- 新增 `WanChaoGuiYi/Assets/Scripts/Domain/Map/MapGraphData.cs`
+  - 从 `RegionDefinition.neighbors` 提供邻接查询，不依赖 Unity `MapGraph`。
+- 新增 `WanChaoGuiYi/Assets/Scripts/Domain/Core/HeadlessSimulationRunner.cs`
+  - `RunSingleLaneWar(IDataRepository data, string playerFactionId)` 串起：
+    - `GameStateFactory.CreateDefault()`
+    - `WorldStateFactory.Create(...)`
+    - `MapGraphData + MapQueryService + MapCommandService.MoveArmy(...)`
+    - `DomainArmyMovementSystem`
+    - `DomainMapWarResolutionSystem`
+    - `DomainEconomySystem`
+  - 返回 `HeadlessSimulationResult`，包含 `passed`、`failureReason`、`state`、`worldState`、`turnsExecuted`。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+
+## 2026-04-30 Iteration 5 / US-019 Headless 必要日志断言
+
+实现文件：
+
+- `HeadlessSimulationRunner.cs`
+  - 最多推进 24 回合，直到出现 `战斗结束`。
+  - 断言日志包含：`行军`、`抵达`、`接敌`、`战斗结束`。
+  - 根据战后目标区域归属判断战果：
+    - 攻方占领时要求 `占领` 与 `新占领` 日志。
+    - 防守成功时要求 `进攻方获胜` 或 `防守方获胜` 战斗结果日志作为防守/战果反馈。
+  - 断言经济结算日志包含 `收入 金钱`。
+  - 任一条件不满足时返回 `failureReason = Missing required log: ...`。
+
+验证：
+
+- 静态检查确认 `FindMissingRequiredLog()` 覆盖用户指定日志 token。
+- `python3 tools/validate_domain_core.py` 通过。
+
+## 2026-04-30 Iteration 5 / US-020 Domain 图与数据接口解耦
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Domain/Map/IMapGraphData.cs`
+  - 定义 `AreNeighbors()` 与 `GetNeighbors()`。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Map/MapGraph.cs`
+  - Unity `MapGraph : MonoBehaviour` 实现 `IMapGraphData`，作为 Unity adapter 数据源。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Map/MapGraphData.cs`
+  - `MapGraphData` 实现 `IMapGraphData`，作为 headless 数据源。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Map/MapQueryService.cs`
+  - 只依赖 `IMapGraphData`，不再直接引用 Unity `MapGraph` 类型。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Military/DomainArmyMovementSystem.cs`
+  - legacy `MoveArmy()` 参数从 `MapGraph` 改为 `IMapGraphData`。
+- 修改 `tools/validate_domain_core.py`
+  - 增加 `MapGraph ` 与 `MapGraph)` 禁止 token，防止 Domain 重新直接依赖 Unity 地图组件。
+
+验证：
+
+- 静态 grep `using UnityEngine|MonoBehaviour|SerializeField|GetComponent|gameObject|Mathf.|MapGraph ` 于 `WanChaoGuiYi/Assets/Scripts/Domain` 无输出。
+- `python3 tools/validate_domain_core.py` 通过。
+
+## 2026-04-30 Iteration 5 / US-021 Headless 验证与记录
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Core/NumericSystem.cs`
+  - 移除 `using UnityEngine`。
+  - 全部 `Mathf.*` 替换为 `DomainMath.*`，减少战斗与经济公式对 Unity 的依赖。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Core/DomainMath.cs`
+  - `RoundToInt(float)` 改为 `MidpointRounding.AwayFromZero`，更接近 Unity `Mathf.RoundToInt` 的中点取整语义。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- `python3 tools/validate_domain_core.py` 通过：Domain folder is Unity-free and adapters delegate to Domain types。
+- 静态 grep `IIDataRepository|using UnityEngine|Mathf.` 于本轮触达核心文件和 Domain 目录无输出。
+
+环境限制：
+
+- 当前环境仍没有 Unity/C# 编译器，也没有独立 C# test harness，因此本轮完成的是 headless runner 代码入口与静态边界验证；尚不能实际执行 `RunSingleLaneWar()`。
+- 下一步最直接的优化路径：补一个真正非 Unity 的 JSON repository / CLI harness，使 `HeadlessSimulationRunner` 能从 `Assets/Data/*.json` 加载数据并在命令行里跑出 pass/fail。
+
+
+实现文件：
+
+- 新增 `WanChaoGuiYi/Assets/Scripts/Domain/Core/DomainMath.cs`
+  - 用 `System.Math` 封装 `Max`、`Min`、`Clamp`、`Clamp01`、`RoundToInt`、`CeilToInt`、`Log10`，让 Domain 系统不依赖 Unity `Mathf`。
+- 移动核心类型到 Domain 目录，namespace 保持 `WanChaoGuiYi` 兼容现有引用：
+  - `IGameSystem` → `Domain/Core/IGameSystem.cs`
+  - `WorldState` / `MapState` / runtime states → `Domain/World/WorldState.cs`
+  - `WorldStateFactory` → `Domain/World/WorldStateFactory.cs`
+  - `MapQueryService` → `Domain/Map/MapQueryService.cs`
+  - `MapCommandService` → `Domain/Map/MapCommandService.cs`
+- 新增 `tools/validate_domain_core.py`
+  - 检查 Domain 目录不包含 `using UnityEngine`、`MonoBehaviour`、`SerializeField`、`GetComponent`、`gameObject`、`Mathf.`。
+  - 检查 Unity adapter 仍引用对应 Domain 类型。
+
+验证：
+
+- `python3 tools/validate_domain_core.py` 通过：Domain folder is Unity-free and adapters delegate to Domain types。
+
+## 2026-04-30 Iteration 4 / US-015 地图战争 Domain 系统抽离
+
+实现文件：
+
+- 新增 `Domain/Military/DomainEngagementDetector.cs`
+  - 从 Unity `EngagementDetector` 抽出接敌检测、engagement 创建/复用、事件发布与日志。
+- 新增 `Domain/Military/DomainBattleSimulationSystem.cs`
+  - 从 Unity `BattleSimulationSystem` 抽出 engagement 战力计算、损耗结算和 `BattleResolved` 事件。
+  - 保持不调用 `ChangeRegionOwner`，避免绕过占领系统。
+- 新增 `Domain/Governance/DomainGovernanceImpactSystem.cs`
+  - 从 Unity `GovernanceImpactSystem` 抽出占领治理后果，使用 `DomainMath` 替代 `Mathf`。
+- 新增 `Domain/Military/DomainOccupationSystem.cs`
+  - 从 Unity `OccupationSystem` 抽出战后归属变更与治理影响调用。
+- 新增 `Domain/Military/DomainMapWarResolutionSystem.cs`
+  - 纯 C# 实现地图战争解析顺序：接敌检测 → 战斗结算 → 占领治理 → 败方撤退/溃散 → 清理 engagement。
+  - 修复旧 `MapWarResolutionSystem` 内联逻辑中 `ResolveLoserArmy` 使用未定义 `engagement` 的潜在编译风险。
+- 瘦身 Unity adapter：
+  - `Military/EngagementDetector.cs`
+  - `Military/BattleSimulationSystem.cs`
+  - `Military/OccupationSystem.cs`
+  - `Governance/GovernanceImpactSystem.cs`
+  - `Military/MapWarResolutionSystem.cs`
+
+验证：
+
+- `python3 tools/validate_domain_core.py` 通过。
+- 静态 grep 确认 Domain 目录无 Unity 依赖关键字。
+
+## 2026-04-30 Iteration 4 / US-016 行军与经济 Domain 系统抽离
+
+实现文件：
+
+- 新增 `Domain/Military/DomainArmyMovementSystem.cs`
+  - 实现 `IGameSystem`。
+  - 保留地图路线推进、到达日志、`ArmyArrived` 事件、撤退脱离接敌、legacy `ArmyState.regionId` 同步。
+  - legacy movement fallback 使用 `DomainMath.Max` 替代 `Mathf.Max`。
+- 瘦身 `Military/ArmyMovementSystem.cs`
+  - Unity 层只负责获取 `GameManager`，创建并委托 `DomainArmyMovementSystem`。
+- 新增 `Domain/Economy/DomainEconomySystem.cs`
+  - 实现 `IGameSystem`。
+  - 保留税粮结算、军队维护费、财政负数惩罚、扩张继承压力。
+  - 保留 runtime `RegionRuntimeState.taxContributionPercent` 与 `foodContributionPercent` 折算，让新占领治理代价继续进入经济闭环。
+- 瘦身 `Economy/EconomySystem.cs`
+  - Unity 层只负责获取 `GameManager`，创建并委托 `DomainEconomySystem`。
+
+验证：
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+
+## 2026-04-30 Iteration 4 / US-017 Domain Core 验证与记录
+
+验证：
+
+- `python3 tools/validate_data.py` 通过：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- `python3 tools/validate_domain_core.py` 通过：Domain folder is Unity-free and adapters delegate to Domain types。
+- 静态 grep `using UnityEngine|MonoBehaviour|SerializeField|GetComponent|gameObject|Mathf.` 于 `WanChaoGuiYi/Assets/Scripts/Domain` 无输出。
+
+环境限制：
+
+- 当前环境仍无法运行 Unity/C# 编译器，因此本轮只能证明 Domain 边界和数据解析正确，不能证明 Unity Console 编译、MonoBehaviour 生命周期、Scene/Prefab 绑定无误。
+- 下一步最有价值的长期方向是补 headless simulation runner：用纯 C# 或脚本驱动 Domain Core 跑新局、单路行军、接敌、战斗、占领、经济结算，不再依赖 Unity PlayMode 才能验证核心闭环。
+
+## 2026-04-30 Headless Suite Iteration 2 / 增援撤退与状态一致断言
+
+实现文件：
+
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Core/HeadlessSimulationRunner.cs`
+  - `RunAllScenarios()` 从 3 个默认场景扩展为 4 个，新增 `active_retreat_leaves_engagement`。
+  - 强化 `reinforcement_joins_existing_engagement`，新增断言：`ArmyTask.Reinforce`、目标接敌区域、路线终点、增援意图日志、抵达后 attacker membership 增长。
+  - 强化 `attacker_wins_and_occupies`，新增 runtime/legacy 状态一致性断言：owner、`OccupationStatus.Occupied`、integration、税粮贡献倍率、民变/地方势力/兼并压力、Faction regionIds 转移。
+  - 新增经济贡献断言：占领后的 `taxContributionPercent/foodContributionPercent = 35`，有效税粮贡献低于基础税粮贡献，确认 economy 读取 runtime 贡献倍率。
+  - 新增主动撤退场景：接敌后调用 `RetreatArmy()`，验证接敌军队能移动回撤退目标、清空 `engagementId`、回到 Idle、legacy army region 同步、原 engagement 清理且不会再被战斗系统结算。
+- 修改 `WanChaoGuiYi/Assets/Scripts/Domain/Military/DomainArmyMovementSystem.cs`
+  - `ArmyTask.Retreat` 移动后同步从 engagement attacker/defender 列表移除该军队。
+  - 若撤退导致任一方为空，清理 engagement，并将 contested region 恢复为 controlled，避免空 engagement 后续被误结算。
+
+验证：
+
+- `tools/verify_headless_war.sh` 通过。
+- 验证输出：`DATA VALIDATION PASSED`、`[domain-core] OK`、`passed=True`、`scenarioCount=4`。
+- 四个场景全部 `scenarioPassed=True`：
+  - `defender_holds_and_attacker_retreats`
+  - `attacker_wins_and_occupies`
+  - `reinforcement_joins_existing_engagement`
+  - `active_retreat_leaves_engagement`
+
+经验：
+
+- 增援语义现在不只是“发路线命令”，而是有可验证的任务状态、路线意图和接敌成员变化。
+- 主动撤退需要同步清理 engagement 成员关系；只清空军队自身 `engagementId` 会留下空侧 engagement，后续 war resolution 可能误触发战斗。
+- 占领验收不能只看 `占领/新占领/收入` 日志，必须同时验证 runtime state、legacy mirror 与 faction ownership 索引。
+

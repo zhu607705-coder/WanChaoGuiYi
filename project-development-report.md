@@ -4,10 +4,11 @@
 
 ## 当前状态
 
-- 阶段：MVP 内容扩展完成，准备进入 Unity 编译验证。
-- 当前目标：所有不依赖 Unity 编译器的工作已完成，等待 Unity 环境编译验证。
+- 阶段：地图主导战争闭环重写启动，执行 `.omc/plans/complete-architecture-map-led-war-rewrite-consensus.md`。
+- 当前目标：保留现有 JSON 数据资产，重写 C# 运行层，让行军、接敌、战斗、占领、地图刷新、UI反馈和治理后果都从同一地图状态模型连续发生。
 - 技术方向：Unity + C#，2D 节点地图 + 区域面片，UGUI，JSON 数据表。
-- 版本策略：国内版 MVP 先行，全球版只保留数据结构接口。
+- 版本策略：国内版完整架构优先，全球版只保留数据结构接口。
+- 旧状态说明：此前“MVP 内容扩展完成，准备进入 Unity 编译验证”的阶段记录保留为历史基线；从 2026-04-29 起，军事运行层不再继续围绕旧 BattleSession 架构扩展。
 
 ## 数据规模
 
@@ -197,6 +198,15 @@
 
 ## 验证记录
 
+- 2026-04-29：地图主导战争闭环重写 Phase 0 启动；当前工作区基线存在未提交变更：`GameManager.cs` 将 battle session 相关组件从回合系统改为服务初始化、`BattleSessionSystem.cs` 改用 `GameContext` 构造函数、`EquipmentSystem.cs` 移除重复 `EquipmentDefinition/EquipmentBonus` 类型；这些属于重写前编译修复基线。
+- 2026-04-29：地图主导战争闭环 Phase 1 完成数据契约更新：新增 Map-Led War Runtime Contract，明确复用现有 JSON 字段、运行时状态、查询能力、写入规则和占领治理后果；本阶段未新增持久 JSON 字段，因此无需迁移数据表。
+- 2026-04-29：地图主导战争闭环 Phase 2 首片完成：新增 `WorldState`、`MapState`、`RegionRuntimeState`、`ArmyRuntimeState`、`WarRuntimeState`、`EngagementRuntimeState`、`WorldStateFactory`、`MapQueryService`，并在 `GameManager.StartNewGame()` 中由现有 `GameState` 构建地图主导运行状态和查询服务。
+- 2026-04-30：地图主导战争闭环 Ralph Iteration 3 完成：新增 `GameManager.RunSingleLaneWarSmokeTest()` 作为 Unity 内单路闭环验收入口；`MapState.RemoveArmy()` 与 `MapWarResolutionSystem` 的败方撤退/溃散处理已落位，战后败军会撤往同势力相邻地区或从 runtime/legacy 军队列表移除，降低重复接敌风险；`ArmyMovementSystem` 允许 `ArmyTask.Retreat` 的接敌军队脱离并写日志，`MapCommandService` 为撤退和增援补充可解释日志；旧 `BattleResolver.Resolve()` 默认不再直接改地区归属，只有显式开启 `allowLegacyOwnershipChange` 时才保留 legacy 改归属路径。
+- 2026-04-30：地图主导战争闭环 Ralph Iteration 2 完成：`GameStateFactory.CreateDefault()` 现在创建稳定的初始玩家军队和非玩家军队，并优先放在玩家首个区域与敌方相邻区域；新增 `MapWarResolutionSystem` 并在 `GameManager.CollectSystems()` 中按 `ArmyMovementSystem -> MapWarResolutionSystem -> SiegeSystem -> EconomySystem` 顺序执行，使接敌、战斗、占领和新占领税粮折损进入同一回合闭环；`EconomySystem` 在存在 `GameManager.World.Map` 时按 `RegionRuntimeState.taxContributionPercent/foodContributionPercent` 折算收入，找不到 runtime region 时保留 legacy 计算路径。
+- 2026-04-30：`python3 tools/validate_data.py` 通过；静态检查确认 `MapWarResolutionSystem` 已注册、`EconomySystem` 读取 runtime 贡献倍率、`BattleSimulationSystem` 不调用 `ChangeRegionOwner`。当前环境仍未发现 Unity/C# 编译器，无法完成 Console 编译与 PlayMode 验收；进入 Unity 后需优先验证单路攻击闭环和经济日志数值。
+- 2026-04-30：地图主导战争闭环 Ralph Iteration 1 完成路线行军、接敌、战斗、占领、治理反馈首片：新增 `MapCommandService`、`EngagementDetector`、`BattleSimulationSystem`、`OccupationSystem`、`GovernanceImpactSystem`，扩展战争事件 `ArmyMoveStarted`、`ArmyArrived`、`ContactDetected`、`EngagementStarted`、`RegionOccupied`、`GovernanceImpactApplied`。当前实现仍需 Unity 编译验证与场景内单路/多军闭环手动验收。
+- 2026-04-30：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- 2026-04-29：`python3 tools/validate_data.py` 通过，结果：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
 - 2026-04-28：`python3 -m json.tool` 验证 7 个 JSON 数据表全部可解析。
 - 2026-04-28：临时数据引用检查发现 30 个帝皇偏好政策缺表，已补齐到 `policies.json`。
 - 2026-04-28：`python3 tools/validate_data.py` 通过，结果：`emperors=8 regions=17 policies=35`；该脚本检查唯一 id、帝皇全球扩展字段、偏好政策引用、区域邻接存在性和区域邻接双向性。
@@ -297,3 +307,207 @@
 - 2026-04-29：`portraits.json` 解析通过。
 - 2026-04-29：本地文件计数通过：单张资产 77 个，其中立绘 13、兵种 8、系统 16、科技 40；生成母版 10 张。
 - 2026-04-29：已抽查立绘母版和科技图标母版；当前资产属于 concept_v1，后续进入 Unity UI 后再按实际尺寸、裁切和辨识度精修。
+
+## 2026-04-30 Headless Scenario Suite 记录
+
+### 目标
+
+把 headless 验收从单路 smoke test 扩展为小型确定性场景套件。用户价值是：后续每次改地图战争逻辑，都能先在命令行确认“防守胜利撤退、进攻胜利占领、增援加入接敌”三类核心语义没有断链，再进入 Unity 验证。
+
+### 已完成
+
+- `HeadlessSimulationRunner` 新增 `RunAllScenarios()` 与 `HeadlessSimulationSuiteResult`。
+- `HeadlessSimulationResult` 新增 `scenarioName`，CLI 现在逐场景输出 `scenario`、`scenarioPassed`、`turnsExecuted` 和失败原因。
+- 当前默认运行 3 个场景：
+  - `defender_holds_and_attacker_retreats`：验证防守方获胜后进攻军撤退。
+  - `attacker_wins_and_occupies`：验证进攻方获胜、地区归属变化、新占领治理折损、败军溃散和经济结算。
+  - `reinforcement_joins_existing_engagement`：验证增援抵达后加入既有 engagement，接敌成员从 `1 对 1` 变为 `2 对 1`，且不会重复记录未变化的接敌。
+- `Program.cs` 改为调用 `runner.RunAllScenarios(repository, playerFactionId)`，任一场景失败即返回非 0。
+- 新增 `tools/verify_headless_war.sh`，统一执行：
+  - `python3 tools/validate_data.py`
+  - `python3 tools/validate_domain_core.py`
+  - `tools/run_headless_simulation.sh`
+
+### 验证
+
+- `python3 tools/validate_domain_core.py && tools/run_headless_simulation.sh` 通过。
+- `tools/run_headless_simulation.sh` 输出 `passed=True`、`scenarioCount=3`。
+- 三个场景全部 `scenarioPassed=True`。
+- 日志语义确认：
+  - 防守胜利路径：`防守方获胜` 后 `army_player_1战败后撤退至guanzhong`。
+  - 进攻占领路径：`进攻方获胜` 后 `longxi归属变更`、`longxi被faction_qin_shi_huang占领`、`longxi新占领`。
+  - 增援路径：先 `longxi发生接敌：1 支部队对 1 支部队`，增援抵达后 `longxi发生接敌：2 支部队对 1 支部队`。
+
+### 限制与下一步
+
+- 当前仍是 headless/Domain 验证，Unity Console 和 PlayMode 尚未验证。
+- 场景仍属于确定性 smoke suite，不是完整测试框架；下一步可以继续把断言拆得更细，或进入增援/撤退玩法语义扩展。
+
+## 2026-04-30 Headless Scenario Suite Iteration 2 记录
+
+### 目标
+
+把地图战争 headless 验收从“日志存在”推进到“状态一致”。用户价值是：后续改战争、治理或经济数值时，CLI 不只告诉我们发生了战斗，还能确认归属、占领治理折损、撤退脱战和经济贡献倍率真的落到状态里。
+
+### 已完成
+
+- `HeadlessSimulationRunner.RunAllScenarios()` 默认场景数从 3 个扩展为 4 个：
+  - 新增 `active_retreat_leaves_engagement`：验证已接敌军队可以发出 `RetreatArmy()`，在行军阶段脱离 engagement 并回到撤退目标区域。
+- 强化 `reinforcement_joins_existing_engagement`：
+  - 断言 `ReinforceArmy()` 设置 `ArmyTask.Reinforce`。
+  - 断言 `targetRegionId` 和路线终点保留为目标接敌区域。
+  - 断言增援意图日志包含“增援”和“加入当地接敌”。
+  - 保留抵达后 attacker membership 从 `1` 增至 `2` 的断言。
+- 强化 `attacker_wins_and_occupies`：
+  - 断言 runtime region owner 改为进攻方。
+  - 断言 runtime `occupationStatus = Occupied`。
+  - 断言 `integration = 25`，`taxContributionPercent = 35`，`foodContributionPercent = 35`。
+  - 断言 legacy `RegionState` 镜像 owner / integration / rebellionRisk / localPower / annexationPressure。
+  - 断言旧 owner faction 不再持有该 region，新 owner faction 已持有该 region。
+  - 断言占领后有效税粮贡献低于基础税粮贡献，确认 runtime 贡献倍率进入经济闭环。
+- `DomainArmyMovementSystem` 在撤退军队移动后同步从 engagement attacker/defender 列表移除该军队；若任一方为空，则清理 engagement，并把 contested region 复原为 controlled，避免撤退后残留空 engagement 被战斗系统误结算。
+
+### 验证
+
+- `tools/verify_headless_war.sh` 通过。
+- 输出：`passed=True`、`scenarioCount=4`。
+- 四个场景全部 `scenarioPassed=True`：
+  - `defender_holds_and_attacker_retreats`
+  - `attacker_wins_and_occupies`
+  - `reinforcement_joins_existing_engagement`
+  - `active_retreat_leaves_engagement`
+
+### 限制与下一步
+
+- 仍属于 CLI/headless 验证；Unity Console、PlayMode 和场景内按钮/地图交互尚未验证。
+- 下一步建议把这 4 个场景拆为更接近测试框架的独立断言输出，或进入 Unity 手动验收 `RunSingleLaneWarSmokeTest()` 与 UI 日志/地图颜色同步。
+
+## 2026-04-30 Headless CLI Harness 记录
+
+### 目标
+
+把上一步的 `HeadlessSimulationRunner` 接到真正的命令行入口上：从 `WanChaoGuiYi/Assets/Data/*.json` 加载数据，创建非 Unity 数据仓库，然后直接调用 `RunSingleLaneWar()`。这一步的用户价值是让战争闭环未来能变成一条稳定命令，而不是每次都进 Unity 手动复现。
+
+### 已完成
+
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/NonUnityJsonDataRepository.cs`
+  - 实现 `IDataRepository`。
+  - 使用 `System.Text.Json` 解析 JSON，并启用 `IncludeFields`，适配当前 Unity 风格 public field 数据模型。
+  - 加载 headless 模拟需要的数据表：帝皇、地区、历史层、政策、事件、人才、兵种、科技、胜利条件、将领、建筑。
+  - 对缺表、空 items、缺 id、重复 id 做明确异常。
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj`
+  - .NET 8 console project。
+  - 显式链接 Domain/Core/World/Map/Military/Governance/Economy 所需源码。
+  - 不链接 Unity adapter 文件，避免 `MonoBehaviour`、`TextAsset`、`UnityEngine` 进入 headless 工程。
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/HeadlessBattleTypes.cs`
+  - 提供非 Unity 版本 `BattleResult` 与 `EquipmentLookup`，避免 CLI harness 为这两个类型依赖 `BattleResolver : MonoBehaviour`。
+- 新增 `tools/headless_runner/WanChaoGuiYiHeadless/Program.cs`
+  - 默认数据目录：`WanChaoGuiYi/Assets/Data`。
+  - 默认玩家势力：`faction_qin_shihuang`。
+  - 调用 `NonUnityJsonDataRepository.Load()` 后执行 `HeadlessSimulationRunner.RunSingleLaneWar()`。
+  - 输出 `passed`、`turnsExecuted` 与日志。
+  - 成功返回 0，runner 失败返回 1，异常返回 2。
+- 新增 `tools/run_headless_simulation.sh`
+  - 用法：`tools/run_headless_simulation.sh [data-dir] [player-faction-id]`。
+  - 缺少 `dotnet` 时返回 127，并提示安装 .NET SDK 8+。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- 2026-04-30 环境修复：通过 Homebrew 清华镜像安装 .NET SDK `10.0.107`。
+- 真实运行 `tools/run_headless_simulation.sh` 通过，输出 `passed=True`、`turnsExecuted=1`。
+- 本次 headless 日志确认闭环：初始军队部署 → 行军 → 抵达 → 接敌 → 战斗结束 → 占领 → 新占领治理折损 → 败军溃散 → 经济收入。
+- 真实编译修复：`DataModels.cs` 补 `System.Collections.Generic`；`MapGraphData.GetNeighbors()` 返回类型改为 `IEnumerable<string>`；`WanChaoGuiYiHeadless.csproj` 目标框架改为 `net10.0` 以匹配当前 SDK。
+- 静态验证确认 CLI 调用：`runner.RunSingleLaneWar(repository, playerFactionId)`。
+- 静态验证确认 headless csproj 不包含 Unity adapter 文件：`DataRepository.cs`、`MapGraph.cs`、`BattleResolver.cs`、`EconomySystem.cs`、`ArmyMovementSystem.cs`。
+- 静态验证确认 headless csproj 的 26 个 `<Compile Include=...>` 链接文件全部存在。
+- 静态 grep 确认 `tools/headless_runner` 与 `WanChaoGuiYi/Assets/Scripts/Domain` 无 `UnityEngine`、`MonoBehaviour`、`SerializeField`、`GetComponent`、`gameObject`、`Mathf.`。
+- 注意：当前验证使用 .NET SDK `10.0.107`；若团队/CI 固定 .NET 8 LTS，需要另装 .NET 8 SDK 或改回 `net8.0` 后重新验证。
+
+### 限制与下一步
+
+- 当前工作环境没有 `dotnet`、`csc`、`mcs`，因此 CLI harness 尚未真实编译和执行。
+- 下一步在安装 .NET SDK 8+ 后运行：
+
+```bash
+tools/run_headless_simulation.sh
+```
+
+- 如果编译失败，优先修复 headless csproj 缺失类型或 Unity 泄漏。
+- 如果编译通过但 `passed=false`，根据输出的 `failureReason` 和 turnLog 修复战争闭环实际逻辑。
+
+
+### 目标
+
+把“地图主导战争闭环”的验收再往前推进一步：不用依赖 Unity PlayMode 手动点按钮，而是在代码层提供一个可组合的 headless runner。它的用户价值是把战争闭环从“只能进 Unity 看现象”变成“未来可命令行 pass/fail”，后续每次改战争、经济、治理都能更快发现断链。
+
+### 已完成
+
+- 新增 `IDataRepository`，让 `GameContext`、`GameStateFactory`、`WorldStateFactory` 可以接收非 Unity 数据仓库。
+- `DataRepository` 实现 `IDataRepository`，保留现有 Unity JSON 加载路径。
+- 新增 `IMapGraphData`，把地图邻接查询抽成接口。
+- `MapGraph` 和 `MapGraphData` 均实现 `IMapGraphData`：
+  - Unity 运行时继续使用 `MapGraph`。
+  - headless runner 使用 `MapGraphData` 从 `RegionDefinition.neighbors` 读取邻接。
+- `MapQueryService` 改为只依赖 `IMapGraphData`，Domain 不再直接引用 Unity `MapGraph` 具体类型。
+- 新增 `HeadlessSimulationRunner.RunSingleLaneWar(IDataRepository data, string playerFactionId)`：
+  - `GameStateFactory.CreateDefault()` 创建新局和初始军队。
+  - `WorldStateFactory.Create(...)` 构建 runtime world。
+  - `MapCommandService.MoveArmy(...)` 发起 `army_player_1` 攻向 `army_enemy_1` 所在区域。
+  - 连续执行 `DomainArmyMovementSystem -> DomainMapWarResolutionSystem -> DomainEconomySystem`。
+  - 断言日志出现：`行军`、`抵达`、`接敌`、`战斗结束`、`占领/防守`、`新占领` 治理折损、`收入 金钱` 经济结算。
+- `NumericSystem` 移除 `using UnityEngine` 和 `Mathf.*`，改用 `DomainMath.*`，减少 Domain 战斗/经济公式的 Unity 依赖。
+- `DomainMath.RoundToInt()` 改用 `MidpointRounding.AwayFromZero`，尽量贴近 Unity `Mathf.RoundToInt` 中点取整行为。
+- `tools/validate_domain_core.py` 增加对 Domain 直接引用 `MapGraph` 具体类型的检查。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过：`emperors=13 portraits=13 regions=56 map_region_shapes=56 historical_layers=56 policies=35 units=8 technologies=40 generals=12 buildings=12 chronicle_events=200`。
+- `python3 tools/validate_domain_core.py` 通过。
+- 静态 grep 确认 `WanChaoGuiYi/Assets/Scripts/Domain` 无 `using UnityEngine`、`MonoBehaviour`、`SerializeField`、`GetComponent`、`gameObject`、`Mathf.`、直接 `MapGraph` 依赖。
+
+### 限制与下一步
+
+- 当前环境仍没有 Unity/C# 编译器，也没有独立 C# test harness；因此 `HeadlessSimulationRunner` 已落位，但还不能在本机实际执行并产出 pass/fail。
+- 下一步最直接路径：实现一个非 Unity JSON repository / CLI harness，从 `WanChaoGuiYi/Assets/Data/*.json` 读取数据，直接调用 `HeadlessSimulationRunner.RunSingleLaneWar()`，把结果输出为命令行 smoke test。
+
+
+### 目标
+
+解决当前环境没有 Unity/C# 编译器导致核心玩法难以自动验收的问题。长期方向是把玩法核心拆成不依赖 Unity 的 Domain Core，Unity 层只保留 `MonoBehaviour` adapter。这样后续可以发展 headless simulation：不用进入 Unity，也能验证行军、接敌、战斗、占领、治理和经济结算。
+
+### 已完成
+
+- 建立 `WanChaoGuiYi/Assets/Scripts/Domain/` 边界，包含 `Core`、`World`、`Map`、`Military`、`Governance`、`Economy`。
+- 新增 `DomainMath`，Domain 系统使用 `System.Math` 包装，不直接依赖 Unity `Mathf`。
+- 将核心状态和地图服务移入 Domain：`IGameSystem`、`WorldState`、`WorldStateFactory`、`MapQueryService`、`MapCommandService`。
+- 抽离地图战争相关 Domain 系统：
+  - `DomainEngagementDetector`
+  - `DomainBattleSimulationSystem`
+  - `DomainOccupationSystem`
+  - `DomainGovernanceImpactSystem`
+  - `DomainMapWarResolutionSystem`
+- 抽离回合推进相关 Domain 系统：
+  - `DomainArmyMovementSystem`
+  - `DomainEconomySystem`
+- 对应 Unity 文件已瘦身为 adapter：
+  - `EngagementDetector`
+  - `BattleSimulationSystem`
+  - `OccupationSystem`
+  - `GovernanceImpactSystem`
+  - `MapWarResolutionSystem`
+  - `ArmyMovementSystem`
+  - `EconomySystem`
+- 新增 `tools/validate_domain_core.py`，用于在无 Unity 编译器环境检查 Domain 边界。
+
+### 验证
+
+- `python3 tools/validate_data.py` 通过。
+- `python3 tools/validate_domain_core.py` 通过。
+- 静态 grep 确认 `WanChaoGuiYi/Assets/Scripts/Domain` 下无 `using UnityEngine`、`MonoBehaviour`、`SerializeField`、`GetComponent`、`gameObject`、`Mathf.`。
+
+### 限制与下一步
+
+- 当前仍未验证 Unity Console 编译、PlayMode 和场景绑定。Unity 中必须重新导入并检查移动过的脚本文件是否保留/重建了可接受的 asset 引用。
+- 下一步建议补一个 headless simulation runner 或 Domain smoke test：从 `GameStateFactory.CreateDefault()` 创建新局，构建 `WorldState`，调用 `MapCommandService.MoveArmy()`，连续执行 `DomainArmyMovementSystem`、`DomainMapWarResolutionSystem`、`DomainEconomySystem`，断言出现接敌、战斗、占领、治理折损和经济日志。

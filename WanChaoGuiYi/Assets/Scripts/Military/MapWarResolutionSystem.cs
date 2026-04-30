@@ -2,11 +2,11 @@ using UnityEngine;
 
 namespace WanChaoGuiYi
 {
-    public sealed class EconomySystem : MonoBehaviour, IGameSystem
+    public sealed class MapWarResolutionSystem : MonoBehaviour, IGameSystem
     {
         [SerializeField] private GameManager gameManager;
 
-        private DomainEconomySystem domain;
+        private DomainMapWarResolutionSystem domain;
 
         public void Initialize(GameContext context)
         {
@@ -39,8 +39,13 @@ namespace WanChaoGuiYi
                 gameManager = GetComponent<GameManager>();
             }
 
-            if (domain != null || gameManager == null) return;
-            domain = new DomainEconomySystem(gameManager.World);
+            if (domain != null || gameManager == null || gameManager.World == null) return;
+
+            domain = new DomainMapWarResolutionSystem(
+                gameManager.World,
+                new DomainEngagementDetector(),
+                new DomainBattleSimulationSystem(),
+                new DomainOccupationSystem(new DomainGovernanceImpactSystem()));
         }
     }
 }

@@ -1,77 +1,81 @@
 {
-  "task": "不依赖 Unity 编译器的五项工作",
-  "iteration": 0,
-  "maxIterations": 5,
+  "task": "地图主导战争闭环 Headless Suite Iteration 2 - 增援撤退与状态一致断言",
+  "iteration": 7,
+  "maxIterations": 12,
   "stories": [
     {
-      "id": "US-001",
-      "title": "世界观设定文档",
+      "id": "US-026",
+      "title": "强化增援玩法语义验收",
       "priority": 1,
-      "description": "创建 docs/world-building.md，包含游戏世界观、时代跨度、帝皇选择逻辑、九州概念、法统体系",
+      "description": "让 headless 场景验证 ReinforceArmy 不只是普通路线命令，而是保留增援任务、目标接敌区域、路线意图，并在抵达后加入既有 engagement。",
       "acceptanceCriteria": [
-        "docs/world-building.md 文件存在",
-        "包含时代跨度说明（秦→清）",
-        "包含帝皇选择逻辑（为什么选这 13 位）",
-        "包含九州概念定义",
-        "包含法统体系说明",
-        "所有引用有史料出处"
+        "HeadlessSimulationRunner.RunAllScenarios 包含 reinforcement_joins_existing_engagement 场景",
+        "reinforcement_joins_existing_engagement 断言 ReinforceArmy 设置 ArmyTask.Reinforce",
+        "reinforcement_joins_existing_engagement 断言 reinforcement.targetRegionId 等于目标接敌区域",
+        "reinforcement_joins_existing_engagement 断言 reinforcement.route 的终点等于目标接敌区域",
+        "reinforcement_joins_existing_engagement 断言增援抵达后加入 attackerArmyIds 且 attacker 数量增加",
+        "reinforcement_joins_existing_engagement 断言新增 membership 只产生一次额外接敌日志"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-002",
-      "title": "JSON 数据完整性检查和补全",
+      "id": "US-027",
+      "title": "补主动撤退 headless 场景",
       "priority": 2,
-      "description": "检查所有 JSON 数据表的完整性，补全缺失字段",
+      "description": "新增确定性场景验证已接敌军队能主动撤退、脱离 engagement、同步 legacy army region，并避免撤退后空 engagement 被战斗系统误结算。",
       "acceptanceCriteria": [
-        "所有 13 位帝皇有 score 字段",
-        "所有 56 个区域有完整 historical_layer",
-        "所有 generals.json 条目有 sourceReference",
-        "所有 buildings.json 条目有 sourceReference",
-        "所有 technologies.json 条目有 sourceReference",
-        "validate_data.py 通过"
+        "HeadlessSimulationRunner.RunAllScenarios 包含 active_retreat_leaves_engagement 场景",
+        "active_retreat_leaves_engagement 先制造接敌，再对已接敌军队调用 RetreatArmy",
+        "active_retreat_leaves_engagement 断言 RetreatArmy 设置 ArmyTask.Retreat 与撤退目标区域",
+        "active_retreat_leaves_engagement 断言撤退军队在接敌状态下仍能移动到撤退区域",
+        "active_retreat_leaves_engagement 断言撤退后 army.engagementId 清空且任务回到 Idle",
+        "active_retreat_leaves_engagement 断言 legacy ArmyState.regionId 同步到撤退区域",
+        "active_retreat_leaves_engagement 断言原 engagement 被清理且后续 war resolution 不产生战斗结束日志"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-003",
-      "title": "validate_data.py 增强",
+      "id": "US-028",
+      "title": "撤退清理 engagement 成员关系",
       "priority": 3,
-      "description": "增强验证脚本，新增 generals、buildings 表的引用检查",
+      "description": "DomainArmyMovementSystem 在 Retreat 移动完成后同步从 engagement 双方成员列表移除撤退军队，并在任一方为空时清理 engagement 和 contested 状态。",
       "acceptanceCriteria": [
-        "新增 generals 表加载和 id 唯一性检查",
-        "新增 buildings 表加载和 id 唯一性检查",
-        "新增 buildings 的 requiresTech 引用检查",
-        "新增 generals 的 terrainBonus key 合法性检查",
-        "新增数据完整性报告输出",
-        "python3 tools/validate_data.py 通过"
+        "DomainArmyMovementSystem 在 ArmyTask.Retreat 移动后调用 RemoveArmyFromEngagement",
+        "RemoveArmyFromEngagement 同时从 attackerArmyIds 和 defenderArmyIds 移除撤退军队",
+        "ClearEngagementIfSideEmpty 在任一方为空时移除 engagement",
+        "ClearEngagementIfSideEmpty 将 contested runtime region 恢复为 OccupationStatus.Controlled",
+        "active_retreat_leaves_engagement 通过 CLI 验证证明撤退后没有残留 engagement 被误结算"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-004",
-      "title": "文档更新",
+      "id": "US-029",
+      "title": "占领治理经济状态一致断言",
       "priority": 4,
-      "description": "更新 data-contract.md、architecture.md、project-development-report.md",
+      "description": "把 attacker_wins_and_occupies 从日志断言升级为 runtime state、legacy mirror、faction ownership 和经济贡献倍率的一致性验收。",
       "acceptanceCriteria": [
-        "data-contract.md 新增 General、Building 数据契约",
-        "architecture.md 新增将领系统、建筑系统架构说明",
-        "project-development-report.md 记录最新进展"
+        "attacker_wins_and_occupies 调用 ValidateCapturedRegionState",
+        "ValidateCapturedRegionState 断言 runtime owner、OccupationStatus.Occupied、integration=25、taxContributionPercent=35、foodContributionPercent=35",
+        "ValidateCapturedRegionState 断言 legacy RegionState owner/integration/rebellionRisk/localPower/annexationPressure 镜像 runtime state",
+        "ValidateCapturedRegionState 断言 previous owner 不再持有 region 且 capturing faction 持有 region",
+        "attacker_wins_and_occupies 调用 ValidateEconomyContributionState",
+        "ValidateEconomyContributionState 断言占领后有效税粮贡献低于基础税粮贡献",
+        "tools/verify_headless_war.sh 输出 passed=True 且 scenarioCount=4"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-005",
-      "title": "map_region_shapes.json 边界点精修",
+      "id": "US-030",
+      "title": "记录 headless suite 本轮进度",
       "priority": 5,
-      "description": "精修 56 个区域的边界点数据",
+      "description": "把本轮增援、撤退、状态一致断言和 CLI 验证结果写入 OMC progress 与项目权威开发报告。",
       "acceptanceCriteria": [
-        "所有 56 个区域有 boundary 点数据",
-        "boundary 点数量 >= 3",
-        "邻接区域的边界点大致吻合",
-        "validate_data.py 通过"
+        ".omc/progress.txt 记录 Headless Suite Iteration 2 的实现文件、验证结果和经验",
+        "project-development-report.md 记录 Headless Scenario Suite Iteration 2 的目标、完成内容、验证和限制",
+        "记录 tools/verify_headless_war.sh 的 fresh 输出包含 DATA VALIDATION PASSED、[domain-core] OK、passed=True、scenarioCount=4",
+        "记录 Unity Console / PlayMode 仍是后续限制"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

@@ -4,41 +4,52 @@ namespace WanChaoGuiYi
 {
     public sealed class ArmyMovementSystem : MonoBehaviour, IGameSystem
     {
-        public void Initialize(GameContext context) { }
-        public void OnTurnStart(GameContext context) { }
-        public void OnTurnEnd(GameContext context) { }
+        [SerializeField] private GameManager gameManager;
+
+        private DomainArmyMovementSystem domain;
+
+        public void Initialize(GameContext context)
+        {
+            EnsureDomain();
+            if (domain != null) domain.Initialize(context);
+        }
+
+        public void OnTurnStart(GameContext context)
+        {
+            EnsureDomain();
+            if (domain != null) domain.OnTurnStart(context);
+        }
 
         public void ExecuteTurn(GameContext context)
         {
-            for (int i = 0; i < context.State.armies.Count; i++)
-            {
-                ArmyState army = context.State.armies[i];
-                if (army.movementProgress > 0)
-                {
-                    army.movementProgress = Mathf.Max(0, army.movementProgress - 50);
-                }
-            }
+            EnsureDomain();
+            if (domain != null) domain.ExecuteTurn(context);
+        }
+
+        public void OnTurnEnd(GameContext context)
+        {
+            EnsureDomain();
+            if (domain != null) domain.OnTurnEnd(context);
         }
 
         public bool MoveArmy(GameContext context, string armyId, string targetRegionId, MapGraph mapGraph)
         {
-            ArmyState army = FindArmy(context, armyId);
-            if (army == null || mapGraph == null) return false;
-            if (!mapGraph.AreNeighbors(army.regionId, targetRegionId)) return false;
-
-            army.regionId = targetRegionId;
-            army.movementProgress = 100;
-            return true;
+            EnsureDomain();
+            return domain != null && domain.MoveArmy(context, armyId, targetRegionId, mapGraph);
         }
 
-        private static ArmyState FindArmy(GameContext context, string armyId)
+        private void EnsureDomain()
         {
-            for (int i = 0; i < context.State.armies.Count; i++)
+            if (gameManager == null)
             {
-                if (context.State.armies[i].id == armyId) return context.State.armies[i];
+                gameManager = GetComponent<GameManager>();
             }
 
-            return null;
+            if (domain != null) return;
+
+            WorldState worldState = gameManager != null ? gameManager.World : null;
+            MapCommandService mapCommandService = gameManager != null ? gameManager.MapCommands : null;
+            domain = new DomainArmyMovementSystem(worldState, mapCommandService, new DomainEngagementDetector());
         }
     }
 }

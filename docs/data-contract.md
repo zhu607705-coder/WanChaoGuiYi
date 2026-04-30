@@ -153,6 +153,110 @@
 - `labelOffset` 控制文字相对中心的位置，偏移后的标签点也必须落在 `boundary` 内。
 - 后续精修地图时只改 JSON 边界点，不改渲染代码。
 
+## Map-Led War Runtime Contract
+
+本节定义地图主导战争闭环的运行时契约。原则：JSON 表提供初始事实和稳定配置，运行时状态记录会变化的战争事实；地图状态是军队位置、路线、接敌、战斗和占领的唯一权威入口。
+
+### Persistent JSON Fields Used By Runtime
+
+第一阶段不新增必须迁移的 JSON 表，直接复用现有字段：
+
+- `regions.json`
+  - `id`：区域稳定 id。
+  - `terrain`：战斗地形和移动/补给修正输入。
+  - `population`、`foodOutput`、`taxOutput`、`manpower`：占领后治理折损的基础值。
+  - `localPower`、`rebellionRisk`、`landStructure`：占领后治理风险输入。
+  - `neighbors`：`MapGraph` 路线和邻接查询的唯一数据来源。
+- `map_region_shapes.json`
+  - `regionId`、`center`、`boundary`：地图渲染、点击和行军路径显示的空间输入。
+- `units.json`
+  - `stats.attack`、`stats.defense`、`stats.mobility`、`stats.siege`：战斗结算和移动能力输入。
+- `historical_layers.json`
+  - `yieldModifiers.mobility`、`geographyTags`、`strategicResources`：后续补给、地形、围攻和增援规则输入。
+
+### Runtime-Only State
+
+这些字段默认不写回 JSON 数据表；未来存档系统需要序列化它们。
+
+```json
+{
+  "world": {
+    "turn": 1,
+    "season": "Spring",
+    "factions": ["faction_qin_shi_huang"],
+    "regions": ["guanzhong"],
+    "armies": ["army_qin_1"],
+    "wars": ["war_qin_chu"],
+    "logs": []
+  },
+  "map": {
+    "regionRuntimeStates": {},
+    "armiesByRegion": {},
+    "engagementsByRegion": {}
+  },
+  "army": {
+    "id": "army_qin_1",
+    "ownerFactionId": "faction_qin_shi_huang",
+    "locationRegionId": "guanzhong",
+    "targetRegionId": "hedong",
+    "route": ["guanzhong", "hedong"],
+    "task": "Move",
+    "soldiers": 1000,
+    "morale": 70,
+    "supply": 80,
+    "movementPoints": 1,
+    "engagementId": null
+  }
+}
+```
+
+### Runtime Enums
+
+- `ArmyTask`
+  - `Idle`：驻扎。
+  - `Move`：沿地图路线行军。
+  - `Attack`：向敌控区域推进，抵达后接敌。
+  - `Retreat`：脱离接敌并向指定友方区域移动。
+  - `Reinforce`：向已有接敌区域增援。
+  - `Siege`：围攻区域，不直接等同于占领。
+- `EngagementPhase`
+  - `Forming`：接敌刚建立，允许合并多支部队。
+  - `Resolving`：战斗正在结算。
+  - `Resolved`：战斗已产生结果，等待占领/治理系统应用。
+- `OccupationStatus`
+  - `Controlled`：稳定控制。
+  - `Contested`：有敌军或接敌。
+  - `Occupied`：刚占领，治理惩罚生效。
+  - `Rebelling`：民变或地方势力反弹。
+
+### Runtime Query Requirements
+
+`MapState` / `MapQueryService` 必须能回答：
+
+- 指定区域的控制势力、占领状态、整合度、税粮折损和风险。
+- 指定区域有哪些军队，按势力分组后有哪些友军/敌军。
+- 指定军队当前位置、目标、路线、任务、是否接敌。
+- 指定区域的邻接区域和从 A 到 B 的路线。
+- 指定区域是否已有 engagement，多支军队是否应加入同一 engagement。
+
+### Write Rules
+
+- 军队位置、路线、任务只能通过 `MapCommandService` 或地图主导系统修改。
+- 战斗系统只产出 `BattleResult`/`BattleRuntimeState`，不得直接修改区域归属。
+- 区域控制权只能通过 `OccupationSystem` 修改。
+- 占领后的整合度、税粮折损、民变风险、地方势力和兼并压力只能通过 `GovernanceImpactSystem` 应用。
+- 每个关键变化必须发布事件并写入日志：行军开始、抵达、接敌、战斗结束、占领、治理后果。
+
+### Governance Impact Contract
+
+新占领区域默认使用以下运行时规则，后续可用政策/帝皇机制调整：
+
+- `integration` 设置为低值或在原值基础上下降，首版默认 25。
+- `taxOutput` 和 `foodOutput` 的实际贡献由运行时倍率折损，不直接覆盖 JSON 定义值。
+- `rebellionRisk` 上升。
+- `localPower` 或 `annexationPressure` 上升，用于表达地方势力和兼并压力。
+- UI 必须显示“为什么该地区刚占领但贡献低、风险高”。
+
 ## Policy
 
 政策必须声明成本、效果、风险和适配帝皇机制。

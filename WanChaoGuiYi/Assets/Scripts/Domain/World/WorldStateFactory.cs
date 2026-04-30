@@ -1,0 +1,75 @@
+using System.Collections.Generic;
+
+namespace WanChaoGuiYi
+{
+    public static class WorldStateFactory
+    {
+        public static WorldState Create(GameState gameState, IDataRepository data)
+        {
+            MapState mapState = new MapState();
+            if (gameState == null)
+            {
+                return new WorldState(gameState, mapState);
+            }
+
+            for (int i = 0; i < gameState.regions.Count; i++)
+            {
+                RegionState region = gameState.regions[i];
+                mapState.AddRegion(new RegionRuntimeState
+                {
+                    id = region.id,
+                    ownerFactionId = region.ownerFactionId,
+                    occupationStatus = OccupationStatus.Controlled,
+                    integration = region.integration,
+                    taxContributionPercent = CalculateContributionPercent(region.integration),
+                    foodContributionPercent = CalculateContributionPercent(region.integration),
+                    rebellionRisk = region.rebellionRisk,
+                    localPower = region.localPower,
+                    annexationPressure = region.annexationPressure
+                });
+            }
+
+            for (int i = 0; i < gameState.armies.Count; i++)
+            {
+                ArmyState army = gameState.armies[i];
+                mapState.AddArmy(new ArmyRuntimeState
+                {
+                    id = army.id,
+                    ownerFactionId = army.ownerFactionId,
+                    locationRegionId = army.regionId,
+                    targetRegionId = null,
+                    route = new List<string>(),
+                    task = ArmyTask.Idle,
+                    unitId = army.unitId,
+                    soldiers = army.soldiers,
+                    morale = army.morale,
+                    supply = 80,
+                    movementPoints = ResolveMovementPoints(army, data),
+                    engagementId = null
+                });
+            }
+
+            return new WorldState(gameState, mapState);
+        }
+
+        private static int CalculateContributionPercent(int integration)
+        {
+            if (integration < 0) return 0;
+            if (integration > 100) return 100;
+            return integration;
+        }
+
+        private static int ResolveMovementPoints(ArmyState army, IDataRepository data)
+        {
+            if (army == null || data == null || string.IsNullOrEmpty(army.unitId)) return 1;
+
+            UnitDefinition unit;
+            if (!data.Units.TryGetValue(army.unitId, out unit) || unit == null || unit.stats == null)
+            {
+                return 1;
+            }
+
+            return unit.stats.mobility > 0 ? unit.stats.mobility : 1;
+        }
+    }
+}
