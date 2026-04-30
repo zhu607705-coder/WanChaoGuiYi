@@ -691,3 +691,28 @@ tools/unity/run_playmode_tests.sh
   - `command.unengaged_retreat_rejected` 存在且通过。
 - `python3 tools/unity/preflight_without_unity.py` 通过。
 - `git diff --check` 通过。
+
+## 2026-04-30 Unity 交接清单加固
+
+### 已完成
+
+- 更新 `docs/unity-handoff-checklist.md`：
+  - 将 Unity 前置验收命令从单场景 `tools/run_headless_simulation.sh` 升级为四场景门禁 `tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang`。
+  - 增加期望输出示例，明确 4 个 headless 场景都应 `[PASS]`。
+  - 明确 `tools/headless_runner/latest-war-report.json` 是运行时生成产物，不应提交。
+  - 增加失败定位规则：数据失败、Domain 泄漏、headless 场景失败、Unity 编译失败、PlayMode 失败分别如何处理。
+- 新增 `tools/verify_unity_handoff.sh`：
+  - 一步执行 Unity 前置门禁：`tools/unity/preflight_without_unity.py` + `tools/verify_headless_war.sh`。
+  - 通过后直接提示下一步在 Unity 机器运行 `tools/unity/run_playmode_tests.sh`。
+- 更新 `tools/unity/preflight_without_unity.py`：
+  - 将 `tools/verify_unity_handoff.sh` 纳入 Unity 交接入口检查，避免文档引用脚本缺失时仍误判通过。
+
+### 验证
+
+- `tools/verify_unity_handoff.sh` 通过。
+- `python3 tools/unity/preflight_without_unity.py` 通过。
+- `tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang` 通过：
+  - `passed=True`
+  - `scenarioCount=4`
+  - 四个场景全部 `[PASS]`。
+- `git diff --check` 通过。

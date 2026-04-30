@@ -75,6 +75,7 @@ def main():
         os.path.join(ASSETS, "Tests", "PlayMode", "WanChaoGuiYi.PlayModeTests.asmdef"),
         os.path.join(ASSETS, "Tests", "PlayMode", "GameManagerPlayModeSmokeTests.cs"),
         os.path.join(ROOT, "tools", "unity", "run_playmode_tests.sh"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.sh"),
     ]
     for path in required_files:
         code = require_file(path)
@@ -91,7 +92,7 @@ def main():
     if "WanChaoGuiYi.Runtime" not in playmode_asmdef.get("references", []):
         return fail("PlayMode asmdef does not reference WanChaoGuiYi.Runtime")
 
-    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and PlayMode entrypoints are present.")
+    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and Unity handoff entrypoints are present.")
     return 0
 
 
