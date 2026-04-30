@@ -308,6 +308,41 @@
 - 2026-04-29：本地文件计数通过：单张资产 77 个，其中立绘 13、兵种 8、系统 16、科技 40；生成母版 10 张。
 - 2026-04-29：已抽查立绘母版和科技图标母版；当前资产属于 concept_v1，后续进入 Unity UI 后再按实际尺寸、裁切和辨识度精修。
 
+## 2026-04-30 Headless Scenario Suite 记录
+
+### 目标
+
+把 headless 验收从单路 smoke test 扩展为小型确定性场景套件。用户价值是：后续每次改地图战争逻辑，都能先在命令行确认“防守胜利撤退、进攻胜利占领、增援加入接敌”三类核心语义没有断链，再进入 Unity 验证。
+
+### 已完成
+
+- `HeadlessSimulationRunner` 新增 `RunAllScenarios()` 与 `HeadlessSimulationSuiteResult`。
+- `HeadlessSimulationResult` 新增 `scenarioName`，CLI 现在逐场景输出 `scenario`、`scenarioPassed`、`turnsExecuted` 和失败原因。
+- 当前默认运行 3 个场景：
+  - `defender_holds_and_attacker_retreats`：验证防守方获胜后进攻军撤退。
+  - `attacker_wins_and_occupies`：验证进攻方获胜、地区归属变化、新占领治理折损、败军溃散和经济结算。
+  - `reinforcement_joins_existing_engagement`：验证增援抵达后加入既有 engagement，接敌成员从 `1 对 1` 变为 `2 对 1`，且不会重复记录未变化的接敌。
+- `Program.cs` 改为调用 `runner.RunAllScenarios(repository, playerFactionId)`，任一场景失败即返回非 0。
+- 新增 `tools/verify_headless_war.sh`，统一执行：
+  - `python3 tools/validate_data.py`
+  - `python3 tools/validate_domain_core.py`
+  - `tools/run_headless_simulation.sh`
+
+### 验证
+
+- `python3 tools/validate_domain_core.py && tools/run_headless_simulation.sh` 通过。
+- `tools/run_headless_simulation.sh` 输出 `passed=True`、`scenarioCount=3`。
+- 三个场景全部 `scenarioPassed=True`。
+- 日志语义确认：
+  - 防守胜利路径：`防守方获胜` 后 `army_player_1战败后撤退至guanzhong`。
+  - 进攻占领路径：`进攻方获胜` 后 `longxi归属变更`、`longxi被faction_qin_shi_huang占领`、`longxi新占领`。
+  - 增援路径：先 `longxi发生接敌：1 支部队对 1 支部队`，增援抵达后 `longxi发生接敌：2 支部队对 1 支部队`。
+
+### 限制与下一步
+
+- 当前仍是 headless/Domain 验证，Unity Console 和 PlayMode 尚未验证。
+- 场景仍属于确定性 smoke suite，不是完整测试框架；下一步可以继续把断言拆得更细，或进入增援/撤退玩法语义扩展。
+
 ## 2026-04-30 Headless CLI Harness 记录
 
 ### 目标
