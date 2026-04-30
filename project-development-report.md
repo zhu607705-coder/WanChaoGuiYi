@@ -666,3 +666,28 @@ tools/unity/run_playmode_tests.sh
 ```
 
 - Unity 验证时优先对照 `tools/headless_runner/latest-war-report.json`，确认场景内 UI/日志呈现与 headless 断言一致。
+
+## 2026-04-30 Review Findings 修复
+
+### 已完成
+
+- 修复 headless assertion 假阳性风险：
+  - `HeadlessSimulationRunner` 在 `Pass()` 与 `FinalizeScenarioReport()` 中扫描失败 assertion。
+  - 任一 assertion 失败会把 scenario 和 suite 标为失败，并记录失败阶段与原因。
+  - `tools/verify_headless_war.sh` 现在检查所有 `assertions[].passed`，并逐场景校验必需 assertion 是否存在且通过。
+- 修复未接敌军队可执行撤退的问题：
+  - `MapCommandService.RetreatArmy()` 要求军队已有 `engagementId`。
+  - `active_retreat_leaves_engagement` 新增 `command.unengaged_retreat_rejected` 断言。
+- 清理 volatile 报告产物：
+  - `tools/headless_runner/latest-war-report.json` 保持运行时固定生成路径，但从版本跟踪中移除并加入 `.gitignore`。
+  - 避免每次验证因时间戳和随机 engagement id 让工作区变脏。
+
+### 验证
+
+- `tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang` 通过：
+  - `passed=True`
+  - `scenarioCount=4`
+  - 四个场景全部 `[PASS]`
+  - `command.unengaged_retreat_rejected` 存在且通过。
+- `python3 tools/unity/preflight_without_unity.py` 通过。
+- `git diff --check` 通过。

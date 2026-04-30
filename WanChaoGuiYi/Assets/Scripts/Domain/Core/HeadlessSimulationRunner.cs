@@ -103,12 +103,12 @@ namespace WanChaoGuiYi
 
             for (int i = 0; i < suite.scenarios.Count; i++)
             {
+                FinalizeScenarioReport(suite.scenarios[i]);
                 if (!suite.scenarios[i].passed)
                 {
                     suite.passed = false;
                 }
 
-                FinalizeScenarioReport(suite.scenarios[i]);
                 suite.report.scenarios.Add(suite.scenarios[i].report);
                 if (suite.scenarios[i].passed) suite.report.passedCount++;
                 else suite.report.failedCount++;
@@ -653,6 +653,14 @@ namespace WanChaoGuiYi
 
             string originRegionId = playerArmy.locationRegionId;
             string targetRegionId = enemyArmy.locationRegionId;
+            bool unengagedRetreatRejected = !runtime.commands.RetreatArmy(playerArmy.id, targetRegionId);
+            AddAssertion(result, "command.unengaged_retreat_rejected", "command", unengagedRetreatRejected,
+                true, unengagedRetreatRejected, "Unengaged army should not accept a retreat command.");
+            if (!unengagedRetreatRejected)
+            {
+                return Fail(result, runtime.state, runtime.worldState, "Unengaged army accepted a retreat command.");
+            }
+
             bool initialIssued = runtime.commands.MoveArmy(playerArmy.id, targetRegionId);
             AddAssertion(result, "command.attack_route_created", "command", initialIssued,
                 true, initialIssued, "Initial attack command should create engagement before retreat.");
@@ -1314,9 +1322,15 @@ namespace WanChaoGuiYi
 
         private static HeadlessSimulationResult Pass(HeadlessSimulationResult result, GameState state, WorldState worldState)
         {
-            result.passed = true;
             result.state = state;
             result.worldState = worldState;
+            ApplyAssertionFailures(result);
+            if (result.failureReason != null)
+            {
+                return result;
+            }
+
+            result.passed = true;
             if (result.report != null)
             {
                 result.report.passed = true;
@@ -1359,6 +1373,7 @@ namespace WanChaoGuiYi
         private static void FinalizeScenarioReport(HeadlessSimulationResult result)
         {
             if (result == null || result.report == null) return;
+            ApplyAssertionFailures(result);
             result.report.name = result.scenarioName;
             result.report.passed = result.passed;
             result.report.turnsExecuted = result.turnsExecuted;
@@ -1375,6 +1390,50 @@ namespace WanChaoGuiYi
             EnsurePhase(result, "outcome", "skip", "该场景未记录结果阶段。");
             EnsurePhase(result, "governance", "skip", "该场景不涉及治理折损。");
             EnsurePhase(result, "economy", "skip", "该场景不涉及经济结算。");
+        }
+
+        private static void ApplyAssertionFailures(HeadlessSimulationResult result)
+        {
+            HeadlessAssertionResult failedAssertion = FindFailedAssertion(result);
+            if (failedAssertion == null) return;
+
+            result.passed = false;
+            if (string.IsNullOrEmpty(result.failureReason))
+            {
+                result.failureReason = failedAssertion.message;
+            }
+
+            if (result.report != null)
+            {
+                result.report.passed = false;
+                if (string.IsNullOrEmpty(result.report.failureStage))
+                {
+                    result.report.failureStage = failedAssertion.phase;
+                }
+
+                if (string.IsNullOrEmpty(result.report.failureReason))
+                {
+                    result.report.failureReason = failedAssertion.message;
+                }
+            }
+
+            HeadlessPhaseResult phase = FindPhase(result, failedAssertion.phase);
+            if (phase != null)
+            {
+                phase.status = "fail";
+            }
+        }
+
+        private static HeadlessAssertionResult FindFailedAssertion(HeadlessSimulationResult result)
+        {
+            if (result == null || result.report == null || result.report.assertions == null) return null;
+            for (int i = 0; i < result.report.assertions.Count; i++)
+            {
+                HeadlessAssertionResult assertion = result.report.assertions[i];
+                if (assertion != null && !assertion.passed) return assertion;
+            }
+
+            return null;
         }
 
         private static List<string> CopyLogs(GameState state)

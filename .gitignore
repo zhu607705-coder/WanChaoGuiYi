@@ -32,3 +32,6 @@ WanChaoGuiYi/sysinfo.txt
 # Headless runner build outputs
 tools/headless_runner/WanChaoGuiYiHeadless/bin/
 tools/headless_runner/WanChaoGuiYiHeadless/obj/
+
+# Headless runner generated reports
+tools/headless_runner/latest-war-report.json

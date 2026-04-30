@@ -33,6 +33,9 @@ namespace WanChaoGuiYi
 
         public bool RetreatArmy(string armyId, string targetRegionId)
         {
+            ArmyRuntimeState army = queries != null ? queries.GetArmy(armyId) : null;
+            if (army == null || string.IsNullOrEmpty(army.engagementId)) return false;
+
             bool issued = IssueRouteCommand(armyId, targetRegionId, ArmyTask.Retreat, "撤退");
             if (issued) AddLog("war", armyId + "尝试脱离接敌，撤退会在行军阶段生效。原因：已接敌军队只允许主动撤退。影响：成功抵达后会移出接敌成员。");
             return issued;
