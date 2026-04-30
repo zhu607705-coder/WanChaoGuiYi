@@ -1,77 +1,62 @@
 {
-  "task": "不依赖 Unity 编译器的五项工作",
-  "iteration": 0,
-  "maxIterations": 5,
+  "task": "地图主导战争闭环长线重写与 Headless CLI Harness - Iteration 6",
+  "iteration": 6,
+  "maxIterations": 12,
   "stories": [
     {
-      "id": "US-001",
-      "title": "世界观设定文档",
+      "id": "US-022",
+      "title": "非 Unity JSON Repository",
       "priority": 1,
-      "description": "创建 docs/world-building.md，包含游戏世界观、时代跨度、帝皇选择逻辑、九州概念、法统体系",
+      "description": "新增命令行环境可用的数据仓库，直接从 Assets/Data/*.json 加载 headless 模拟需要的数据表。",
       "acceptanceCriteria": [
-        "docs/world-building.md 文件存在",
-        "包含时代跨度说明（秦→清）",
-        "包含帝皇选择逻辑（为什么选这 13 位）",
-        "包含九州概念定义",
-        "包含法统体系说明",
-        "所有引用有史料出处"
+        "NonUnityJsonDataRepository 实现 IDataRepository",
+        "Repository 使用 System.Text.Json IncludeFields 解析 Unity 风格字段模型",
+        "Repository 从传入 dataDirectory 加载 emperors、regions、historical_layers、policies、events、talents、units、technologies、victory_conditions、generals、buildings",
+        "Repository 注册 id 字典并对缺表、空 items、缺 id、重复 id 给出异常",
+        "Headless project 不引用 Unity DataRepository、TextAsset 或 JsonUtility"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-002",
-      "title": "JSON 数据完整性检查和补全",
+      "id": "US-023",
+      "title": "Headless CLI Harness",
       "priority": 2,
-      "description": "检查所有 JSON 数据表的完整性，补全缺失字段",
+      "description": "新增 .NET CLI 工程和运行脚本，命令行加载 JSON 后直接调用 HeadlessSimulationRunner.RunSingleLaneWar()。",
       "acceptanceCriteria": [
-        "所有 13 位帝皇有 score 字段",
-        "所有 56 个区域有完整 historical_layer",
-        "所有 generals.json 条目有 sourceReference",
-        "所有 buildings.json 条目有 sourceReference",
-        "所有 technologies.json 条目有 sourceReference",
-        "validate_data.py 通过"
+        "tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj 存在并链接 Domain/Core/World/Map/Military/Economy/Governance 所需源码",
+        "Program.cs 支持可选 data-dir 与 player-faction-id 参数，默认使用 WanChaoGuiYi/Assets/Data 和 faction_qin_shihuang",
+        "Program.cs 调用 repository.Load(dataDirectory) 与 runner.RunSingleLaneWar(repository, playerFactionId)",
+        "CLI 成功时输出 passed、turnsExecuted 和日志并返回 0",
+        "CLI 失败时输出 failureReason 和日志并返回非 0"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-003",
-      "title": "validate_data.py 增强",
+      "id": "US-024",
+      "title": "Headless 运行脚本与验证",
       "priority": 3,
-      "description": "增强验证脚本，新增 generals、buildings 表的引用检查",
+      "description": "提供稳定命令入口并运行当前环境可执行的验证；当前缺少 dotnet 时明确提示安装要求。",
       "acceptanceCriteria": [
-        "新增 generals 表加载和 id 唯一性检查",
-        "新增 buildings 表加载和 id 唯一性检查",
-        "新增 buildings 的 requiresTech 引用检查",
-        "新增 generals 的 terrainBonus key 合法性检查",
-        "新增数据完整性报告输出",
-        "python3 tools/validate_data.py 通过"
+        "tools/run_headless_simulation.sh 存在且可执行",
+        "运行脚本会检查 dotnet SDK，缺失时返回 127 并提示安装 .NET SDK 8+",
+        "静态验证确认 CLI 调用 RunSingleLaneWar(repository, playerFactionId)",
+        "静态验证确认 headless csproj 不包含 Unity adapter 文件",
+        "python3 tools/validate_data.py 和 python3 tools/validate_domain_core.py 通过"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "US-004",
-      "title": "文档更新",
+      "id": "US-025",
+      "title": "Headless CLI 记录与限制",
       "priority": 4,
-      "description": "更新 data-contract.md、architecture.md、project-development-report.md",
+      "description": "把本轮 CLI harness 的用法、验证结果和当前 dotnet 缺失限制写入项目记录。",
       "acceptanceCriteria": [
-        "data-contract.md 新增 General、Building 数据契约",
-        "architecture.md 新增将领系统、建筑系统架构说明",
-        "project-development-report.md 记录最新进展"
+        ".omc/progress.txt 记录新增 repository、CLI harness、运行脚本和验证结果",
+        "project-development-report.md 记录如何运行 tools/run_headless_simulation.sh",
+        "记录当前环境 dotnet/csc/mcs 均不可用，无法实际执行 C# harness",
+        "记录下一步是在安装 dotnet SDK 后运行真实 headless smoke 并修复编译/运行错误"
       ],
-      "passes": false
-    },
-    {
-      "id": "US-005",
-      "title": "map_region_shapes.json 边界点精修",
-      "priority": 5,
-      "description": "精修 56 个区域的边界点数据",
-      "acceptanceCriteria": [
-        "所有 56 个区域有 boundary 点数据",
-        "boundary 点数量 >= 3",
-        "邻接区域的边界点大致吻合",
-        "validate_data.py 通过"
-      ],
-      "passes": false
+      "passes": true
     }
   ]
 }
