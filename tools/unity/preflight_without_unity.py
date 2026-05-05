@@ -5,7 +5,7 @@ import sys
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PROJECT = os.path.join(ROOT, "WanChaoGuiYi")
+PROJECT = os.path.join(ROOT, "My project")
 ASSETS = os.path.join(PROJECT, "Assets")
 DATA = os.path.join(ASSETS, "Data")
 
@@ -72,9 +72,25 @@ def main():
 
     required_files = [
         os.path.join(ASSETS, "Scripts", "WanChaoGuiYi.Runtime.asmdef"),
+        os.path.join(ASSETS, "Scripts", "Demo", "DemoSceneBootstrap.cs"),
+        os.path.join(ASSETS, "Scripts", "UI", "UISetup.cs"),
+        os.path.join(ASSETS, "Resources", "Map", "jiuzhou_generated_map.png"),
+        os.path.join(ASSETS, "Resources", "Data", "map_render_metadata.json"),
         os.path.join(ASSETS, "Tests", "PlayMode", "WanChaoGuiYi.PlayModeTests.asmdef"),
         os.path.join(ASSETS, "Tests", "PlayMode", "GameManagerPlayModeSmokeTests.cs"),
         os.path.join(ROOT, "tools", "unity", "run_playmode_tests.sh"),
+        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.ps1"),
+        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.cmd"),
+        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.ps1"),
+        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.cmd"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.sh"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.ps1"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.cmd"),
+        os.path.join(ROOT, "tools", "verify_headless_war.ps1"),
+        os.path.join(ROOT, "tools", "verify_headless_war.cmd"),
+        os.path.join(ROOT, "tools", "run_headless_simulation.ps1"),
+        os.path.join(ROOT, "tools", "run_headless_simulation.cmd"),
+        os.path.join(ROOT, "tools", "art", "render_jiuzhou_isometric_preview.py"),
     ]
     for path in required_files:
         code = require_file(path)
@@ -91,7 +107,7 @@ def main():
     if "WanChaoGuiYi.Runtime" not in playmode_asmdef.get("references", []):
         return fail("PlayMode asmdef does not reference WanChaoGuiYi.Runtime")
 
-    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and PlayMode entrypoints are present.")
+    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and Unity handoff entrypoints are present.")
     return 0
 
 

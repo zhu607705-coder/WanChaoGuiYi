@@ -35,6 +35,9 @@
     "description": "新征服区域更快完成制度统一，但徭役压力和继承风险增长更快。"
   },
   "historicalBurdens": ["民力透支", "继承脆弱", "地方反弹"],
+  "diplomacySkills": [
+    {"id": "shu_tong_wen_che_tong_gui", "name": "书同文车同轨", "moneyCost": 20, "talentCost": 0, "cooldownTurns": 3}
+  ],
   "preferredPolicies": ["jun_xian_system", "standardization", "strict_law", "grand_projects"],
   "aiPersonality": {
     "expansion": 85,
@@ -65,6 +68,28 @@
   },
   "prompt": "Original game concept art portrait...",
   "uiCropHints": {"headCenterX": 0.5, "headCenterY": 0.31, "safeScale": 0.88}
+}
+```
+
+## General
+
+将领表驱动自动结算、地形/兵种加成和将领 UI 展示。`portraitAssetPath` 是将领立绘的稳定 Unity 资源路径，必须指向 `Assets/Art/Portraits/Generals/*.png` 下的实际 PNG。
+
+```json
+{
+  "id": "guan_yu",
+  "portraitAssetPath": "Assets/Art/Portraits/Generals/guan_yu.png",
+  "name": "关羽",
+  "title": "武圣",
+  "era": "classical",
+  "military": 96,
+  "loyalty": 95,
+  "specialAbility": "water_attack",
+  "specialAbilityName": "水攻",
+  "specialAbilityDesc": "在河流区域战斗力+30%",
+  "terrainBonus": {"river_plain": 30, "river_delta": 20},
+  "unitBonus": {"infantry": 10, "cavalry": 5},
+  "sourceReference": "《三国志·关羽传》"
 }
 ```
 
@@ -122,6 +147,25 @@
   "uiSummary": "关中适合中央集权、工程和标准化军备。"
 }
 ```
+
+## Heavy Strategy Defaults (H0-H6)
+
+These fields may be authored later, but current JSON stays backward-compatible by deriving defaults from existing `regions.json` and `historical_layers.json`.
+
+- `regionSpecialization`: optional author override. Valid values: `grain`, `military`, `tax`, `border`, `legitimacy`, `culture`, `capital`. If absent, runtime derives it from terrain, yields, land structure, legitimacy memory, era profile, geography tags, and strategic resources.
+- `supplyNode`: optional boolean author override. If absent, runtime derives it from capital / military / border identity and corridor / pass / frontier / horse / iron / labor-pool tags.
+- `controlStage`: runtime/save field. Valid values: `controlled`, `newly_attached`, `military_governed`, `pacified`, `registered`. It refines `OccupationStatus.Occupied` and prevents new conquests from granting full tax/grain/manpower immediately.
+- `localAcceptance`: runtime/save field. Distinct from short-term `rebellionRisk`; it models whether local society recognizes rule. Pacification and relief can raise it; military governance, emergency tax, and conscription can lower it.
+- `visibilityState`: runtime/save field. Valid values: `hidden`, `known`, `scouted`. War forecasts must hide full enemy detail when target risk is not scouted.
+- `actionForecast`: runtime/UI object. Every governance or campaign action must expose cost, immediate delta, risk delta, next control stage, and historical-source summary before execution.
+- `GovernanceActionForecast`: C# runtime/UI forecast object for pacify, military governance, household registration, relief, emergency tax, conscription, and equivalent future actions. It must expose money/food/legitimacy/population/manpower deltas, local order deltas, contribution deltas, next control stage, `canApply`, disabled reason, reason text, and source summary.
+- `CampaignRouteForecast`: C# runtime/UI forecast object for war projection. It must expose route, supply cost, projected supply/power, visibility state, unknown-risk flag, contact risk, interception risk, dispatch gate, disabled reason, and source summary.
+
+Validation gate:
+- Every region must retain `legitimacyMemory`, `landStructure`, `neighbors`, and a matching historical layer.
+- Historical layers must keep `uiSummary` plus geography/resource tags so derived specialization and supply rules remain explainable.
+- Any authored `regionSpecialization` or `supplyNode` value must pass `tools/validate_data.py`.
+- `tools/validate_data.py` must fail if this contract drops the heavy strategy source/default/forecast field names, so docs cannot drift away from the JSON/runtime gate.
 
 ## Map Region Shape
 
@@ -259,7 +303,7 @@
 
 ## Policy
 
-政策必须声明成本、效果、风险和适配帝皇机制。
+政策必须声明成本、效果、风险、历史来源和适配帝皇机制。`sourceReference` 必填，引用正史、政书或典籍；治理/政策 UI 必须能展示该来源摘要。
 
 ```json
 {
@@ -269,9 +313,41 @@
   "cost": {"money": 40, "legitimacy": 3},
   "effects": {"taxBase": 8, "annexationPressure": -10},
   "risks": {"eliteAnger": 12, "rebellionRisk": 4},
+  "sourceReference": "《汉书·食货志》《明史·食货志》",
   "mechanicTags": ["land_control", "centralization"]
 }
 ```
+
+### Source Reference Contract
+
+`sourceReference` 是历史启发型机制的必填来源字段。所有新增 policy、diplomacy、border、war、governance 机制如果进入 JSON 数据表、运行时动作定义或 UI 可选项，都必须具备来源说明；如果某类动作暂时只写在 C# 中，也必须在对应 UI 文案或数据契约里保留等价来源摘要，后续迁移成 JSON 时不得丢失。
+
+适用范围：
+
+- `policy`：政策、改革、内政、经济、军事和朝廷动作，引用正史、政书或典籍。
+- `diplomacy`：议和、宣战、盟约、毁约、朝贡、封贡等外交动作，引用史书纪传、会要、实录或制度史材料。
+- `border`：封关、边禁、互市、屯边、徙民实边、经略边疆等边境动作，引用食货志、兵志、边防记载或相关实录。
+- `war`：出征、围攻、增援、撤退、布防、征发、后勤补给等战争动作，引用兵书、正史兵志、纪传或战役记载。
+- `governance`：安抚、整合、户籍、赋役、赈济、肃贪、地方妥协等治理动作，引用食货志、职官志、刑法志、政书或地方治理记载。
+
+示例：
+
+```json
+{
+  "id": "border_closure",
+  "domain": "border",
+  "label": "封关禁市",
+  "effects": {"borderControl": 8, "smugglingRisk": 4},
+  "risks": {"taxEfficiency": -3, "diplomacyOpinion": -6},
+  "sourceReference": "《明史·食货志》《清实录》"
+}
+```
+
+UI 展示规则：
+
+- 玩家可主动选择的机制必须显示来源摘要或提供可展开来源。
+- 来源字段不能只存在于策划文档；数据校验应尽量覆盖已经进入 JSON 的机制表。
+- 缺少来源的新增机制不得标记为完成。
 
 ## Event
 

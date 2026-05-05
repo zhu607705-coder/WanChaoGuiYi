@@ -1,6 +1,10 @@
 # macOS
 .DS_Store
 
+# Python generated caches
+__pycache__/
+*.py[cod]
+
 # Unity generated folders
 WanChaoGuiYi/Library/
 WanChaoGuiYi/Temp/
@@ -9,6 +13,13 @@ WanChaoGuiYi/Build/
 WanChaoGuiYi/Builds/
 WanChaoGuiYi/Logs/
 WanChaoGuiYi/UserSettings/
+My project/Library/
+My project/Temp/
+My project/Obj/
+My project/Build/
+My project/Builds/
+My project/Logs/
+My project/UserSettings/
 
 # Unity generated files
 WanChaoGuiYi/*.csproj
@@ -21,6 +32,16 @@ WanChaoGuiYi/*.svd
 WanChaoGuiYi/*.pdb
 WanChaoGuiYi/*.mdb
 WanChaoGuiYi/sysinfo.txt
+My project/*.csproj
+My project/*.sln
+My project/*.suo
+My project/*.user
+My project/*.pidb
+My project/*.booproj
+My project/*.svd
+My project/*.pdb
+My project/*.mdb
+My project/sysinfo.txt
 
 # Rider / VS Code
 .idea/
@@ -35,3 +56,6 @@ tools/headless_runner/WanChaoGuiYiHeadless/obj/
 
 # Headless runner generated reports
 tools/headless_runner/latest-war-report.json
+
+# Codex outputs
+.outputs/

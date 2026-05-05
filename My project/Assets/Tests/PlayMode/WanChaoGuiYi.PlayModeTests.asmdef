@@ -1,0 +1,22 @@
+{
+  "name": "WanChaoGuiYi.PlayModeTests",
+  "rootNamespace": "WanChaoGuiYi.Tests",
+  "references": [
+    "WanChaoGuiYi.Runtime",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

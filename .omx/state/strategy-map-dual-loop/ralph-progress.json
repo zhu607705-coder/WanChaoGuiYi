@@ -1,0 +1,63 @@
+﻿{
+    "mode":  "ralph",
+    "active":  false,
+    "iteration":  1,
+    "maxIterations":  10,
+    "currentPhase":  "completed",
+    "currentStage":  "complete",
+    "startedAtUtc":  "2026-05-04T12:14:58Z",
+    "contextSnapshotPath":  ".omx/context/post-stage-war-pressure-20260505T004133Z.md",
+    "prdPath":  ".omx/plans/prd-strategy-map-dual-loop.md",
+    "testSpecPath":  ".omx/plans/test-spec-strategy-map-dual-loop.md",
+    "stageStatus":  {
+                        "Stage 0":  "completed",
+                        "Stage A":  "completed",
+                        "Stage B":  "completed",
+                        "Stage C":  "completed",
+                        "Stage D":  "completed",
+                        "Stage E":  "completed",
+                        "Stage F":  "completed"
+                    },
+    "completedAtUtc":  "2026-05-04T16:34:33Z",
+    "postStageMaintenance":  {
+                                 "lastUpdatedUtc":  "2026-05-05T05:31:36Z",
+                                 "lastFocus":  "heavy strategy systems H0-H6 full closure hard gate",
+                                 "lastStatus":  "completed-full-closure",
+                                 "lastVerification":  {
+                                                          "data":  "passed regions=56 map_region_shapes=56",
+                                                          "unityPreflight":  "passed",
+                                                          "domainCore":  "passed",
+                                                          "headlessWar":  "passed scenarioCount=14 with H1-H4 heavy strategy scenarios required",
+                                                          "runtimeBuild":  "passed",
+                                                          "playModeTestsBuild":  "passed",
+                                                          "playMode":  "passed total=21 passed=20 failed=0 skipped=1; skipped VisualSmoke is graphics-gated under nographics",
+                                                          "visualSmoke":  "graphics gate passed with 12 screenshots at 1600x900; temporary .outputs/visual/unity-*.png count=0, .outputs/tuanjie/visual-project-copy absent, .outputs/tuanjie/visual-preview-copy absent",
+                                                          "visualVerdict":  "visual smoke screenshots passed nonblank/color checks via run_visual_smoke_tests.ps1",
+                                                          "codeReview":  "previous request-changes items fixed: governance forecast drift, outliner/sidebar overlap, mesh fallback gate",
+                                                          "uiBenchmarkDoc":  "added docs/strategy-ui-reference-benchmarks.md; no code execution change",
+                                                          "heavySystemsPlan":  "prd/test-spec marked approved and executed for H0-H6 full closure"
+                                                      },
+                                 "nextFocusCandidates":  [
+                                                             "governance main panel componentization and lower text density",
+                                                             "2.5D terrain height/shadow/highlight expression without replacing 56 region boundaries",
+                                                             "outliner grouping and priority filters for risk, marching armies, policies, occupation, reports",
+                                                             "continued label avoidance and map zoom/pan feel tuning",
+                                                             "performance profiling for 1024x576 and 1280x720 UI/map interactions"
+                                                         ]
+                             },
+    "heavyStrategySystems":  {
+                                 "status":  "completed-full-closure",
+                                 "completedAtUtc":  "2026-05-05T05:31:36Z",
+                                 "prdPath":  ".omx/plans/prd-heavy-strategy-systems.md",
+                                 "testSpecPath":  ".omx/plans/test-spec-heavy-strategy-systems.md",
+                                 "stages":  {
+                                                "H0":  "completed: data/source contract gate remains valid for 56 regions",
+                                                "H1":  "completed: specialization and governance forecast headless gate",
+                                                "H2":  "completed: occupation control chain and UI forecast gate",
+                                                "H3":  "completed: connected campaign, supply node, visibility, interception forecast plus turn-advance gate",
+                                                "H4":  "completed: relief/tax pressure causality gate",
+                                                "H5":  "completed: lens/outliner click, collapse, narrow viewport gate",
+                                                "H6":  "completed: PlayMode plus graphics VisualSmoke with screenshot and visual-project/preview-copy cleanup gate"
+                                            }
+                             }
+}
