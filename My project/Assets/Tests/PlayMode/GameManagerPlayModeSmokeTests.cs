@@ -1332,13 +1332,40 @@ namespace WanChaoGuiYi.Tests
             targetRegion.rebellionRisk = 90;
             targetRegion.localPower = 75;
 
+            RegionState occupiedRegion = manager.State.FindRegion(playerFaction.regionIds[1]);
+            Assert.IsNotNull(occupiedRegion, "Outliner smoke needs a second region for occupation grouping.");
+            occupiedRegion.occupationStatus = OccupationStatus.Occupied;
+            occupiedRegion.controlStage = ControlStage.NewlyAttached;
+
+            ArmyRuntimeState movingArmy = null;
+            foreach (ArmyRuntimeState army in manager.World.Map.ArmiesById.Values)
+            {
+                if (army.ownerFactionId == playerFaction.id)
+                {
+                    movingArmy = army;
+                    break;
+                }
+            }
+            Assert.IsNotNull(movingArmy, "Outliner smoke needs a player army for army grouping.");
+            movingArmy.task = ArmyTask.Move;
+            movingArmy.targetRegionId = targetRegionId;
+            movingArmy.supply = StrategyCausalRules.LowSupplyBattleThreshold - 1;
+            manager.State.AddLog("war", targetRegionId + "发生接敌：outliner smoke report.");
+
             GameObject.Find("LensRiskButton").GetComponent<Button>().onClick.Invoke();
             yield return null;
             Canvas.ForceUpdateCanvases();
 
             AssertPanelVisible("StrategyOutlinerPanel", "Outliner should start expanded when the region sidebar is not open.");
+            Text outlinerText = GameObject.Find("StrategyOutlinerText").GetComponent<Text>();
+            Assert.IsTrue(outlinerText.text.Contains("高风险地区"), "Outliner summary should group high-risk regions.");
+            Assert.IsTrue(outlinerText.text.Contains("新占治理"), "Outliner summary should group occupation-chain work.");
+            Assert.IsTrue(outlinerText.text.Contains("行军军队"), "Outliner summary should group marching and low-supply armies.");
+            Assert.IsTrue(outlinerText.text.Contains("最新战报"), "Outliner summary should group recent reports with a region target.");
             Button firstEntry = GameObject.Find("StrategyOutlinerEntryButton_0").GetComponent<Button>();
             Assert.IsNotNull(firstEntry, "Critical region should create a clickable outliner entry.");
+            Text firstEntryText = firstEntry.GetComponentInChildren<Text>();
+            Assert.IsTrue(firstEntryText.text.Contains("高风险地区"), "Highest-priority outliner entry should expose its group label.");
             firstEntry.onClick.Invoke();
             yield return null;
             Canvas.ForceUpdateCanvases();

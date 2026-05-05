@@ -81,8 +81,11 @@ namespace WanChaoGuiYi
     public sealed class StrategyOutlinerEntry
     {
         public string category;
+        public string groupId;
+        public string groupLabel;
         public string targetId;
         public string label;
+        public int groupPriority;
         public int priority;
     }
 
@@ -536,15 +539,15 @@ namespace WanChaoGuiYi
                 ControlStage stage = ResolveControlStage(region);
                 if (region.rebellionRisk >= 55 || region.localPower >= 70)
                 {
-                    entries.Add(new StrategyOutlinerEntry { category = "critical_region", targetId = region.id, label = region.id + " risk " + region.rebellionRisk + "/" + region.localPower, priority = 90 });
+                    entries.Add(CreateOutlinerEntry("critical_region", "risk", "高风险地区", 100, region.id, region.id + " risk " + region.rebellionRisk + "/" + region.localPower, 90));
                 }
                 if (stage != ControlStage.Controlled)
                 {
-                    entries.Add(new StrategyOutlinerEntry { category = "occupation_chain", targetId = region.id, label = region.id + " control " + stage, priority = 80 });
+                    entries.Add(CreateOutlinerEntry("occupation_chain", "occupation", "新占治理", 90, region.id, region.id + " control " + stage, 80));
                 }
                 if (region.localAcceptance > 0 && region.localAcceptance < 45)
                 {
-                    entries.Add(new StrategyOutlinerEntry { category = "acceptance", targetId = region.id, label = region.id + " acceptance " + region.localAcceptance, priority = 70 });
+                    entries.Add(CreateOutlinerEntry("acceptance", "risk", "高风险地区", 100, region.id, region.id + " acceptance " + region.localAcceptance, 70));
                 }
             }
 
@@ -555,14 +558,16 @@ namespace WanChaoGuiYi
                     if (army == null) continue;
                     if (army.task != ArmyTask.Idle)
                     {
-                        entries.Add(new StrategyOutlinerEntry { category = "marching_army", targetId = army.id, label = army.id + " " + army.task + " -> " + army.targetRegionId, priority = 75 });
+                        entries.Add(CreateOutlinerEntry("marching_army", "army", "行军军队", 80, army.id, army.id + " " + army.task + " -> " + army.targetRegionId, 75));
                     }
                     if (army.supply < StrategyCausalRules.LowSupplyBattleThreshold)
                     {
-                        entries.Add(new StrategyOutlinerEntry { category = "low_supply", targetId = army.id, label = army.id + " supply " + army.supply, priority = 85 });
+                        entries.Add(CreateOutlinerEntry("low_supply", "army", "行军军队", 80, army.id, army.id + " supply " + army.supply, 85));
                     }
                 }
             }
+
+            AddRecentReportEntries(entries, state);
 
             entries.Sort(CompareOutlinerEntries);
             return entries;
@@ -723,9 +728,81 @@ namespace WanChaoGuiYi
 
         private static int CompareOutlinerEntries(StrategyOutlinerEntry a, StrategyOutlinerEntry b)
         {
+            int ag = a != null ? a.groupPriority : 0;
+            int bg = b != null ? b.groupPriority : 0;
+            int groupCompare = bg.CompareTo(ag);
+            if (groupCompare != 0) return groupCompare;
+
             int ap = a != null ? a.priority : 0;
             int bp = b != null ? b.priority : 0;
-            return bp.CompareTo(ap);
+            int priorityCompare = bp.CompareTo(ap);
+            if (priorityCompare != 0) return priorityCompare;
+
+            string al = a != null ? a.label : "";
+            string bl = b != null ? b.label : "";
+            return string.Compare(al, bl, StringComparison.Ordinal);
+        }
+
+        private static StrategyOutlinerEntry CreateOutlinerEntry(string category, string groupId, string groupLabel, int groupPriority, string targetId, string label, int priority)
+        {
+            return new StrategyOutlinerEntry
+            {
+                category = category,
+                groupId = groupId,
+                groupLabel = groupLabel,
+                groupPriority = groupPriority,
+                targetId = targetId,
+                label = label,
+                priority = priority
+            };
+        }
+
+        private static void AddRecentReportEntries(List<StrategyOutlinerEntry> entries, GameState state)
+        {
+            if (entries == null || state == null || state.turnLog == null || state.turnLog.Count == 0) return;
+
+            int added = 0;
+            for (int i = state.turnLog.Count - 1; i >= 0 && added < 2; i--)
+            {
+                TurnLogEntry log = state.turnLog[i];
+                if (log == null || string.IsNullOrEmpty(log.message)) continue;
+                if (!IsOutlinerReportCategory(log.category)) continue;
+
+                string targetId = ResolveFirstRegionMention(state, log.message);
+                if (string.IsNullOrEmpty(targetId)) continue;
+
+                string label = "[" + log.category + "] " + CompactOutlinerLabel(log.message, 34);
+                entries.Add(CreateOutlinerEntry("latest_report", "report", "最新战报", 60, targetId, label, 50 - added));
+                added++;
+            }
+        }
+
+        private static bool IsOutlinerReportCategory(string category)
+        {
+            return category == "war" || category == "rebellion" || category == "event" || category == "diplomacy";
+        }
+
+        private static string ResolveFirstRegionMention(GameState state, string message)
+        {
+            if (state == null || state.regions == null || string.IsNullOrEmpty(message)) return null;
+            for (int i = 0; i < state.regions.Count; i++)
+            {
+                RegionState region = state.regions[i];
+                if (region != null && !string.IsNullOrEmpty(region.id) && message.Contains(region.id))
+                {
+                    return region.id;
+                }
+            }
+
+            return null;
+        }
+
+        private static string CompactOutlinerLabel(string label, int maxLength)
+        {
+            if (string.IsNullOrEmpty(label) || maxLength <= 0) return "";
+            if (label.Length <= maxLength) return label;
+            if (maxLength <= 3) return label.Substring(0, maxLength);
+            return label.Substring(0, maxLength - 3) + "...";
         }
 
         private static void ChooseBetter(RegionSpecialization candidate, int score, ref RegionSpecialization best, ref int bestScore)

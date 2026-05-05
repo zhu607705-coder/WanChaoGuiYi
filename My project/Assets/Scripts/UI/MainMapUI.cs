@@ -984,10 +984,10 @@ namespace WanChaoGuiYi
             if (strategyOutlinerRoot == null)
             {
                 strategyOutlinerRoot = CreateRuntimePanel(canvas.transform, "StrategyOutlinerPanel", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-12, -108), new Vector2(292, 330));
-                CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerTitle", "Outliner", new Vector2(10, -10), new Vector2(0, 1), new Vector2(170, 26), 13);
+                CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerTitle", "军政待办", new Vector2(10, -10), new Vector2(0, 1), new Vector2(170, 26), 13);
                 Button collapse = CreateRuntimeButton(strategyOutlinerRoot.transform, "StrategyOutlinerCollapseButton", "-", new Vector2(264, -12), new Vector2(1, 1), new Vector2(24, 24));
                 collapse.onClick.AddListener(CollapseStrategyOutliner);
-                strategyOutlinerText = CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerText", "", new Vector2(10, -42), new Vector2(0, 1), new Vector2(272, 34), 10);
+                strategyOutlinerText = CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerText", "", new Vector2(10, -42), new Vector2(0, 1), new Vector2(272, 62), 10);
                 strategyOutlinerText.verticalOverflow = VerticalWrapMode.Truncate;
             }
 
@@ -1033,8 +1033,8 @@ namespace WanChaoGuiYi
             ClearStrategyOutlinerEntryButtons();
             List<StrategyOutlinerEntry> entries = StrategyMapRulebook.BuildOutliner(gameManager.State, gameManager.World);
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.AppendLine("Top actions | lens " + currentLens);
-            int count = Mathf.Min(entries.Count, 8);
+            AppendOutlinerSummary(sb, entries);
+            int count = Mathf.Min(entries.Count, 7);
             for (int i = 0; i < count; i++)
             {
                 StrategyOutlinerEntry entry = entries[i];
@@ -1052,7 +1052,7 @@ namespace WanChaoGuiYi
         {
             if (strategyOutlinerRoot == null || entry == null) return;
 
-            string label = entry.category + " | " + entry.label;
+            string label = ResolveOutlinerButtonLabel(entry);
             if (label.Length > 42)
             {
                 label = label.Substring(0, 39) + "...";
@@ -1062,7 +1062,7 @@ namespace WanChaoGuiYi
                 strategyOutlinerRoot.transform,
                 "StrategyOutlinerEntryButton_" + index,
                 label,
-                new Vector2(146, -82 - index * 30),
+                new Vector2(146, -112 - index * 30),
                 new Vector2(0.5f, 1),
                 new Vector2(272, 26));
             int capturedIndex = index;
@@ -1090,6 +1090,57 @@ namespace WanChaoGuiYi
 
             gameManager.State.AddLog("ui", "outliner selected " + index + ": " + category + " -> " + regionId);
             gameManager.Events.Publish(new GameEvent(GameEventType.RegionSelected, regionId, null));
+        }
+
+        private void AppendOutlinerSummary(System.Text.StringBuilder sb, List<StrategyOutlinerEntry> entries)
+        {
+            if (sb == null) return;
+            sb.AppendLine("Lens " + currentLens + " | " + (entries != null ? entries.Count : 0) + " items");
+            if (entries == null || entries.Count == 0) return;
+
+            List<string> groups = new List<string>();
+            List<int> counts = new List<int>();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                StrategyOutlinerEntry entry = entries[i];
+                string label = ResolveOutlinerGroupLabel(entry);
+                int index = groups.IndexOf(label);
+                if (index < 0)
+                {
+                    groups.Add(label);
+                    counts.Add(1);
+                }
+                else
+                {
+                    counts[index] = counts[index] + 1;
+                }
+            }
+
+            int visibleGroups = Mathf.Min(groups.Count, 4);
+            for (int i = 0; i < visibleGroups; i++)
+            {
+                if (i > 0) sb.Append("  ");
+                sb.Append(groups[i]);
+                sb.Append(" ");
+                sb.Append(counts[i]);
+            }
+        }
+
+        private static string ResolveOutlinerButtonLabel(StrategyOutlinerEntry entry)
+        {
+            if (entry == null) return "";
+            return ResolveOutlinerGroupLabel(entry) + " | " + entry.label;
+        }
+
+        private static string ResolveOutlinerGroupLabel(StrategyOutlinerEntry entry)
+        {
+            if (entry == null) return "其他";
+            if (!string.IsNullOrEmpty(entry.groupLabel)) return entry.groupLabel;
+            if (entry.category == "critical_region" || entry.category == "acceptance") return "高风险地区";
+            if (entry.category == "occupation_chain") return "新占治理";
+            if (entry.category == "marching_army" || entry.category == "low_supply") return "行军军队";
+            if (entry.category == "latest_report") return "最新战报";
+            return "其他";
         }
 
         private void ClearStrategyOutlinerEntryButtons()

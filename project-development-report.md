@@ -2069,3 +2069,26 @@ $team .omx/plans/prd-strategy-map-dual-loop.md .omx/plans/test-spec-strategy-map
 
 - 只读 review 智能体第一轮指出 UI 侦察入口仍会整势力揭示、事件关闭按钮文案异常；本轮已补 UI 入口目标区传递、底层单区兜底与 PlayMode 真实按钮断言，并修正关闭按钮文案。
 - 最终只读 review 智能体复核结论为 `APPROVE`，审查范围覆盖 `MechanismPanel.cs`、`EspionageSystem.cs`、`GameManagerPlayModeSmokeTests.cs`、`UISetup.cs`，0 findings。
+
+## 2026-05-05 Outliner Grouping Optimization Pass
+
+### 目标
+
+继续在 H0-H6 完全闭环之后寻找可验证缺口。本轮选择 outliner：它已经能折叠、点击和避让右侧栏，但仍只是按优先级排出的 `Top actions`，没有把“高风险地区、行军军队、新占治理、最新战报”显性分组，玩家扫读压力不够。
+
+### 已修复
+
+- `StrategyOutlinerEntry` 增加 `groupId`、`groupLabel`、`groupPriority`，让 outliner 不只按单条优先级排序，也能先按军政压力类型分组。
+- `StrategyMapRulebook.BuildOutliner()` 将高民变/高地方势力与低民心归入“高风险地区”，占领链归入“新占治理”，行军/低补给归入“行军军队”，最近 war/rebellion/event/diplomacy 日志中能匹配地区的记录归入“最新战报”。
+- `MainMapUI` 将 outliner 标题改为“军政待办”，摘要区显示当前 lens、总条目数和前 4 个分组计数；按钮标签带分组名前缀，降低玩家看见一串内部 category 的调试感。
+- PlayMode `StrategyOutlinerEntriesSelectRegionsAndAvoidExpandedSidebar` 扩展为同时制造高风险区、新占治理区、低补给行军军队和地区战报，断言四类分组摘要出现、最高优先级条目带“高风险地区”，并继续验证 1024x576 点击后右栏折叠避让。
+
+### 验证结果
+
+- `git diff --check` 通过。
+- `dotnet build "My project\WanChaoGuiYi.Runtime.csproj"` 通过；仅保留既有 Unity 序列化字段 warning。并行验证时曾出现 Runtime obj 文件锁 warning，串行重跑 PlayModeTests 后无 warning / 0 error。
+- `dotnet build "My project\WanChaoGuiYi.PlayModeTests.csproj"` 串行通过，0 warning / 0 error。
+- `python tools\validate_domain_core.py` 通过。
+- `python tools\unity\preflight_without_unity.py` 通过。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\unity\run_playmode_tests.ps1 "My project"` 通过：`total=22 passed=21 failed=0 skipped=1`，唯一 skipped 仍是 headless/nographics 下预期的 `VisualSmokeCaptureTests`。
+- 未运行 VisualSmoke；本轮只改 outliner UI 文本/按钮分组和 PlayMode 验收，不生成截图。清理复核：`.outputs/visual/unity-*.png` 数量 0，`.outputs/tuanjie/visual-project-copy` 与 `.outputs/tuanjie/visual-preview-copy` 均不存在。

@@ -95,5 +95,32 @@
                                                                    "My project/Assets/Scripts/UI/UISetup.cs"
                                                                ]
                                          }
-                          }
+                          },
+    "postReviewOptimization":  {
+                                   "lastUpdatedUtc":  "2026-05-05T10:02:47Z",
+                                   "lastFocus":  "outliner grouping and priority readability",
+                                   "lastStatus":  "completed",
+                                   "gapFound":  "Outliner was clickable and collapsible but still presented a flat Top actions queue instead of explicit risk, occupation, army, and report groups.",
+                                   "changes":  [
+                                                   "StrategyOutlinerEntry now carries group id, label, and group priority.",
+                                                   "BuildOutliner groups high-risk regions, occupation-chain work, marching or low-supply armies, and region-targeted recent reports.",
+                                                   "MainMapUI renders a grouped Chinese summary and prefixes entry buttons with the group label.",
+                                                   "PlayMode outliner smoke now asserts group summaries and 1024x576 click/collapse behavior together."
+                                               ],
+                                   "verification":  {
+                                                        "diffCheck":  "passed",
+                                                        "runtimeBuild":  "passed with existing Unity serialization warnings only",
+                                                        "playModeTestsBuild":  "passed after serial rerun, 0 warning / 0 error",
+                                                        "domainCore":  "passed",
+                                                        "unityPreflight":  "passed",
+                                                        "playMode":  "passed total=22 passed=21 failed=0 skipped=1; only skip is VisualSmokeCaptureTests under headless graphics gate",
+                                                        "visualCleanup":  ".outputs/visual/unity-*.png count=0; visual-project-copy absent; visual-preview-copy absent"
+                                                    },
+                                   "nextFocusCandidates":  [
+                                                              "governance main panel componentization and lower text density",
+                                                              "war route pressure visual hierarchy and battle report feedback",
+                                                              "continued label avoidance for region-name overview density",
+                                                              "map zoom/pan feel and performance profiling for 1024x576 and 1280x720"
+                                                          ]
+                               }
 }
