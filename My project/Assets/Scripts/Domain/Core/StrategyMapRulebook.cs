@@ -272,8 +272,46 @@ namespace WanChaoGuiYi
         public static VisibilityState ResolveInitialVisibility(RegionDefinition definition, RegionState state)
         {
             if (state == null) return VisibilityState.Hidden;
-            if (state.ownerFactionId == null) return VisibilityState.Hidden;
-            return VisibilityState.Known;
+            return VisibilityState.Hidden;
+        }
+
+        public static VisibilityState ResolveInitialVisibility(RegionDefinition definition, RegionState state, GameState gameState, string observingFactionId)
+        {
+            if (state == null || string.IsNullOrEmpty(state.ownerFactionId) || string.IsNullOrEmpty(observingFactionId))
+            {
+                return VisibilityState.Hidden;
+            }
+
+            if (state.ownerFactionId == observingFactionId)
+            {
+                return VisibilityState.Known;
+            }
+
+            if (definition != null && IsAdjacentToFaction(definition, gameState, observingFactionId))
+            {
+                return VisibilityState.Known;
+            }
+
+            return VisibilityState.Hidden;
+        }
+
+        private static bool IsAdjacentToFaction(RegionDefinition definition, GameState gameState, string factionId)
+        {
+            if (definition == null || definition.neighbors == null || gameState == null || string.IsNullOrEmpty(factionId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < definition.neighbors.Length; i++)
+            {
+                RegionState neighbor = gameState.FindRegion(definition.neighbors[i]);
+                if (neighbor != null && neighbor.ownerFactionId == factionId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static int ResolveInitialAcceptance(RegionDefinition definition, RegionState state)

@@ -10,17 +10,22 @@ namespace WanChaoGuiYi
         [SerializeField] private Text eventNameText;
         [SerializeField] private Text eventCategoryText;
         [SerializeField] private Text choiceText;
+        [SerializeField] private Button[] choiceButtons;
+        [SerializeField] private Button closeButton;
 
         private GameContext context;
         private EventDefinition currentEvent;
         private string currentFactionId;
 
-        public void Bind(GameObject root, Text eventName, Text eventCategory, Text choice)
+        public void Bind(GameObject root, Text eventName, Text eventCategory, Text choice, Button[] choices, Button close)
         {
             panelRoot = root;
             eventNameText = eventName;
             eventCategoryText = eventCategory;
             choiceText = choice;
+            choiceButtons = choices;
+            closeButton = close;
+            BindButtons();
             Hide();
         }
 
@@ -41,6 +46,7 @@ namespace WanChaoGuiYi
             SetText(eventNameText, eventDefinition.name);
             SetText(eventCategoryText, FormatCategory(eventDefinition.category));
             SetText(choiceText, FormatChoices(eventDefinition.choices));
+            RefreshChoiceButtons(eventDefinition.choices);
         }
 
         public void ChooseOption(int index)
@@ -69,6 +75,52 @@ namespace WanChaoGuiYi
             UIPanelVisibility.Hide(panelRoot);
             currentEvent = null;
             currentFactionId = null;
+            RefreshChoiceButtons(null);
+        }
+
+        private void BindButtons()
+        {
+            if (closeButton != null)
+            {
+                closeButton.onClick.RemoveAllListeners();
+                closeButton.onClick.AddListener(Hide);
+            }
+
+            if (choiceButtons == null) return;
+            for (int i = 0; i < choiceButtons.Length; i++)
+            {
+                Button button = choiceButtons[i];
+                if (button == null) continue;
+
+                int choiceIndex = i;
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(delegate { ChooseOption(choiceIndex); });
+            }
+        }
+
+        private void RefreshChoiceButtons(EventChoiceDefinition[] choices)
+        {
+            if (choiceButtons != null)
+            {
+                for (int i = 0; i < choiceButtons.Length; i++)
+                {
+                    Button button = choiceButtons[i];
+                    if (button == null) continue;
+
+                    bool available = choices != null && i < choices.Length;
+                    button.gameObject.SetActive(available);
+                    if (available)
+                    {
+                        Text label = button.GetComponentInChildren<Text>();
+                        SetText(label, choices[i].label);
+                    }
+                }
+            }
+
+            if (closeButton != null)
+            {
+                closeButton.gameObject.SetActive(true);
+            }
         }
 
         private static void SetText(Text text, string value)

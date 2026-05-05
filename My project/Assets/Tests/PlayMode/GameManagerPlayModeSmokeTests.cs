@@ -71,6 +71,57 @@ namespace WanChaoGuiYi.Tests
         }
 
         [UnityTest]
+        public IEnumerator DefaultStartUsesContiguousOwnersAndFogOfWar()
+        {
+            GameObject root = new GameObject("PlayModeSmoke_DefaultStartFog");
+            GameManager manager = root.AddComponent<GameManager>();
+
+            yield return null;
+
+            AssertBootstrapped(manager);
+            FactionState playerFaction = manager.State.FindFaction(manager.State.playerFactionId);
+            Assert.IsNotNull(playerFaction, "Player faction should exist.");
+            AssertOwnedRegionsAreConnected(manager, playerFaction);
+            for (int i = 0; i < manager.State.factions.Count; i++)
+            {
+                FactionState faction = manager.State.factions[i];
+                if (faction != null && faction.regionIds.Count > 0)
+                {
+                    AssertOwnedRegionsAreConnected(manager, faction);
+                }
+            }
+
+            string adjacentForeignRegionId = FirstAdjacentForeignRegion(manager, playerFaction);
+            RegionState adjacentForeignRegion = manager.State.FindRegion(adjacentForeignRegionId);
+            Assert.AreEqual(VisibilityState.Known, adjacentForeignRegion.visibilityState, "Adjacent foreign frontier should be known at start.");
+
+            string distantForeignRegionId = FirstDistantForeignRegion(manager, playerFaction);
+            RegionState distantForeignRegion = manager.State.FindRegion(distantForeignRegionId);
+            Assert.AreEqual(VisibilityState.Hidden, distantForeignRegion.visibilityState, "Non-adjacent foreign region should stay hidden until scouting.");
+
+            FactionState targetFaction = manager.State.FindFaction(distantForeignRegion.ownerFactionId);
+            Assert.IsNotNull(targetFaction, "Distant foreign region should have an owner faction.");
+            FactionState player = manager.State.FindFaction(manager.State.playerFactionId);
+            player.talentIds.Add("playmode_scout");
+            player.money = 999;
+            EspionageSystem espionage = manager.GetComponent<EspionageSystem>();
+            EspionageResult result = espionage.StartOperation(manager.Context, player.id, targetFaction.id, EspionageActionType.ScoutIntel, distantForeignRegionId);
+            Assert.IsTrue(result.success, "Scout operation should start against a hidden target region.");
+            EspionageOperation operation = manager.State.activeOperations[manager.State.activeOperations.Count - 1];
+            operation.progress = 100;
+            operation.detectionRisk = 0;
+            espionage.ExecuteTurn(manager.Context);
+
+            Assert.AreEqual(VisibilityState.Scouted, distantForeignRegion.visibilityState, "Scout intel should mark the target region as scouted.");
+            RegionRuntimeState runtimeRegion;
+            Assert.IsTrue(manager.World.Map.TryGetRegion(distantForeignRegionId, out runtimeRegion), "Runtime region should exist for scouted region.");
+            Assert.AreEqual(VisibilityState.Scouted, runtimeRegion.visibilityState, "Scout intel should keep runtime visibility in sync.");
+
+            Object.Destroy(root);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator WarCommandsDriveArmyStateAndEngagementRules()
         {
             GameObject root = new GameObject("PlayModeSmoke_WarCommands");
@@ -712,6 +763,22 @@ namespace WanChaoGuiYi.Tests
             Assert.IsTrue(details.text.Contains("Border Source:"), "Diplomacy bridge should expose border source notes.");
             Assert.IsTrue(details.text.Contains("Border Cost:"), "Diplomacy bridge should expose border action costs.");
 
+            Button espionageButton = GameObject.Find("EspionageActionButton").GetComponent<Button>();
+            Assert.IsTrue(espionageButton.interactable, "Selected target should enable scout intel.");
+            int scoutedBefore = CountScoutedRegions(manager, selectedTargetFaction);
+            playerFaction.talentIds.Add("selection_scout_agent");
+            playerFaction.money = 999;
+            int operationsBefore = manager.State.activeOperations.Count;
+            espionageButton.onClick.Invoke();
+            Assert.Greater(manager.State.activeOperations.Count, operationsBefore, "Selected espionage action should create an operation.");
+            EspionageOperation scoutOperation = manager.State.activeOperations[manager.State.activeOperations.Count - 1];
+            Assert.AreEqual(targetRegionId, scoutOperation.targetEntityId, "Selected espionage should bind scout intel to the selected region.");
+            scoutOperation.progress = 100;
+            scoutOperation.detectionRisk = 0;
+            manager.GetComponent<EspionageSystem>().ExecuteTurn(manager.Context);
+            Assert.AreEqual(VisibilityState.Scouted, targetRegion.visibilityState, "Selected espionage should scout the selected target region.");
+            Assert.AreEqual(scoutedBefore + 1, CountScoutedRegions(manager, selectedTargetFaction), "Selected espionage should not reveal the whole target faction.");
+
             Button borderButton = GameObject.Find("BorderControlButton").GetComponent<Button>();
             Assert.IsTrue(borderButton.interactable, "Adjacent target should enable border control.");
             int moneyBeforeBorder = playerFaction.money;
@@ -926,9 +993,25 @@ namespace WanChaoGuiYi.Tests
             EventPanel eventPanel = Object.FindObjectOfType<EventPanel>();
             EventDefinition eventDefinition = FirstEvent(manager);
             Assert.IsNotNull(eventDefinition, "At least one event definition is required for UI smoke.");
+            Assert.IsNotNull(eventDefinition.choices, "UI event smoke requires event choices.");
+            Assert.Greater(eventDefinition.choices.Length, 0, "UI event smoke requires at least one event choice.");
             manager.Events.Publish(new GameEvent(GameEventType.EventTriggered, eventDefinition.id, eventDefinition));
             yield return null;
             Assert.IsTrue(eventPanel.gameObject.activeInHierarchy, "EventTriggered should surface the event panel.");
+            AssertPanelVisible("EventPanel", "EventTriggered should make the event panel visible.");
+            Button firstChoice = GameObject.Find("EventChoiceButton0").GetComponent<Button>();
+            Assert.IsTrue(firstChoice.gameObject.activeInHierarchy, "Event panel should expose the first event choice as a button.");
+            firstChoice.onClick.Invoke();
+            yield return null;
+            AssertPanelHidden("EventPanel", "Choosing an event option should close the event panel.");
+
+            manager.Events.Publish(new GameEvent(GameEventType.EventTriggered, eventDefinition.id, eventDefinition));
+            yield return null;
+            AssertPanelVisible("EventPanel", "Event panel should reopen for close-button smoke.");
+            Button closeEvent = GameObject.Find("CloseEventPanelButton").GetComponent<Button>();
+            closeEvent.onClick.Invoke();
+            yield return null;
+            AssertPanelHidden("EventPanel", "Close button should dismiss the event panel without choosing an option.");
 
             Object.Destroy(root);
             yield return null;
@@ -1578,6 +1661,55 @@ namespace WanChaoGuiYi.Tests
             }
 
             return false;
+        }
+
+        private static void AssertOwnedRegionsAreConnected(GameManager manager, FactionState faction)
+        {
+            Assert.IsNotNull(manager, "GameManager is required for ownership connectivity assertion.");
+            Assert.IsNotNull(faction, "Faction is required for ownership connectivity assertion.");
+            if (faction.regionIds.Count <= 1) return;
+
+            HashSet<string> owned = new HashSet<string>(faction.regionIds);
+            Queue<string> frontier = new Queue<string>();
+            HashSet<string> visited = new HashSet<string>();
+            frontier.Enqueue(faction.regionIds[0]);
+            visited.Add(faction.regionIds[0]);
+
+            while (frontier.Count > 0)
+            {
+                string current = frontier.Dequeue();
+                RegionDefinition definition = manager.Data.GetRegion(current);
+                if (definition == null || definition.neighbors == null) continue;
+
+                for (int i = 0; i < definition.neighbors.Length; i++)
+                {
+                    string neighborId = definition.neighbors[i];
+                    if (!owned.Contains(neighborId) || visited.Contains(neighborId)) continue;
+
+                    visited.Add(neighborId);
+                    frontier.Enqueue(neighborId);
+                }
+            }
+
+            Assert.AreEqual(owned.Count, visited.Count, "Faction opening regions should form a contiguous bloc: " + faction.id);
+        }
+
+        private static int CountScoutedRegions(GameManager manager, FactionState faction)
+        {
+            Assert.IsNotNull(manager, "GameManager is required for scout count.");
+            Assert.IsNotNull(faction, "Faction is required for scout count.");
+
+            int count = 0;
+            for (int i = 0; i < faction.regionIds.Count; i++)
+            {
+                RegionState region = manager.State.FindRegion(faction.regionIds[i]);
+                if (region != null && region.visibilityState == VisibilityState.Scouted)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static FactionState FirstOtherFaction(GameManager manager, string factionId)

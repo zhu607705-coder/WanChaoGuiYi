@@ -186,6 +186,13 @@ namespace WanChaoGuiYi
 
             gameManager.Events.Subscribe(GameEventType.GameStarted, OnMapStateChanged);
             gameManager.Events.Subscribe(GameEventType.RegionOwnerChanged, OnRegionOwnerChanged);
+            gameManager.Events.Subscribe(GameEventType.RegionOccupied, OnRegionStateChanged);
+            gameManager.Events.Subscribe(GameEventType.GovernanceImpactApplied, OnRegionStateChanged);
+            gameManager.Events.Subscribe(GameEventType.TurnEnded, OnMapStateChanged);
+            gameManager.Events.Subscribe(GameEventType.PolicyApplied, OnMapStateChanged);
+            gameManager.Events.Subscribe(GameEventType.WeatherChanged, OnMapStateChanged);
+            gameManager.Events.Subscribe(GameEventType.TechResearched, OnMapStateChanged);
+            gameManager.Events.Subscribe(GameEventType.EspionageOperationCompleted, OnMapStateChanged);
             subscribed = true;
         }
 
@@ -195,6 +202,13 @@ namespace WanChaoGuiYi
 
             gameManager.Events.Unsubscribe(GameEventType.GameStarted, OnMapStateChanged);
             gameManager.Events.Unsubscribe(GameEventType.RegionOwnerChanged, OnRegionOwnerChanged);
+            gameManager.Events.Unsubscribe(GameEventType.RegionOccupied, OnRegionStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.GovernanceImpactApplied, OnRegionStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.TurnEnded, OnMapStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.PolicyApplied, OnMapStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.WeatherChanged, OnMapStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.TechResearched, OnMapStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.EspionageOperationCompleted, OnMapStateChanged);
             subscribed = false;
         }
 
@@ -213,6 +227,31 @@ namespace WanChaoGuiYi
             }
 
             RefreshRegion(payload.regionId);
+        }
+
+        private void OnRegionStateChanged(GameEvent gameEvent)
+        {
+            GovernanceImpactPayload governancePayload = gameEvent.Payload as GovernanceImpactPayload;
+            if (governancePayload != null)
+            {
+                RefreshRegion(governancePayload.regionId);
+                return;
+            }
+
+            RegionOccupiedPayload occupiedPayload = gameEvent.Payload as RegionOccupiedPayload;
+            if (occupiedPayload != null)
+            {
+                RefreshRegion(occupiedPayload.regionId);
+                return;
+            }
+
+            if (gameEvent != null && !string.IsNullOrEmpty(gameEvent.EntityId))
+            {
+                RefreshRegion(gameEvent.EntityId);
+                return;
+            }
+
+            Refresh();
         }
 
         private static int DeterministicHash(string text)

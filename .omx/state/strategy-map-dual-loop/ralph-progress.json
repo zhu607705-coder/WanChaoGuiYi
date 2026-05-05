@@ -59,5 +59,41 @@
                                                 "H5":  "completed: lens/outliner click, collapse, narrow viewport gate",
                                                 "H6":  "completed: PlayMode plus graphics VisualSmoke with screenshot and visual-project/preview-copy cleanup gate"
                                             }
-                             }
+                             },
+    "reviewFindingsFix":  {
+                              "status":  "completed-and-approved",
+                              "completedAtUtc":  "2026-05-05T09:30:11Z",
+                              "contextSnapshotPath":  ".omx/context/review-findings-fix-20260505T083953Z.md",
+                              "fixedFindings":  [
+                                                    "Default start now uses historical contiguous ownership blocks and fog-of-war instead of rotating all 56 regions across factions.",
+                                                    "Event panel now exposes choice buttons and a close action.",
+                                                    "Map lens refreshes after governance, occupation, turn, policy, weather, technology, and espionage state changes.",
+                                                    "PlayMode runners parse XML result semantics and only allow the expected VisualSmoke skip.",
+                                                    "Unity handoff checklist now matches 14 headless scenarios and 12 VisualSmoke screenshots.",
+                                                    "Unity Test Runner bootstrap scenes were removed and ignored."
+                                                ],
+                              "verification":  {
+                                                   "diffCheck":  "passed",
+                                                   "dataValidation":  "passed regions=56 map_region_shapes=56",
+                                                   "domainCore":  "passed",
+                                                   "unityPreflight":  "passed",
+                                                   "headlessRunnerBuild":  "passed",
+                                                   "runtimeBuild":  "passed with existing Unity serialization warnings only",
+                                                   "playModeTestsBuild":  "passed",
+                                                   "headlessWar":  "passed scenarioCount=14",
+                                                   "playMode":  "passed total=22 passed=21 failed=0 skipped=1; only skip is VisualSmokeCaptureTests under headless graphics gate",
+                                                   "visualSmoke":  "graphics gate passed with 12 nonblank 1600x900 screenshots; screenshots and temporary Tuanjie copies cleaned"
+                                               },
+                              "review":  {
+                                             "status":  "approved",
+                                             "reviewAgentId":  "019df756-ed33-7e50-b3f6-e37056209cc1",
+                                             "findings":  0,
+                                             "reviewedFiles":  [
+                                                                   "My project/Assets/Scripts/UI/MechanismPanel.cs",
+                                                                   "My project/Assets/Scripts/Diplomacy/EspionageSystem.cs",
+                                                                   "My project/Assets/Tests/PlayMode/GameManagerPlayModeSmokeTests.cs",
+                                                                   "My project/Assets/Scripts/UI/UISetup.cs"
+                                                               ]
+                                         }
+                          }
 }

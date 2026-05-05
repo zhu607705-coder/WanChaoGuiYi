@@ -101,7 +101,7 @@ namespace WanChaoGuiYi
             regionPanel.Bind(region.root, region.regionNameText, region.terrainText, region.populationText, region.foodText, region.taxText, region.manpowerText, region.ownerText, region.integrationText, region.rebellionText, region.annexationText, region.localPowerText, region.neighborsText, region.landStructureText, region.customsText, region.governanceOverviewText, region.governanceSourceText, region.pacifyButton, region.buildButton, region.closeButton, region.collapseButton, region.collapsedRoot, region.expandButton, region.collapsedTabText, region.modeText);
             emperorPanel.Bind(emperor.root, emperor.emperorNameText, emperor.titleText, emperor.mechanicNameText, emperor.mechanicDescText, emperor.statsText, emperor.burdensText, emperor.legitimacyText, emperor.successionText, emperor.heirText, emperor.stableSuccessionsText, emperor.skillText, emperor.resolveSuccessionButton, emperor.useSkillButton, emperor.closeButton);
             courtPanel.Bind(court.root, court.factionNameText, court.emperorNameText, court.moneyText, court.foodText, court.legitimacyText, court.successionText, court.courtPressureText, court.regionCountText, court.talentCountText, court.turnLogText, court.scrollRect, court.generalPortraitGridContent, court.recruitArmyButton, court.equipArmyButton, court.closeButton);
-            eventPanel.Bind(events.root, events.eventNameText, events.categoryText, events.choiceText);
+            eventPanel.Bind(events.root, events.eventNameText, events.categoryText, events.choiceText, events.choiceButtons, events.closeButton);
             battleReportPanel.Bind(battle.root, battle.attackerText, battle.defenderText, battle.resultText, battle.detailsText, battle.closeButton);
             techPanel.Bind(tech.root, tech.titleText, tech.currentResearchText, tech.progressText, tech.availableTechsText, tech.completedTechsText, tech.setResearchButton, tech.closeButton);
             weatherPanel.Bind(weather.root, weather.weatherNameText, weather.weatherEffectText, weather.celestialEventText, weather.resilienceText, weather.closeButton);
@@ -368,7 +368,12 @@ namespace WanChaoGuiYi
             CreateText(panel.transform, "Title", "事件", new Vector2(0, -10), new Vector2(0.5f, 1), new Vector2(430, 36));
             bindings.eventNameText = CreateText(panel.transform, "EventNameText", "", new Vector2(10, -50), new Vector2(0, 1), new Vector2(430, 28));
             bindings.categoryText = CreateText(panel.transform, "CategoryText", "", new Vector2(10, -80), new Vector2(0, 1), new Vector2(430, 24));
-            bindings.choiceText = CreateText(panel.transform, "ChoiceText", "", new Vector2(10, -110), new Vector2(0, 1), new Vector2(430, 200));
+            bindings.choiceText = CreateText(panel.transform, "ChoiceText", "", new Vector2(10, -110), new Vector2(0, 1), new Vector2(430, 108));
+            bindings.choiceButtons = new Button[3];
+            bindings.choiceButtons[0] = CreateButton(panel.transform, "EventChoiceButton0", "Choice 1", new Vector2(0, -226), new Vector2(0.5f, 1), new Vector2(390, 30));
+            bindings.choiceButtons[1] = CreateButton(panel.transform, "EventChoiceButton1", "Choice 2", new Vector2(0, -262), new Vector2(0.5f, 1), new Vector2(390, 30));
+            bindings.choiceButtons[2] = CreateButton(panel.transform, "EventChoiceButton2", "Choice 3", new Vector2(0, -298), new Vector2(0.5f, 1), new Vector2(390, 30));
+            bindings.closeButton = CreateButton(panel.transform, "CloseEventPanelButton", "关闭", new Vector2(0, 18), new Vector2(0.5f, 0), new Vector2(92, 28));
             return bindings;
         }
 
@@ -588,6 +593,8 @@ namespace WanChaoGuiYi
             public Text eventNameText;
             public Text categoryText;
             public Text choiceText;
+            public Button[] choiceButtons;
+            public Button closeButton;
         }
 
         private sealed class BattleReportPanelBindings

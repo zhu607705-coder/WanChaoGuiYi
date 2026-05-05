@@ -43,7 +43,7 @@ Expected headless result:
 ```text
 DATA VALIDATION PASSED
 [domain-core] OK: Domain folder is Unity-free and adapters delegate to Domain types.
-Headless war verification: passed=True scenarioCount=8
+Headless war verification: passed=True scenarioCount=14
 [PASS] defender_holds_and_attacker_retreats turns=2
 [PASS] attacker_wins_and_occupies turns=2
 [PASS] reinforcement_joins_existing_engagement turns=2
@@ -51,7 +51,13 @@ Headless war verification: passed=True scenarioCount=8
 [PASS] tax_pressure_raises_rebellion turns=0
 [PASS] conscription_consumes_population_and_manpower turns=0
 [PASS] war_consumes_grain_and_supply turns=1
+[PASS] low_supply_reduces_battle_power turns=2
 [PASS] border_control_costs_and_diplomatic_pressure turns=0
+[PASS] region_specialization_and_governance_forecasts turns=0
+[PASS] occupation_control_chain_progression turns=0
+[PASS] connected_campaign_vision_and_interception turns=1
+[PASS] relief_and_tax_pressure_causality turns=0
+[PASS] food_supply_order_diplomacy_coupling turns=0
 ```
 
 The command rewrites `tools/headless_runner/latest-war-report.json`. That file is generated output and should not be committed.
@@ -130,12 +136,17 @@ or in Windows Command Prompt:
 tools\unity\run_visual_smoke_tests.cmd
 ```
 
-The visual runner copies `My project` into `.outputs/tuanjie/visual-project-copy`, runs `VisualSmokeCaptureTests` without `-nographics`, verifies these seven `unity-*.png` screenshots are non-empty `1600x900` renders, then deletes the temporary screenshots and project copy:
+The visual runner copies `My project` into `.outputs/tuanjie/visual-project-copy`, runs `VisualSmokeCaptureTests` without `-nographics`, verifies these 12 `unity-*.png` screenshots are non-empty `1600x900` renders, then deletes the temporary screenshots and project copy:
 
 - `unity-map-hud.png`
-- `unity-governance-default.png`
 - `unity-region-building-panel.png`
 - `unity-weather-panel.png`
+- `unity-governance-default.png`
+- `unity-governance-forecast.png`
+- `unity-occupation-chain.png`
+- `unity-war-route-risk.png`
+- `unity-map-lens-risk.png`
+- `unity-outliner.png`
 - `unity-diplomacy-bridge.png`
 - `unity-war-route.png`
 - `unity-battle-report.png`

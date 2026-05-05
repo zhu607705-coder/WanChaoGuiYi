@@ -2027,3 +2027,45 @@ $team .omx/plans/prd-strategy-map-dual-loop.md .omx/plans/test-spec-strategy-map
 - Heavy Strategy Systems H0-H6 现在标记为 `completed-full-closure`，不再使用“initial closure”作为完成口径。
 - 完全闭环含义：当前 MVP 范围内的数据门禁、因果门禁、56 区真实地图门禁、治理/战争双闭环、PlayMode 小视口与 lens/outliner 门禁、图形 VisualSmoke 与截图清理门禁均有本轮新验证证据。
 - 剩余风险不属于本阶段未闭合项，而是下一阶段继续优化项：治理主界面组件化、战争压力层更强表达、2.5D/3D 地形表现、outliner 分组优先级、地图缩放/拖动手感与性能剖析。
+
+## 2026-05-05 Review Findings Fix Pass
+
+### 目标
+
+修复 PR review 指出的 6 个缺口：默认开局绕过占领/侦察闭环、事件面板无操作出口、地图 lens 不随治理状态刷新、PlayMode runner 不校验 XML 语义、Unity 交接文档与当前门禁脱节、Unity Test Runner 临时场景被提交。
+
+### 已修复
+
+- 默认开局不再按 `index % factions.Count` 撒点。`GameStateFactory` 现在按历史启发的连续区块分配 56 区，玩家秦系核心位于关中/陇西/长安/咸阳/雍州，并保持各势力领土连通。
+- 初始 visibility 改为玩家自有区与邻接敌区 `Known`，非邻接敌区 `Hidden`；`ScoutIntel` 成功后只把指定地区标为 `Scouted`，并同步 runtime region。
+- `MechanismPanel` 的真实 UI “刺探情报”入口会把当前选中敌区作为 `targetEntityId` 传入；没有选区时也只兜底侦察一个目标区，避免一次性揭示整势力。
+- `EventPanel` 增加 3 个选择按钮和关闭按钮，按钮绑定 `ChooseOption(index)` 与 `Hide()`，事件弹出后不再阻断玩家。
+- `MapRenderer` 订阅 `GovernanceImpactApplied`、`RegionOccupied`、`TurnEnded`、`PolicyApplied`、`WeatherChanged`、`TechResearched`、`EspionageOperationCompleted`，治理/战争/侦察变化后 lens 会刷新。
+- `tools/unity/run_playmode_tests.ps1` 与 `.sh` 解析 PlayMode XML 的 `total/passed/failed/skipped`，要求 `failed=0`、`total>0`、`passed>0`，且只允许唯一 skip 来自 `VisualSmokeCaptureTests`。
+- `docs/unity-handoff-checklist.md` 同步为 headless `scenarioCount=14` 与 12 张 VisualSmoke 截图清单。
+- 删除 `My project/Assets/InitTestScene*.unity(.meta)` 临时场景，并在 `.gitignore` 增加忽略规则。
+
+### 新增/更新验证
+
+- 新增 PlayMode `DefaultStartUsesContiguousOwnersAndFogOfWar`：验证开局连续领土、邻接敌区 Known、远方敌区 Hidden、侦察后仅目标区 Scouted。
+- 扩展 PlayMode `MechanismPanelUsesSelectionContextForDiplomacyBridgeAndWarMode`：验证真实 `EspionageActionButton` 路径携带选区、只侦察目标区，不揭示整势力。
+- 扩展 UI smoke：验证事件面板选择按钮可处理事件、关闭按钮可退出。
+
+### 验证结果
+
+- `git diff --check` 通过。
+- `python tools\validate_data.py` 通过：`regions=56 map_region_shapes=56`。
+- `python tools\validate_domain_core.py` 通过。
+- `python tools\unity\preflight_without_unity.py` 通过。
+- `dotnet build "tools\headless_runner\WanChaoGuiYiHeadless\WanChaoGuiYiHeadless.csproj"` 通过，0 warning / 0 error。
+- `dotnet build "My project\WanChaoGuiYi.Runtime.csproj"` 通过，0 error；保留既有 Unity 序列化字段 warning。
+- `dotnet build "My project\WanChaoGuiYi.PlayModeTests.csproj"` 通过，0 warning / 0 error。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过：`passed=True scenarioCount=14`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\unity\run_playmode_tests.ps1 "My project"` 通过：`total=22 passed=21 failed=0 skipped=1`，唯一 skipped 为 headless/nographics 下预期的 `VisualSmokeCaptureTests`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\unity\run_visual_smoke_tests.ps1 "My project"` 图形门禁通过；12 张截图均为 `1600x900` 非空渲染。
+- 清理复核：`.outputs/visual/unity-*.png` 数量 0；`.outputs/tuanjie/visual-project-copy` 与 `.outputs/tuanjie/visual-preview-copy` 均不存在。
+
+### Review 复核
+
+- 只读 review 智能体第一轮指出 UI 侦察入口仍会整势力揭示、事件关闭按钮文案异常；本轮已补 UI 入口目标区传递、底层单区兜底与 PlayMode 真实按钮断言，并修正关闭按钮文案。
+- 最终只读 review 智能体复核结论为 `APPROVE`，审查范围覆盖 `MechanismPanel.cs`、`EspionageSystem.cs`、`GameManagerPlayModeSmokeTests.cs`、`UISetup.cs`，0 findings。

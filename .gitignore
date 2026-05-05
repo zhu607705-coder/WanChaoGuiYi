@@ -42,6 +42,8 @@ My project/*.svd
 My project/*.pdb
 My project/*.mdb
 My project/sysinfo.txt
+My project/Assets/InitTestScene*.unity
+My project/Assets/InitTestScene*.unity.meta
 
 # Rider / VS Code
 .idea/

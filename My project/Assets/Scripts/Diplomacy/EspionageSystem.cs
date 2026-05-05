@@ -116,7 +116,7 @@ namespace WanChaoGuiYi
             switch (op.actionType)
             {
                 case EspionageActionType.ScoutIntel:
-                    ApplyScoutIntel(context, agent, target);
+                    ApplyScoutIntel(context, agent, target, op.targetEntityId);
                     break;
                 case EspionageActionType.Sabotage:
                     ApplySabotage(context, agent, target);
@@ -132,7 +132,7 @@ namespace WanChaoGuiYi
             context.Events.Publish(new GameEvent(GameEventType.EspionageOperationCompleted, op.id, op));
         }
 
-        private void ApplyScoutIntel(GameContext context, FactionState agent, FactionState target)
+        private void ApplyScoutIntel(GameContext context, FactionState agent, FactionState target, string targetEntityId)
         {
             int totalSoldiers = 0;
             for (int i = 0; i < context.State.armies.Count; i++)
@@ -143,9 +143,65 @@ namespace WanChaoGuiYi
                 }
             }
 
+            int scoutedRegions = 0;
+            string scoutRegionId = !string.IsNullOrEmpty(targetEntityId) ? targetEntityId : ResolveFallbackScoutRegionId(context, target);
+            if (!string.IsNullOrEmpty(scoutRegionId))
+            {
+                scoutedRegions += MarkRegionScouted(context, target, scoutRegionId);
+            }
+
             context.State.AddLog("espionage", "[情报] " + target.name + "：金钱" + target.money +
                 "，粮食" + target.food + "，兵力" + totalSoldiers +
                 "，合法性" + target.legitimacy + "，领地" + target.regionIds.Count + "处。");
+            context.State.AddLog("espionage", "Scout visibility updated for " + scoutedRegions + " region(s) owned by " + target.id + ".");
+        }
+
+        private int MarkRegionScouted(GameContext context, FactionState target, string regionId)
+        {
+            if (context == null || context.State == null || target == null || string.IsNullOrEmpty(regionId)) return 0;
+
+            RegionState region = context.State.FindRegion(regionId);
+            if (region == null || region.ownerFactionId != target.id) return 0;
+            if (region.visibilityState == VisibilityState.Scouted) return 0;
+
+            region.visibilityState = VisibilityState.Scouted;
+
+            GameManager manager = GetComponent<GameManager>();
+            if (manager != null && manager.World != null && manager.World.Map != null)
+            {
+                RegionRuntimeState runtimeRegion;
+                if (manager.World.Map.TryGetRegion(regionId, out runtimeRegion) && runtimeRegion != null)
+                {
+                    runtimeRegion.visibilityState = VisibilityState.Scouted;
+                }
+            }
+
+            return 1;
+        }
+
+        private string ResolveFallbackScoutRegionId(GameContext context, FactionState target)
+        {
+            if (context == null || context.State == null || target == null) return null;
+
+            for (int i = 0; i < target.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(target.regionIds[i]);
+                if (region != null && region.visibilityState == VisibilityState.Hidden)
+                {
+                    return region.id;
+                }
+            }
+
+            for (int i = 0; i < target.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(target.regionIds[i]);
+                if (region != null && region.visibilityState != VisibilityState.Scouted)
+                {
+                    return region.id;
+                }
+            }
+
+            return target.regionIds.Count > 0 ? target.regionIds[0] : null;
         }
 
         private void ApplySabotage(GameContext context, FactionState agent, FactionState target)

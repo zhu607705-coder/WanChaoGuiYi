@@ -248,7 +248,8 @@ namespace WanChaoGuiYi
                 return;
             }
 
-            EspionageResult result = espionageSystem.StartOperation(context, faction.id, target.id, EspionageActionType.ScoutIntel);
+            string targetRegionId = ResolveEspionageTargetRegionId(target);
+            EspionageResult result = espionageSystem.StartOperation(context, faction.id, target.id, EspionageActionType.ScoutIntel, targetRegionId);
             if (result == null || !result.success)
             {
                 context.State.AddLog("espionage", "谍报行动失败：" + (result != null ? result.reason : "unknown"));
@@ -421,6 +422,40 @@ namespace WanChaoGuiYi
             }
 
             return FindFirstOtherFaction();
+        }
+
+        private string ResolveEspionageTargetRegionId(FactionState target)
+        {
+            if (target == null || context == null || context.State == null) return null;
+
+            if (selectionContext != null && !string.IsNullOrEmpty(selectionContext.selectedRegionId))
+            {
+                RegionState selectedRegion = context.State.FindRegion(selectionContext.selectedRegionId);
+                if (selectedRegion != null && selectedRegion.ownerFactionId == target.id)
+                {
+                    return selectedRegion.id;
+                }
+            }
+
+            for (int i = 0; i < target.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(target.regionIds[i]);
+                if (region != null && region.visibilityState == VisibilityState.Hidden)
+                {
+                    return region.id;
+                }
+            }
+
+            for (int i = 0; i < target.regionIds.Count; i++)
+            {
+                RegionState region = context.State.FindRegion(target.regionIds[i]);
+                if (region != null && region.visibilityState != VisibilityState.Scouted)
+                {
+                    return region.id;
+                }
+            }
+
+            return target.regionIds.Count > 0 ? target.regionIds[0] : null;
         }
 
         private string ResolveSelectedRegionLabel()

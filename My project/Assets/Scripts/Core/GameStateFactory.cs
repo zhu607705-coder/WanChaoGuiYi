@@ -18,7 +18,7 @@ namespace WanChaoGuiYi
 
             CreateFactions(state, data);
             FindRequiredPlayerFaction(state, playerFactionId);
-            AssignRegions(state, data);
+            AssignRegions(state, data, playerFactionId);
             CreateInitialArmies(state, data, playerFactionId);
             state.AddLog("system", "新局初始化完成。");
             return state;
@@ -52,15 +52,16 @@ namespace WanChaoGuiYi
             }
         }
 
-        private static void AssignRegions(GameState state, IDataRepository data)
+        private static void AssignRegions(GameState state, IDataRepository data, string playerFactionId)
         {
             List<FactionState> factions = state.factions;
             if (factions.Count == 0) return;
 
-            int index = 0;
+            Dictionary<string, string> historicalOwners = BuildHistoricalRegionOwners();
+            int fallbackIndex = 0;
             foreach (RegionDefinition definition in data.Regions.Values)
             {
-                FactionState owner = factions[index % factions.Count];
+                FactionState owner = ResolveRegionOwner(state, factions, historicalOwners, definition.id, ref fallbackIndex);
                 RegionState region = new RegionState
                 {
                     id = definition.id,
@@ -85,7 +86,74 @@ namespace WanChaoGuiYi
 
                 state.regions.Add(region);
                 owner.regionIds.Add(region.id);
-                index++;
+            }
+
+            ApplyInitialVisibilityForPlayer(state, data, playerFactionId);
+        }
+
+        private static Dictionary<string, string> BuildHistoricalRegionOwners()
+        {
+            Dictionary<string, string> owners = new Dictionary<string, string>();
+
+            AddRegionOwners(owners, "faction_qin_shi_huang", new string[] { "guanzhong", "longxi", "chang_an", "xianyang", "yongzhou" });
+            AddRegionOwners(owners, "faction_liu_bang", new string[] { "hanzhong", "bashu", "chengdu", "yizhou", "yun_gui", "dali" });
+            AddRegionOwners(owners, "faction_han_wu_di", new string[] { "hedong", "bingzhou", "liangzhou", "wuyuan", "shuofang", "hexi", "xiyu", "xiazhou" });
+            AddRegionOwners(owners, "faction_cao_cao", new string[] { "zhongyuan", "luoyang", "xuchang", "yanzhou", "yuzhou", "hebei", "ye", "luoyi", "pangcheng" });
+            AddRegionOwners(owners, "faction_li_shi_min", new string[] { "youyan", "yanjing", "liaodong" });
+            AddRegionOwners(owners, "faction_zhao_kuang_yin", new string[] { "qilu", "qingzhou", "jizhou", "taishan", "xuzhou" });
+            AddRegionOwners(owners, "faction_zhu_yuan_zhang", new string[] { "huainan", "jiangdong", "jianye", "guangling", "jingkou", "shouchun", "yangzhou_city", "donghai" });
+            AddRegionOwners(owners, "faction_kang_xi", new string[] { "jingxiang", "jingzhou_city", "changsha", "lingnan", "minyue", "nanhai", "jiaozhi", "jianning", "yongzhou_south", "qinzhou", "guizhou", "haicheng" });
+
+            return owners;
+        }
+
+        private static void AddRegionOwners(Dictionary<string, string> owners, string factionId, string[] regionIds)
+        {
+            if (owners == null || regionIds == null) return;
+            for (int i = 0; i < regionIds.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(regionIds[i]))
+                {
+                    owners[regionIds[i]] = factionId;
+                }
+            }
+        }
+
+        private static FactionState ResolveRegionOwner(GameState state, List<FactionState> factions, Dictionary<string, string> historicalOwners, string regionId, ref int fallbackIndex)
+        {
+            string ownerFactionId;
+            if (historicalOwners != null && historicalOwners.TryGetValue(regionId, out ownerFactionId))
+            {
+                FactionState historicalOwner = state.FindFaction(ownerFactionId);
+                if (historicalOwner != null) return historicalOwner;
+            }
+
+            for (int i = 0; i < factions.Count; i++)
+            {
+                FactionState fallback = factions[(fallbackIndex + i) % factions.Count];
+                if (fallback == null) continue;
+
+                fallbackIndex = (fallbackIndex + i + 1) % factions.Count;
+                return fallback;
+            }
+
+            return factions[0];
+        }
+
+        private static void ApplyInitialVisibilityForPlayer(GameState state, IDataRepository data, string playerFactionId)
+        {
+            for (int i = 0; i < state.regions.Count; i++)
+            {
+                RegionState region = state.regions[i];
+                if (region == null) continue;
+
+                RegionDefinition definition = null;
+                if (data != null && !string.IsNullOrEmpty(region.id))
+                {
+                    data.Regions.TryGetValue(region.id, out definition);
+                }
+
+                region.visibilityState = StrategyMapRulebook.ResolveInitialVisibility(definition, region, state, playerFactionId);
             }
         }
 
