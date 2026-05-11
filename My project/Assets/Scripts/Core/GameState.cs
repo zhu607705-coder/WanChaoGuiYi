@@ -163,6 +163,9 @@ namespace WanChaoGuiYi
         public LandStructure landStructure;
         public RegionSpecialization regionSpecialization;
         public ControlStage controlStage;
+        public int occupationReservedFood;
+        public int occupationPacificationQueueStep;
+        public int occupationPacificationQueueTurnsRemaining;
         public int localAcceptance;
         public VisibilityState visibilityState;
         public bool supplyNode;

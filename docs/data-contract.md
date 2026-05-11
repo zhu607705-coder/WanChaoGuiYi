@@ -167,6 +167,47 @@ Validation gate:
 - Any authored `regionSpecialization` or `supplyNode` value must pass `tools/validate_data.py`.
 - `tools/validate_data.py` must fail if this contract drops the heavy strategy source/default/forecast field names, so docs cannot drift away from the JSON/runtime gate.
 
+## Route Network
+
+`route_networks.json` 定义可策划维护的战略路网。Web 策略地图优先使用本表决定路线容量、补给倍率、截粮修正，以及瓶颈封锁的守备/清除成本和效果；未命中路网时再回退到地形和历史标签推导。
+
+```json
+{
+  "id": "qinling_plank_roads",
+  "label": "秦岭栈道",
+  "nodes": ["guanzhong", "hanzhong", "bashu", "chengdu"],
+  "roadClass": "pass-bottleneck",
+  "baseCapacity": 1,
+  "supplyFactor": 1.34,
+  "interceptionModifier": 16,
+  "reason": "关中入汉中的栈道和谷口是天然瓶颈，车队吞吐低且容易被截粮。",
+  "blockade": {
+    "initialStrengthFloor": 18,
+    "refreshStrengthGain": 12,
+    "guardFoodCost": 8,
+    "guardMoneyCost": 6,
+    "guardStrengthGain": 24,
+    "guardBlockadeReduction": 16,
+    "guardRiskReduction": 15,
+    "guardDamageReduction": 3,
+    "clearFoodCost": 10,
+    "clearMoneyCost": 8,
+    "clearGuardStrengthGain": 14,
+    "clearRiskReduction": 28
+  },
+  "sourceReference": "《史记·留侯世家》《汉书·高帝纪》"
+}
+```
+
+规则：
+
+- `id` 使用 `snake_case`，必须唯一。
+- `nodes` 是连续相邻地区链；每一段都必须在 `regions.json.neighbors` 中双向连通。
+- `roadClass` 有效值：`open-road`、`river-road`、`hill-road`、`pass-bottleneck`、`frontier-track`、`water-network`。
+- `baseCapacity` 必须大于 0；`supplyFactor` 必须大于 0；`interceptionModifier` 允许为负数。
+- `blockade` 中所有成本和效果字段必须齐全且非负，驱动地图封锁对象的生成、刷新、守备和清除。
+- `sourceReference` 必填，禁止占位来源。
+
 ## Map Region Shape
 
 地图面片表是“实际建模”的基础。原画只做地形底图，地区点击、归属染色、边界和标签都由 `map_region_shapes.json` 驱动。

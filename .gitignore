@@ -61,3 +61,11 @@ tools/headless_runner/latest-war-report.json
 
 # Codex outputs
 .outputs/
+
+# Web strategy map generated artifacts
+web-strategy-map/node_modules/
+web-strategy-map/dist/
+web-strategy-map/public/game-data/
+web-strategy-map/playwright-report/
+web-strategy-map/test-results/
+web-strategy-map/dev-server.log

@@ -49,6 +49,11 @@ namespace WanChaoGuiYi
 
         private void AdvanceMapLedArmies(GameContext context, MapState mapState)
         {
+            if (mapCommandService != null)
+            {
+                mapCommandService.ExecuteLogisticsTurn(mapState);
+            }
+
             foreach (ArmyRuntimeState army in mapState.ArmiesById.Values)
             {
                 if (army.task == ArmyTask.Idle || army.route == null || army.route.Count < 2) continue;

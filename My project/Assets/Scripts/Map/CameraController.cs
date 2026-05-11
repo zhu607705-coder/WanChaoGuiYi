@@ -12,9 +12,11 @@ namespace WanChaoGuiYi
     public sealed class CameraController : MonoBehaviour
     {
         private const string GeneratedMapBackgroundName = "Generated_Jiuzhou_Map_Background_Runtime";
+        private const float SmoothFocusEdgePanReleaseDelay = 0.18f;
 
         [Header("Pan")]
         [SerializeField] private float panSpeed = 10f;
+        [SerializeField] private float zoomPanScaleReference = 6f;
         [SerializeField] private float edgePanThreshold = 20f;
         [SerializeField] private bool edgePanEnabled = true;
 
@@ -24,6 +26,10 @@ namespace WanChaoGuiYi
         [SerializeField] private float maxZoom = 15f;
         [SerializeField] private float detailZoomMax = 6f;
         [SerializeField] private float operationZoomMax = 10f;
+
+        [Header("Focus")]
+        [SerializeField] private bool smoothFocusEnabled = true;
+        [SerializeField] private float smoothFocusDuration = 0.28f;
 
         [Header("Bounds")]
         [SerializeField] private bool useBounds;
@@ -37,6 +43,11 @@ namespace WanChaoGuiYi
         private Vector3 dragOrigin;
         private bool isDragging;
         private bool autoBoundsConfigured;
+        private bool hasSmoothFocusTarget;
+        private Vector3 smoothFocusStart;
+        private Vector3 smoothFocusTarget;
+        private float smoothFocusElapsed;
+        private float edgePanSuppressedUntil;
         private MapZoomBand currentZoomBand = MapZoomBand.Operation;
 
         private void Awake()
@@ -59,6 +70,7 @@ namespace WanChaoGuiYi
             HandleEdgePan();
             HandleMouseDrag();
             HandleZoom();
+            UpdateSmoothFocus();
             ClampPosition();
         }
 
@@ -70,12 +82,14 @@ namespace WanChaoGuiYi
             if (Mathf.Abs(horizontal) < 0.01f && Mathf.Abs(vertical) < 0.01f) return;
 
             Vector3 move = new Vector3(horizontal, vertical, 0f).normalized;
-            transform.position += move * (panSpeed * Time.deltaTime);
+            PanBy(move * GetScaledPanSpeed() * Time.deltaTime);
         }
 
         private void HandleEdgePan()
         {
             if (!edgePanEnabled) return;
+            if (hasSmoothFocusTarget) return;
+            if (Time.unscaledTime < edgePanSuppressedUntil) return;
 
             Vector3 mousePos = Input.mousePosition;
             Vector3 move = Vector3.zero;
@@ -88,7 +102,7 @@ namespace WanChaoGuiYi
 
             if (move.sqrMagnitude > 0.01f)
             {
-                transform.position += move.normalized * (panSpeed * Time.deltaTime);
+                PanBy(move.normalized * GetScaledPanSpeed() * Time.deltaTime);
             }
         }
 
@@ -105,8 +119,8 @@ namespace WanChaoGuiYi
 
             if (Input.GetMouseButton(2) && isDragging)
             {
-                Vector3 current = cam.ScreenToWorldPoint(Input.mousePosition);
-                Vector3 diff = dragOrigin - current;
+                ClearSmoothFocusTarget();
+                Vector3 diff = CalculateDragDeltaFromWorldOrigin(dragOrigin, Input.mousePosition);
                 transform.position += diff;
             }
 
@@ -124,14 +138,20 @@ namespace WanChaoGuiYi
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) < 0.01f) return;
 
-            SetZoom(cam.orthographicSize - scroll * zoomSpeed);
+            ClearSmoothFocusTarget();
+            ZoomAroundScreenPoint(Input.mousePosition, cam.orthographicSize - scroll * zoomSpeed);
         }
 
         private void ClampPosition()
         {
-            if (!useBounds) return;
+            transform.position = ClampPositionValue(transform.position);
+        }
 
-            Vector3 pos = transform.position;
+        private Vector3 ClampPositionValue(Vector3 position)
+        {
+            if (!useBounds) return position;
+
+            Vector3 pos = position;
             ResolveCamera();
             if (cam != null && cam.orthographic)
             {
@@ -146,7 +166,7 @@ namespace WanChaoGuiYi
                 pos.y = Mathf.Clamp(pos.y, minY, maxY);
             }
 
-            transform.position = pos;
+            return pos;
         }
 
         private static float ClampAxisToViewport(float value, float minimum, float maximum, float viewportHalfSize)
@@ -185,10 +205,20 @@ namespace WanChaoGuiYi
             if (cam == null) cam = Camera.main;
         }
 
+        private float GetScaledPanSpeed()
+        {
+            ResolveCamera();
+            float zoom = cam != null ? Mathf.Max(0.01f, cam.orthographicSize) : zoomPanScaleReference;
+            float reference = Mathf.Max(0.01f, zoomPanScaleReference);
+            return panSpeed * Mathf.Clamp(zoom / reference, 0.55f, 2.2f);
+        }
+
         public bool UseBounds { get { return useBounds; } }
         public float CurrentZoom { get { ResolveCamera(); return cam != null ? cam.orthographicSize : 0f; } }
         public MapZoomBand CurrentZoomBand { get { ResolveCamera(); RefreshZoomBand(); return currentZoomBand; } }
         public Rect WorldBounds { get { return Rect.MinMaxRect(minX, minY, maxX, maxY); } }
+        public Rect ViewportWorldRect { get { return CalculateViewportWorldRect(transform.position); } }
+        public bool SmoothFocusActive { get { return hasSmoothFocusTarget; } }
 
         public void ConfigureBounds(Rect worldBounds)
         {
@@ -227,6 +257,44 @@ namespace WanChaoGuiYi
             ClampPosition();
         }
 
+        public void ZoomAroundScreenPoint(Vector3 screenPoint, float zoom)
+        {
+            ResolveCamera();
+            if (cam == null)
+            {
+                return;
+            }
+
+            Vector3 worldBefore = cam.ScreenToWorldPoint(screenPoint);
+            ClearSmoothFocusTarget();
+            SetZoom(zoom);
+            Vector3 worldAfter = cam.ScreenToWorldPoint(screenPoint);
+            transform.position += worldBefore - worldAfter;
+            ClampPosition();
+        }
+
+        public void PanBy(Vector3 worldDelta)
+        {
+            ClearSmoothFocusTarget();
+            edgePanSuppressedUntil = 0f;
+            transform.position += worldDelta;
+            ClampPosition();
+        }
+
+        public Vector3 CalculateScreenDragWorldDelta(Vector3 startScreenPoint, Vector3 currentScreenPoint)
+        {
+            ResolveCamera();
+            if (cam == null) return Vector3.zero;
+
+            Vector3 worldOrigin = cam.ScreenToWorldPoint(startScreenPoint);
+            return CalculateDragDeltaFromWorldOrigin(worldOrigin, currentScreenPoint);
+        }
+
+        public void PanByScreenDrag(Vector3 startScreenPoint, Vector3 currentScreenPoint)
+        {
+            PanBy(CalculateScreenDragWorldDelta(startScreenPoint, currentScreenPoint));
+        }
+
         public void ConfigureZoomBands(float detailMax, float operationMax)
         {
             detailZoomMax = Mathf.Max(0.01f, Mathf.Min(detailMax, operationMax));
@@ -260,9 +328,86 @@ namespace WanChaoGuiYi
 
         public void CenterOnRegion(Vector2 worldPosition)
         {
+            ClearSmoothFocusTarget();
             Vector3 target = new Vector3(worldPosition.x, worldPosition.y, transform.position.z);
             transform.position = target;
             ClampPosition();
+        }
+
+        public void SmoothCenterOnRegion(Vector2 worldPosition)
+        {
+            if (!smoothFocusEnabled || smoothFocusDuration <= 0.01f)
+            {
+                CenterOnRegion(worldPosition);
+                return;
+            }
+
+            smoothFocusStart = transform.position;
+            smoothFocusTarget = ClampPositionValue(new Vector3(worldPosition.x, worldPosition.y, transform.position.z));
+            smoothFocusElapsed = 0f;
+            hasSmoothFocusTarget = (smoothFocusTarget - smoothFocusStart).sqrMagnitude > 0.0001f;
+            if (!hasSmoothFocusTarget)
+            {
+                transform.position = smoothFocusTarget;
+                edgePanSuppressedUntil = Time.unscaledTime + SmoothFocusEdgePanReleaseDelay;
+                return;
+            }
+
+            edgePanSuppressedUntil = Time.unscaledTime + smoothFocusDuration + SmoothFocusEdgePanReleaseDelay;
+        }
+
+        public void ConfigureSmoothFocus(float durationSeconds, bool enabled)
+        {
+            smoothFocusEnabled = enabled;
+            smoothFocusDuration = Mathf.Max(0f, durationSeconds);
+            if (!smoothFocusEnabled)
+            {
+                ClearSmoothFocusTarget();
+            }
+        }
+
+        private void UpdateSmoothFocus()
+        {
+            if (!hasSmoothFocusTarget) return;
+
+            smoothFocusElapsed += Time.deltaTime;
+            float duration = Mathf.Max(0.01f, smoothFocusDuration);
+            float t = Mathf.Clamp01(smoothFocusElapsed / duration);
+            float eased = t * t * (3f - 2f * t);
+            transform.position = ClampPositionValue(Vector3.Lerp(smoothFocusStart, smoothFocusTarget, eased));
+            if (t >= 1f)
+            {
+                transform.position = smoothFocusTarget;
+                hasSmoothFocusTarget = false;
+                edgePanSuppressedUntil = Time.unscaledTime + SmoothFocusEdgePanReleaseDelay;
+            }
+        }
+
+        private void ClearSmoothFocusTarget()
+        {
+            hasSmoothFocusTarget = false;
+            smoothFocusElapsed = 0f;
+        }
+
+        private Vector3 CalculateDragDeltaFromWorldOrigin(Vector3 worldOrigin, Vector3 currentScreenPoint)
+        {
+            ResolveCamera();
+            if (cam == null) return Vector3.zero;
+
+            return worldOrigin - cam.ScreenToWorldPoint(currentScreenPoint);
+        }
+
+        private Rect CalculateViewportWorldRect(Vector3 position)
+        {
+            ResolveCamera();
+            if (cam == null || !cam.orthographic)
+            {
+                return Rect.MinMaxRect(position.x, position.y, position.x, position.y);
+            }
+
+            float halfHeight = Mathf.Max(0.01f, cam.orthographicSize);
+            float halfWidth = halfHeight * Mathf.Max(0.01f, cam.aspect);
+            return Rect.MinMaxRect(position.x - halfWidth, position.y - halfHeight, position.x + halfWidth, position.y + halfHeight);
         }
     }
 }

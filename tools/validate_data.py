@@ -66,6 +66,7 @@ def main():
     victories = load("victory_conditions.json")["items"]
     generals = load("generals.json")["items"]
     buildings = load("buildings.json")["items"]
+    route_networks = load("route_networks.json")["items"]
 
     if len(emperors) < 8:
         fail(f"MVP requires at least 8 emperors, got {len(emperors)}")
@@ -84,6 +85,7 @@ def main():
     assert_unique_ids(victories, "victory condition")
     general_ids = assert_unique_ids(generals, "general")
     building_ids = assert_unique_ids(buildings, "building")
+    assert_unique_ids(route_networks, "route network")
 
     if not portrait_ids:
         fail("portrait table is empty")
@@ -176,6 +178,8 @@ def main():
             neighbor_edges = set(region_by_id[neighbor].get("neighbors", []))
             if region["id"] not in neighbor_edges:
                 fail(f"region edge {region['id']} -> {neighbor} is not bidirectional")
+
+    validate_route_networks(route_networks, region_by_id)
 
     historical_layer_region_ids = set()
     for layer in historical_layers:
@@ -279,6 +283,7 @@ def main():
                 f"technologies={len(technologies)}",
                 f"generals={len(generals)}",
                 f"buildings={len(buildings)}",
+                f"route_networks={len(route_networks)}",
                 f"chronicle_events={len(chronicle_events)}",
             ]
         )
@@ -458,6 +463,81 @@ def validate_strategy_system_defaults(regions, historical_layers):
         fail(f"strategy specialization defaults are too narrow: {sorted(derived_specializations)}")
     if supply_nodes < 6:
         fail(f"strategy supply-node defaults are too sparse: {supply_nodes}")
+
+
+def validate_route_networks(route_networks, region_by_id):
+    valid_road_classes = {
+        "open-road",
+        "river-road",
+        "hill-road",
+        "pass-bottleneck",
+        "frontier-track",
+        "water-network",
+    }
+    blockade_fields = [
+        "initialStrengthFloor",
+        "refreshStrengthGain",
+        "guardFoodCost",
+        "guardMoneyCost",
+        "guardStrengthGain",
+        "guardBlockadeReduction",
+        "guardRiskReduction",
+        "guardDamageReduction",
+        "clearFoodCost",
+        "clearMoneyCost",
+        "clearGuardStrengthGain",
+        "clearRiskReduction",
+    ]
+
+    if not route_networks:
+        fail("route_networks.json has no route network items")
+
+    for network in route_networks:
+        network_id = network.get("id", "")
+        if not re.fullmatch(r"[a-z0-9_]+", network_id):
+            fail(f"route network {network_id or '<missing-id>'} id must be snake_case")
+        if not str(network.get("label", "")).strip():
+            fail(f"route network {network_id} missing label")
+        require_source_reference(network, "route network")
+
+        nodes = network.get("nodes", [])
+        if not isinstance(nodes, list) or len(nodes) < 2:
+            fail(f"route network {network_id} needs at least two nodes")
+        if len(nodes) != len(set(nodes)):
+            fail(f"route network {network_id} has duplicate nodes")
+        for node_id in nodes:
+            if node_id not in region_by_id:
+                fail(f"route network {network_id} references missing region {node_id}")
+
+        for from_id, to_id in zip(nodes, nodes[1:]):
+            from_neighbors = set(region_by_id[from_id].get("neighbors", []))
+            to_neighbors = set(region_by_id[to_id].get("neighbors", []))
+            if to_id not in from_neighbors or from_id not in to_neighbors:
+                fail(f"route network {network_id} leg {from_id}->{to_id} is not bidirectional region adjacency")
+
+        road_class = network.get("roadClass")
+        if road_class not in valid_road_classes:
+            fail(f"route network {network_id} has invalid roadClass {road_class}")
+
+        base_capacity = network.get("baseCapacity")
+        if not isinstance(base_capacity, (int, float)) or base_capacity <= 0:
+            fail(f"route network {network_id} has invalid baseCapacity {base_capacity}")
+        supply_factor = network.get("supplyFactor")
+        if not isinstance(supply_factor, (int, float)) or supply_factor <= 0:
+            fail(f"route network {network_id} has invalid supplyFactor {supply_factor}")
+        interception_modifier = network.get("interceptionModifier")
+        if not isinstance(interception_modifier, (int, float)):
+            fail(f"route network {network_id} has invalid interceptionModifier {interception_modifier}")
+        if not str(network.get("reason", "")).strip():
+            fail(f"route network {network_id} missing reason")
+
+        blockade = network.get("blockade")
+        if not isinstance(blockade, dict):
+            fail(f"route network {network_id} missing blockade object")
+        for field in blockade_fields:
+            value = blockade.get(field)
+            if not isinstance(value, (int, float)) or value < 0:
+                fail(f"route network {network_id} blockade.{field} must be a non-negative number")
 
 
 def validate_heavy_strategy_contract_docs():

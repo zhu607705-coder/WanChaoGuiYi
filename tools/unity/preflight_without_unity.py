@@ -78,14 +78,7 @@ def main():
         os.path.join(ASSETS, "Resources", "Data", "map_render_metadata.json"),
         os.path.join(ASSETS, "Tests", "PlayMode", "WanChaoGuiYi.PlayModeTests.asmdef"),
         os.path.join(ASSETS, "Tests", "PlayMode", "GameManagerPlayModeSmokeTests.cs"),
-        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.sh"),
-        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.ps1"),
-        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.cmd"),
-        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.ps1"),
-        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.cmd"),
-        os.path.join(ROOT, "tools", "verify_unity_handoff.sh"),
-        os.path.join(ROOT, "tools", "verify_unity_handoff.ps1"),
-        os.path.join(ROOT, "tools", "verify_unity_handoff.cmd"),
+        os.path.join(ROOT, "tools", "unity", "visual_smoke_reference.json"),
         os.path.join(ROOT, "tools", "verify_headless_war.ps1"),
         os.path.join(ROOT, "tools", "verify_headless_war.cmd"),
         os.path.join(ROOT, "tools", "run_headless_simulation.ps1"),
@@ -97,6 +90,22 @@ def main():
         if code != 0:
             return code
 
+    legacy_unity_entrypoints = [
+        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.sh"),
+        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.ps1"),
+        os.path.join(ROOT, "tools", "unity", "run_playmode_tests.cmd"),
+        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.ps1"),
+        os.path.join(ROOT, "tools", "unity", "run_visual_smoke_tests.cmd"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.sh"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.ps1"),
+        os.path.join(ROOT, "tools", "verify_unity_handoff.cmd"),
+    ]
+    missing_legacy = [
+        os.path.relpath(path, ROOT)
+        for path in legacy_unity_entrypoints
+        if not os.path.isfile(path)
+    ]
+
     manifest = load_json(os.path.join(PROJECT, "Packages", "manifest.json"))
     dependencies = manifest.get("dependencies", {})
     for package_name in ["com.unity.test-framework", "com.unity.ugui"]:
@@ -107,7 +116,9 @@ def main():
     if "WanChaoGuiYi.Runtime" not in playmode_asmdef.get("references", []):
         return fail("PlayMode asmdef does not reference WanChaoGuiYi.Runtime")
 
-    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and Unity handoff entrypoints are present.")
+    print("[unity-preflight] OK: data tables, map shapes, asmdefs, packages, and headless entrypoints are present.")
+    if missing_legacy:
+        print("[unity-preflight] WARN: legacy Unity/Tuanjie entrypoints are optional in the web-strategy-map mainline: " + ", ".join(missing_legacy))
     return 0
 
 

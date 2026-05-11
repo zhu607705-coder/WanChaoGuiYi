@@ -26,7 +26,10 @@ namespace WanChaoGuiYi
                     foodContributionPercent = ResolveContributionPercent(region.foodContributionPercent, region.integration),
                     rebellionRisk = region.rebellionRisk,
                     localPower = region.localPower,
-                    annexationPressure = region.annexationPressure
+                    annexationPressure = region.annexationPressure,
+                    occupationReservedFood = region.occupationReservedFood,
+                    occupationPacificationQueueStep = region.occupationPacificationQueueStep,
+                    occupationPacificationQueueTurnsRemaining = region.occupationPacificationQueueTurnsRemaining
                 };
                 StrategyMapRulebook.ApplyRuntimeDefaults(definition, region, runtimeRegion, data);
                 mapState.AddRegion(runtimeRegion);

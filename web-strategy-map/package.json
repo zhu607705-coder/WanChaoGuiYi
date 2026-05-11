@@ -1,0 +1,25 @@
+{
+  "name": "wanchao-strategy-map",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:data": "node scripts/sync-data.mjs",
+    "dev": "npm run sync:data && vite --host 127.0.0.1",
+    "build": "npm run sync:data && tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:ui": "npm run sync:data && playwright test"
+  },
+  "dependencies": {
+    "@vitejs/plugin-basic-ssl": "latest",
+    "three": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@types/node": "^25.6.2",
+    "@types/three": "^0.184.1",
+    "typescript": "latest"
+  }
+}

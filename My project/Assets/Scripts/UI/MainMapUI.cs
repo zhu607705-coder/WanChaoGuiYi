@@ -24,12 +24,14 @@ namespace WanChaoGuiYi
         [SerializeField] private Text resourceText;
         [SerializeField] private Text selectionContextText;
         [SerializeField] private Text modeStateText;
+        [SerializeField] private Text overlayBudgetText;
         [SerializeField] private Button governanceModeButton;
         [SerializeField] private Button warModeButton;
         [SerializeField] private Button nextTurnButton;
         [SerializeField] private Button courtButton;
         [SerializeField] private Button emperorButton;
         [SerializeField] private Button attackButton;
+        [SerializeField] private Button prepareFrontlineButton;
         [SerializeField] private Button techButton;
         [SerializeField] private Button weatherButton;
         [SerializeField] private Button eventButton;
@@ -39,14 +41,20 @@ namespace WanChaoGuiYi
         private SelectionContext selectionContext = new SelectionContext();
         private MapInteractionMode currentMode = MapInteractionMode.Governance;
         private MapLensMode currentLens = MapLensMode.Governance;
-        private static readonly Vector2 StrategyOutlinerDockedPosition = new Vector2(-12, -108);
-        private static readonly Vector2 StrategyOutlinerRegionPanelAvoidPosition = new Vector2(-600, -108);
         private GameObject strategyLensBar;
         private GameObject strategyOutlinerRoot;
         private GameObject strategyOutlinerCollapsedRoot;
         private Text strategyLensStateText;
         private Text strategyOutlinerText;
         private readonly List<GameObject> strategyOutlinerEntryRoots = new List<GameObject>();
+        private GameObject logisticsQueuePanel;
+        private Text logisticsQueueText;
+        private Button logisticsPriorityUpButton;
+        private Button logisticsPriorityDownButton;
+        private Button logisticsPauseButton;
+        private Button logisticsCancelButton;
+        private string selectedLogisticsArmyId;
+        private DemoEntityVisualSpawner entityVisualSpawner;
         private bool strategyOutlinerCollapsed;
         private bool subscribed;
 
@@ -55,7 +63,7 @@ namespace WanChaoGuiYi
         public SelectionContext CurrentSelectionContext { get { return selectionContext; } }
         public string SelectedRegionId { get { return selectedRegionId; } }
 
-        public void Bind(GameManager manager, RegionPanel region, EmperorPanel emperor, CourtPanel court, EventPanel eventsPanel, BattleReportPanel battlePanel, TechPanel tech, WeatherPanel weather, MechanismPanel mechanism, Text turn, Text resources, Text selectionText, Text modeText, Button governanceModeButtonRef, Button warModeButtonRef, Button nextTurn, Button courtButtonRef, Button emperorButtonRef, Button attackButtonRef, Button techButtonRef, Button weatherButtonRef, Button eventButtonRef, Button mechanismButtonRef)
+        public void Bind(GameManager manager, RegionPanel region, EmperorPanel emperor, CourtPanel court, EventPanel eventsPanel, BattleReportPanel battlePanel, TechPanel tech, WeatherPanel weather, MechanismPanel mechanism, Text turn, Text resources, Text selectionText, Text modeText, Text overlayBudget, Button governanceModeButtonRef, Button warModeButtonRef, Button nextTurn, Button courtButtonRef, Button emperorButtonRef, Button attackButtonRef, Button prepareFrontlineButtonRef, Button techButtonRef, Button weatherButtonRef, Button eventButtonRef, Button mechanismButtonRef)
         {
             UnsubscribeBindings();
 
@@ -72,12 +80,14 @@ namespace WanChaoGuiYi
             resourceText = resources;
             selectionContextText = selectionText;
             modeStateText = modeText;
+            overlayBudgetText = overlayBudget;
             governanceModeButton = governanceModeButtonRef;
             warModeButton = warModeButtonRef;
             nextTurnButton = nextTurn;
             courtButton = courtButtonRef;
             emperorButton = emperorButtonRef;
             attackButton = attackButtonRef;
+            prepareFrontlineButton = prepareFrontlineButtonRef;
             techButton = techButtonRef;
             weatherButton = weatherButtonRef;
             eventButton = eventButtonRef;
@@ -86,6 +96,10 @@ namespace WanChaoGuiYi
             if (eventPanel != null && gameManager != null)
             {
                 eventPanel.Initialize(gameManager.Context);
+            }
+            if (battleReportPanel != null)
+            {
+                battleReportPanel.SetFocusHandler(FocusBattleReportRegion);
             }
 
             selectedRegionId = null;
@@ -135,6 +149,10 @@ namespace WanChaoGuiYi
             gameManager.Events.Subscribe(GameEventType.DiplomacyProposalAccepted, OnMechanismChanged);
             gameManager.Events.Subscribe(GameEventType.DiplomacyProposalRejected, OnMechanismChanged);
             gameManager.Events.Subscribe(GameEventType.DiplomacyTreatyBroken, OnMechanismChanged);
+            gameManager.Events.Subscribe(GameEventType.FrontlinePrepared, OnMechanismChanged);
+            gameManager.Events.Subscribe(GameEventType.FrontlineLogisticsAdvanced, OnMechanismChanged);
+            gameManager.Events.Subscribe(GameEventType.FrontlineLogisticsCommanded, OnMechanismChanged);
+            gameManager.Events.Subscribe(GameEventType.FrontlineLogisticsRaided, OnMechanismChanged);
             gameManager.Events.Subscribe(GameEventType.EspionageOperationStarted, OnMechanismChanged);
             gameManager.Events.Subscribe(GameEventType.EspionageOperationCompleted, OnMechanismChanged);
             gameManager.Events.Subscribe(GameEventType.EspionageAgentCaught, OnMechanismChanged);
@@ -146,6 +164,7 @@ namespace WanChaoGuiYi
             if (governanceModeButton != null) governanceModeButton.onClick.AddListener(EnterGovernanceMode);
             if (warModeButton != null) warModeButton.onClick.AddListener(EnterWarModeButtonPressed);
             if (attackButton != null) attackButton.onClick.AddListener(AttackSelectedRegion);
+            if (prepareFrontlineButton != null) prepareFrontlineButton.onClick.AddListener(PrepareFrontlineSelectedRegion);
             if (techButton != null) techButton.onClick.AddListener(OpenTechPanel);
             if (weatherButton != null) weatherButton.onClick.AddListener(OpenWeatherPanel);
             if (eventButton != null) eventButton.onClick.AddListener(OpenLatestEventPanel);
@@ -175,6 +194,10 @@ namespace WanChaoGuiYi
                 gameManager.Events.Unsubscribe(GameEventType.DiplomacyProposalAccepted, OnMechanismChanged);
                 gameManager.Events.Unsubscribe(GameEventType.DiplomacyProposalRejected, OnMechanismChanged);
                 gameManager.Events.Unsubscribe(GameEventType.DiplomacyTreatyBroken, OnMechanismChanged);
+                gameManager.Events.Unsubscribe(GameEventType.FrontlinePrepared, OnMechanismChanged);
+                gameManager.Events.Unsubscribe(GameEventType.FrontlineLogisticsAdvanced, OnMechanismChanged);
+                gameManager.Events.Unsubscribe(GameEventType.FrontlineLogisticsCommanded, OnMechanismChanged);
+                gameManager.Events.Unsubscribe(GameEventType.FrontlineLogisticsRaided, OnMechanismChanged);
                 gameManager.Events.Unsubscribe(GameEventType.EspionageOperationStarted, OnMechanismChanged);
                 gameManager.Events.Unsubscribe(GameEventType.EspionageOperationCompleted, OnMechanismChanged);
                 gameManager.Events.Unsubscribe(GameEventType.EspionageAgentCaught, OnMechanismChanged);
@@ -187,6 +210,7 @@ namespace WanChaoGuiYi
             if (governanceModeButton != null) governanceModeButton.onClick.RemoveListener(EnterGovernanceMode);
             if (warModeButton != null) warModeButton.onClick.RemoveListener(EnterWarModeButtonPressed);
             if (attackButton != null) attackButton.onClick.RemoveListener(AttackSelectedRegion);
+            if (prepareFrontlineButton != null) prepareFrontlineButton.onClick.RemoveListener(PrepareFrontlineSelectedRegion);
             if (techButton != null) techButton.onClick.RemoveListener(OpenTechPanel);
             if (weatherButton != null) weatherButton.onClick.RemoveListener(OpenWeatherPanel);
             if (eventButton != null) eventButton.onClick.RemoveListener(OpenLatestEventPanel);
@@ -197,6 +221,11 @@ namespace WanChaoGuiYi
         private void Start()
         {
             RefreshHUD();
+        }
+
+        private void LateUpdate()
+        {
+            RefreshOverlayBudgetText();
         }
 
         public void AdvanceTurn()
@@ -330,7 +359,7 @@ namespace WanChaoGuiYi
                 context.selectedArmyId = ResolvePlayerOperableArmyId(regionId, !context.isNeighbor);
                 bool canDispatch = !string.IsNullOrEmpty(context.selectedArmyId);
                 context.availableActions = canDispatch
-                    ? new[] { "dispatch_attack", "inspect_diplomacy", "inspect_border" }
+                    ? new[] { "dispatch_attack", "prepare_frontline", "inspect_diplomacy", "inspect_border" }
                     : new[] { "inspect_diplomacy", "inspect_border" };
                 context.disabledReasons = canDispatch
                     ? new[] { "dispatch_requires_route_review" }
@@ -497,7 +526,32 @@ namespace WanChaoGuiYi
                 ? GetRegionName(battleRegionId)
                 : (defender != null ? GetRegionName(defender.regionId) : "");
 
-            battleReportPanel.Show(result, attackerName, defenderName, regionName);
+            battleReportPanel.Show(result, attackerName, defenderName, regionName, battleRegionId);
+        }
+
+        private void FocusBattleReportRegion(string regionId)
+        {
+            SelectAndFocusMapRegion(regionId, "battle report focus");
+        }
+
+        private static bool TryResolveRegionWorldCenter(string regionId, out Vector2 center)
+        {
+            center = Vector2.zero;
+            if (string.IsNullOrEmpty(regionId)) return false;
+
+            GameObject regionObject = GameObject.Find("RegionSurface_" + regionId);
+            if (regionObject == null) return false;
+
+            MeshFilter meshFilter = regionObject.GetComponent<MeshFilter>();
+            if (meshFilter == null || meshFilter.sharedMesh == null)
+            {
+                center = regionObject.transform.position;
+                return true;
+            }
+
+            Vector3 world = regionObject.transform.TransformPoint(meshFilter.sharedMesh.bounds.center);
+            center = new Vector2(world.x, world.y);
+            return true;
         }
 
         private void OnRegionOccupied(GameEvent gameEvent)
@@ -656,14 +710,68 @@ namespace WanChaoGuiYi
             RefreshHUD();
         }
 
+        private void PrepareFrontlineSelectedRegion()
+        {
+            if (gameManager == null || gameManager.State == null) return;
+            if (string.IsNullOrEmpty(selectedRegionId))
+            {
+                gameManager.State.AddLog("war", "请先选择一个前线目标地区。");
+                RefreshHUD();
+                return;
+            }
+
+            if (selectionContext == null || selectionContext.mode != MapInteractionMode.War || !selectionContext.HasAvailableAction("prepare_frontline"))
+            {
+                gameManager.State.AddLog("war", "当前选择不能前线整备：" + DescribeAttackDisabledReason());
+                RefreshHUD();
+                return;
+            }
+
+            bool prepared = gameManager.PrepareFrontline(selectionContext.selectedArmyId, selectedRegionId);
+            if (prepared)
+            {
+                RefreshSelectionContextFromState();
+                gameManager.State.AddLog("war", "已完成前线整备：" + GetRegionName(selectedRegionId));
+            }
+            else
+            {
+                gameManager.State.AddLog("war", "前线整备未能执行：" + GetRegionName(selectedRegionId));
+            }
+
+            RefreshHUD();
+        }
+
         private string DescribeAttackDisabledReason()
         {
             if (selectionContext == null || selectionContext.disabledReasons == null || selectionContext.disabledReasons.Length == 0)
             {
-                return "missing_selection_context";
+                return "缺少当前选择";
             }
 
-            return string.Join(", ", selectionContext.disabledReasons);
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            for (int i = 0; i < selectionContext.disabledReasons.Length; i++)
+            {
+                if (i > 0) sb.Append("、");
+                sb.Append(FormatDisabledReason(selectionContext.disabledReasons[i]));
+            }
+
+            return sb.ToString();
+        }
+
+        private static string FormatDisabledReason(string reason)
+        {
+            switch (reason)
+            {
+                case "missing_state": return "局势尚未初始化";
+                case "region_not_found": return "目标地区不存在";
+                case "attack_requires_war_mode": return "需要先进入战争模式";
+                case "attack_requires_explicit_war_mode": return "需要从外交面板确认战争模式";
+                case "dispatch_requires_route_review": return "需要先确认路线和补给";
+                case "dispatch_requires_operable_army": return "缺少可调度军队";
+                case "dispatch_requires_adjacent_target": return "需要邻接控制区或可用前线";
+                case "dispatch_requires_scouted_supply_projection": return "需要侦察后才能评估补给";
+                default: return string.IsNullOrEmpty(reason) ? "原因未明" : reason;
+            }
         }
 
         private void RefreshHUD()
@@ -686,8 +794,11 @@ namespace WanChaoGuiYi
 
             RefreshSelectionContextText();
             RefreshAttackButtonState();
+            RefreshPrepareFrontlineButtonState();
             RefreshModeHUD();
+            RefreshOverlayBudgetText();
             RefreshStrategyOutliner();
+            RefreshLogisticsQueuePanel();
         }
 
         private void RefreshSelectionContextText()
@@ -696,16 +807,14 @@ namespace WanChaoGuiYi
 
             if (selectionContext == null || string.IsNullOrEmpty(selectionContext.selectedRegionId))
             {
-                selectionContextText.text = "M:" + currentMode + " | R:none";
+                selectionContextText.text = FormatCompactModeName(currentMode) + " | 未选区";
                 return;
             }
 
             selectionContextText.text =
-                "M:" + selectionContext.mode +
-                " | R:" + selectionContext.selectedRegionId +
-                " | F:" + Flag(selectionContext.isFriendly) +
-                " N:" + Flag(selectionContext.isNeighbor) +
-                " H:" + Flag(selectionContext.isHostile);
+                FormatCompactModeName(selectionContext.mode) +
+                " | " + GetRegionName(selectionContext.selectedRegionId) +
+                " | " + FormatCompactRelationTag(selectionContext);
         }
 
         private void RefreshAttackButtonState()
@@ -715,6 +824,15 @@ namespace WanChaoGuiYi
             attackButton.interactable = selectionContext != null &&
                                        selectionContext.mode == MapInteractionMode.War &&
                                        selectionContext.HasAvailableAction("dispatch_attack");
+        }
+
+        private void RefreshPrepareFrontlineButtonState()
+        {
+            if (prepareFrontlineButton == null) return;
+
+            prepareFrontlineButton.interactable = selectionContext != null &&
+                                                  selectionContext.mode == MapInteractionMode.War &&
+                                                  selectionContext.HasAvailableAction("prepare_frontline");
         }
 
         private void RefreshModeHUD()
@@ -727,6 +845,35 @@ namespace WanChaoGuiYi
 
             ApplyModeButtonState(governanceModeButton, visibleMode == MapInteractionMode.Governance);
             ApplyModeButtonState(warModeButton, visibleMode == MapInteractionMode.War);
+        }
+
+        private void RefreshOverlayBudgetText()
+        {
+            if (overlayBudgetText == null) return;
+
+            if (entityVisualSpawner == null)
+            {
+                entityVisualSpawner = FindObjectOfType<DemoEntityVisualSpawner>();
+            }
+
+            if (entityVisualSpawner == null)
+            {
+                SetText(overlayBudgetText, "避让 缩放/预算/重叠 0/0/0 | 标签 0/0 隐0 | 脉冲 0/0 额0");
+                return;
+            }
+
+            int totalPulses = entityVisualSpawner.LastActivePulseCount + entityVisualSpawner.LastInactivePulseCount;
+            SetText(overlayBudgetText,
+                "避让 缩放/预算/重叠 " +
+                entityVisualSpawner.LastHiddenByZoomCount + "/" +
+                entityVisualSpawner.LastHiddenByBudgetCount + "/" +
+                entityVisualSpawner.LastHiddenByOverlapCount +
+                " | 标签 " + entityVisualSpawner.LastVisibleLabelCount + "/" +
+                entityVisualSpawner.LastWarLabelObjectCount +
+                " 隐" + entityVisualSpawner.LastHiddenLabelCount +
+                " | 脉冲 " + entityVisualSpawner.LastActivePulseCount + "/" +
+                totalPulses +
+                " 额" + entityVisualSpawner.LastPulseBudget);
         }
 
         private static void ApplyModeButtonState(Button button, bool selected)
@@ -755,6 +902,35 @@ namespace WanChaoGuiYi
                 case MapInteractionMode.Diplomacy: return "外交过渡";
                 default: return mode.ToString();
             }
+        }
+
+        private static string FormatRelationTag(SelectionContext context)
+        {
+            if (context == null) return "未判定";
+            if (context.isFriendly) return "己方";
+            if (context.isHostile) return "敌对";
+            if (context.isNeighbor) return "邻接";
+            return "远邻";
+        }
+
+        private static string FormatCompactModeName(MapInteractionMode mode)
+        {
+            switch (mode)
+            {
+                case MapInteractionMode.War: return "战争";
+                case MapInteractionMode.Diplomacy: return "外交";
+                default: return "治理";
+            }
+        }
+
+        private static string FormatCompactRelationTag(SelectionContext context)
+        {
+            if (context == null) return "未判定";
+            if (context.isFriendly) return "己方";
+            if (context.isHostile && context.isNeighbor) return "敌对邻接";
+            if (context.isHostile) return "敌对远邻";
+            if (context.isNeighbor) return "邻接";
+            return "远邻";
         }
 
         private void UpdateMechanismPanelSelectionContext()
@@ -806,12 +982,10 @@ namespace WanChaoGuiYi
                     : null;
                 if (previewForecast != null && previewForecast.canDispatch)
                 {
-                    return "Route forecast: " + previewForecast.FormatCompact() +
-                           " | 补给-" + previewForecast.firstTurnSupplyCost + " -> " + previewForecast.supplyAfterFirstMove +
-                           " | 全程补给-" + previewForecast.fullRouteSupplyCost +
-                           " | 战力修正" + previewForecast.supplyPowerPercent + "%" +
-                           " | 风险等级 " + ResolveForecastRiskGrade(previewForecast) +
-                           " | 需侦察确认后投送";
+                    FrontlineSupplyPlanForecast previewPlan = previewArmy != null
+                        ? StrategyMapRulebook.BuildFrontlineSupplyPlanForecast(gameManager.MapQueries, gameManager.Context, previewArmy, selectionContext.selectedRegionId)
+                        : null;
+                    return FormatCampaignRouteForecast(previewForecast, "预备军", previewPlan);
                 }
 
                 return "行军预告: 无可用空闲军队；需先在邻接地区布置军队。";
@@ -826,12 +1000,8 @@ namespace WanChaoGuiYi
             CampaignRouteForecast forecast = StrategyMapRulebook.BuildCampaignRouteForecast(gameManager.MapQueries, gameManager.Context, army, selectionContext.selectedRegionId);
             if (forecast != null)
             {
-                return "Route forecast: " + forecast.FormatCompact() +
-                       " | 补给-" + forecast.firstTurnSupplyCost + " -> " + forecast.supplyAfterFirstMove +
-                       " | 全程补给-" + forecast.fullRouteSupplyCost +
-                       " | 战力修正" + forecast.supplyPowerPercent + "%" +
-                       " | 风险等级 " + ResolveForecastRiskGrade(forecast) +
-                       " | source " + forecast.sourceReference;
+                FrontlineSupplyPlanForecast plan = StrategyMapRulebook.BuildFrontlineSupplyPlanForecast(gameManager.MapQueries, gameManager.Context, army, selectionContext.selectedRegionId);
+                return FormatCampaignRouteForecast(forecast, army.id, plan);
             }
 
             List<string> route = gameManager.MapQueries.FindRoute(army.locationRegionId, selectionContext.selectedRegionId);
@@ -851,6 +1021,32 @@ namespace WanChaoGuiYi
                    " | 战力修正" + supplyPowerPercent + "%" +
                    " | 风险等级 " + targetRisk +
                     " | 目标接敌后自动结算";
+        }
+
+        private static string FormatCampaignRouteForecast(CampaignRouteForecast forecast, string armyLabel, FrontlineSupplyPlanForecast plan)
+        {
+            if (forecast == null) return "行军预告: 暂无路线。";
+            string planLine = plan != null ? "\n" + plan.FormatCompact() : "";
+            return "行军预告: " + armyLabel + " | 路径" + forecast.routeSteps + "段 | 风险等级 " + ResolveForecastRiskGrade(forecast) +
+                   "\n补给压力: 首回合补给-" + forecast.firstTurnSupplyCost + "→" + forecast.supplyAfterFirstMove +
+                   " | 全程补给-" + forecast.fullRouteSupplyCost +
+                   " | 战力修正" + forecast.supplyPowerPercent + "%" +
+                   "\n接敌判断: 路线可见 " + FormatVisibilityState(forecast.visibilityState) +
+                   " | 接敌" + forecast.contactRisk + "%" +
+                   " | 拦截" + forecast.interceptionRisk + "%" +
+                   (forecast.hasUnknownRisk ? " | 情报不足" : " | 情报可读") +
+                   planLine;
+        }
+
+        private static string FormatVisibilityState(VisibilityState state)
+        {
+            switch (state)
+            {
+                case VisibilityState.Scouted: return "已侦察";
+                case VisibilityState.Known: return "邻接可见";
+                case VisibilityState.Hidden: return "未知";
+                default: return state.ToString();
+            }
         }
 
         private static string ResolveForecastRiskGrade(CampaignRouteForecast forecast)
@@ -917,6 +1113,7 @@ namespace WanChaoGuiYi
             UpdateMechanismPanelSelectionContext();
             UpdateRegionPanelMode();
             RefreshAttackButtonState();
+            RefreshPrepareFrontlineButtonState();
             RefreshSelectionContextText();
             RefreshModeHUD();
         }
@@ -960,8 +1157,15 @@ namespace WanChaoGuiYi
         {
             if (gameManager == null || gameManager.Data == null || string.IsNullOrEmpty(regionId)) return "";
 
-            RegionDefinition definition = gameManager.Data.GetRegion(regionId);
-            return definition != null ? definition.name : regionId;
+            try
+            {
+                RegionDefinition definition = gameManager.Data.GetRegion(regionId);
+                return definition != null ? definition.name : regionId;
+            }
+            catch (System.Exception)
+            {
+                return regionId;
+            }
         }
 
         private void EnsureStrategyControls()
@@ -971,42 +1175,131 @@ namespace WanChaoGuiYi
 
             if (strategyLensBar == null)
             {
-                strategyLensBar = CreateRuntimePanel(canvas.transform, "StrategyLensBar", new Vector2(0, 1), new Vector2(0, 1), new Vector2(12, -108), new Vector2(500, 34));
-                strategyLensStateText = CreateRuntimeText(strategyLensBar.transform, "StrategyLensStateText", "Lens Governance", new Vector2(8, 0), new Vector2(0, 0.5f), new Vector2(105, 28), 11);
-                CreateLensButton("LensGovernanceButton", "Gov", MapLensMode.Governance, 116);
-                CreateLensButton("LensRiskButton", "Risk", MapLensMode.Risk, 174);
-                CreateLensButton("LensEconomyButton", "Eco", MapLensMode.Economy, 232);
-                CreateLensButton("LensLegitimacyButton", "Legit", MapLensMode.Legitimacy, 290);
-                CreateLensButton("LensWarButton", "War", MapLensMode.War, 348);
-                CreateLensButton("LensTerrainButton", "Land", MapLensMode.Terrain, 406);
+                strategyLensBar = GameObject.Find("StrategyLensBar");
             }
+            if (strategyLensBar == null)
+            {
+                strategyLensBar = CreateRuntimePanel(canvas.transform, "StrategyLensBar", StrategyLayoutSpec.TopLeftAnchor, StrategyLayoutSpec.TopLeftAnchor, StrategyLayoutSpec.LensBarPosition, StrategyLayoutSpec.LensBarSize);
+            }
+            strategyLensStateText = FindChildComponent<Text>(strategyLensBar.transform, "StrategyLensStateText");
+            if (strategyLensStateText == null)
+            {
+                strategyLensStateText = CreateRuntimeText(strategyLensBar.transform, "StrategyLensStateText", "图层:治理", new Vector2(10, -2), new Vector2(0, 1), new Vector2(78, 28), 10);
+            }
+            ConfigureLensButton("LensGovernanceButton", "治理", MapLensMode.Governance, 0);
+            ConfigureLensButton("LensRiskButton", "风险", MapLensMode.Risk, 1);
+            ConfigureLensButton("LensEconomyButton", "财税", MapLensMode.Economy, 2);
+            ConfigureLensButton("LensLegitimacyButton", "法统", MapLensMode.Legitimacy, 3);
+            ConfigureLensButton("LensWarButton", "战事", MapLensMode.War, 4);
+            ConfigureLensButton("LensTerrainButton", "地形", MapLensMode.Terrain, 5);
 
             if (strategyOutlinerRoot == null)
             {
-                strategyOutlinerRoot = CreateRuntimePanel(canvas.transform, "StrategyOutlinerPanel", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-12, -108), new Vector2(292, 330));
-                CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerTitle", "军政待办", new Vector2(10, -10), new Vector2(0, 1), new Vector2(170, 26), 13);
-                Button collapse = CreateRuntimeButton(strategyOutlinerRoot.transform, "StrategyOutlinerCollapseButton", "-", new Vector2(264, -12), new Vector2(1, 1), new Vector2(24, 24));
-                collapse.onClick.AddListener(CollapseStrategyOutliner);
-                strategyOutlinerText = CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerText", "", new Vector2(10, -42), new Vector2(0, 1), new Vector2(272, 62), 10);
-                strategyOutlinerText.verticalOverflow = VerticalWrapMode.Truncate;
+                strategyOutlinerRoot = GameObject.Find("StrategyOutlinerPanel");
             }
+            if (strategyOutlinerRoot == null)
+            {
+                strategyOutlinerRoot = CreateRuntimePanel(canvas.transform, "StrategyOutlinerPanel", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.OutlinerDockedPosition, StrategyLayoutSpec.OutlinerSize);
+                CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerTitle", "军政待办", new Vector2(12, -10), new Vector2(0, 1), new Vector2(168, 26), 13);
+            }
+            Button collapse = ResolveButton(strategyOutlinerRoot.transform, "StrategyOutlinerCollapseButton", "-", new Vector2(268, -12), new Vector2(1, 1), new Vector2(24, 24));
+            if (collapse != null)
+            {
+                collapse.onClick.RemoveAllListeners();
+                collapse.onClick.AddListener(CollapseStrategyOutliner);
+            }
+            strategyOutlinerText = FindChildComponent<Text>(strategyOutlinerRoot.transform, "StrategyOutlinerText");
+            if (strategyOutlinerText == null)
+            {
+                strategyOutlinerText = CreateRuntimeText(strategyOutlinerRoot.transform, "StrategyOutlinerText", "", new Vector2(14, -42), new Vector2(0, 1), new Vector2(266, 58), 10);
+            }
+            strategyOutlinerText.verticalOverflow = VerticalWrapMode.Truncate;
 
             if (strategyOutlinerCollapsedRoot == null)
             {
-                strategyOutlinerCollapsedRoot = CreateRuntimePanel(canvas.transform, "StrategyOutlinerCollapsed", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-12, -108), new Vector2(84, 42));
-                Button expand = CreateRuntimeButton(strategyOutlinerCollapsedRoot.transform, "StrategyOutlinerExpandButton", "Out", new Vector2(42, -20), new Vector2(0.5f, 1), new Vector2(70, 28));
+                strategyOutlinerCollapsedRoot = GameObject.Find("StrategyOutlinerCollapsed");
+            }
+            if (strategyOutlinerCollapsedRoot == null)
+            {
+                strategyOutlinerCollapsedRoot = CreateRuntimePanel(canvas.transform, "StrategyOutlinerCollapsed", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.OutlinerDockedPosition, StrategyLayoutSpec.OutlinerCollapsedSize);
+            }
+            Button expand = ResolveButton(strategyOutlinerCollapsedRoot.transform, "StrategyOutlinerExpandButton", "待办", new Vector2(37, -18), new Vector2(0.5f, 1), new Vector2(60, 26));
+            if (expand != null)
+            {
+                expand.onClick.RemoveAllListeners();
                 expand.onClick.AddListener(ExpandStrategyOutliner);
             }
 
+            if (logisticsQueuePanel == null)
+            {
+                logisticsQueuePanel = GameObject.Find("LogisticsQueuePanel");
+            }
+            if (logisticsQueuePanel == null)
+            {
+                logisticsQueuePanel = CreateRuntimePanel(canvas.transform, "LogisticsQueuePanel", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.LogisticsQueuePosition, StrategyLayoutSpec.LogisticsQueueSize);
+                CreateRuntimeText(logisticsQueuePanel.transform, "LogisticsQueueTitle", "后勤队列", new Vector2(12, -8), new Vector2(0, 1), new Vector2(90, 22), 12);
+            }
+            logisticsQueueText = FindChildComponent<Text>(logisticsQueuePanel.transform, "LogisticsQueueText");
+            if (logisticsQueueText == null)
+            {
+                logisticsQueueText = CreateRuntimeText(logisticsQueuePanel.transform, "LogisticsQueueText", "暂无前线运输队", new Vector2(12, -30), new Vector2(0, 1), new Vector2(270, 42), 10);
+            }
+            logisticsQueueText.verticalOverflow = VerticalWrapMode.Truncate;
+            logisticsPriorityUpButton = ResolveButton(logisticsQueuePanel.transform, "LogisticsPriorityUpButton", "加急", new Vector2(42, -92), new Vector2(0, 1), new Vector2(54, 24));
+            logisticsPriorityDownButton = ResolveButton(logisticsQueuePanel.transform, "LogisticsPriorityDownButton", "后置", new Vector2(102, -92), new Vector2(0, 1), new Vector2(54, 24));
+            logisticsPauseButton = ResolveButton(logisticsQueuePanel.transform, "LogisticsPauseButton", "暂停", new Vector2(162, -92), new Vector2(0, 1), new Vector2(54, 24));
+            logisticsCancelButton = ResolveButton(logisticsQueuePanel.transform, "LogisticsCancelButton", "取消", new Vector2(222, -92), new Vector2(0, 1), new Vector2(54, 24));
+            BindButton(logisticsPriorityUpButton, delegate { AdjustSelectedLogisticsPriority(1); });
+            BindButton(logisticsPriorityDownButton, delegate { AdjustSelectedLogisticsPriority(-1); });
+            BindButton(logisticsPauseButton, ToggleSelectedLogisticsPause);
+            BindButton(logisticsCancelButton, CancelSelectedLogistics);
+
             ApplyStrategyOutlinerVisibility();
             ApplyLensToMap();
+            RefreshLogisticsQueuePanel();
         }
 
-        private void CreateLensButton(string name, string label, MapLensMode lens, float x)
+        private void ConfigureLensButton(string name, string label, MapLensMode lens, int index)
         {
             if (strategyLensBar == null) return;
-            Button button = CreateRuntimeButton(strategyLensBar.transform, name, label, new Vector2(x, 0), new Vector2(0, 0.5f), new Vector2(52, 28));
+            float x = StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX * index;
+            Button button = ResolveButton(strategyLensBar.transform, name, label, new Vector2(x, -16), new Vector2(0, 1), new Vector2(44, 24));
+            if (button == null) return;
+            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(delegate { SetMapLens(lens); });
+        }
+
+        private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
+        {
+            if (button == null || action == null) return;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(action);
+        }
+
+        private static Button ResolveButton(Transform parent, string name, string label, Vector2 position, Vector2 anchor, Vector2 size)
+        {
+            Button button = FindChildComponent<Button>(parent, name);
+            if (button != null) return button;
+            return CreateRuntimeButton(parent, name, label, position, anchor, size);
+        }
+
+        private static T FindChildComponent<T>(Transform root, string objectName) where T : Component
+        {
+            Transform child = FindChildRecursive(root, objectName);
+            return child != null ? child.GetComponent<T>() : null;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string objectName)
+        {
+            if (root == null || string.IsNullOrEmpty(objectName)) return null;
+            if (root.name == objectName) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(i), objectName);
+                if (found != null) return found;
+            }
+
+            return null;
         }
 
         private void SetMapLens(MapLensMode lens)
@@ -1018,11 +1311,24 @@ namespace WanChaoGuiYi
 
         private void ApplyLensToMap()
         {
-            if (strategyLensStateText != null) strategyLensStateText.text = "Lens " + currentLens;
+            if (strategyLensStateText != null) strategyLensStateText.text = "图层:" + FormatLensName(currentLens);
             MapRenderer renderer = Object.FindObjectOfType<MapRenderer>();
             if (renderer != null)
             {
                 renderer.SetLens(currentLens);
+            }
+        }
+
+        private static string FormatLensName(MapLensMode lens)
+        {
+            switch (lens)
+            {
+                case MapLensMode.Risk: return "风险";
+                case MapLensMode.Economy: return "财税";
+                case MapLensMode.Legitimacy: return "法统";
+                case MapLensMode.War: return "战事";
+                case MapLensMode.Terrain: return "地形";
+                default: return "治理";
             }
         }
 
@@ -1042,10 +1348,171 @@ namespace WanChaoGuiYi
             }
             if (count == 0)
             {
-                sb.AppendLine("No critical items.");
+                sb.AppendLine("暂无急件");
             }
             strategyOutlinerText.text = sb.ToString();
             ApplyStrategyOutlinerVisibility();
+        }
+
+        private void RefreshLogisticsQueuePanel()
+        {
+            if (logisticsQueuePanel == null || logisticsQueueText == null || gameManager == null || gameManager.State == null || gameManager.World == null || gameManager.World.Map == null) return;
+
+            List<ArmyRuntimeState> queue = CollectPlayerLogisticsQueue();
+            string managedArmyId = ResolveManagedLogisticsArmyId(queue);
+            ArmyRuntimeState managedArmy = !string.IsNullOrEmpty(managedArmyId) && gameManager.MapQueries != null
+                ? gameManager.MapQueries.GetArmy(managedArmyId)
+                : null;
+
+            if (queue.Count == 0)
+            {
+                logisticsQueueText.text = "暂无前线运输队\n整备长路线后会在此排程。";
+            }
+            else
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.Append("队列 ");
+                sb.Append(queue.Count);
+                sb.Append(" | 管理 ");
+                sb.Append(managedArmy != null ? managedArmy.id : queue[0].id);
+                sb.AppendLine();
+                int count = Mathf.Min(queue.Count, 2);
+                for (int i = 0; i < count; i++)
+                {
+                    ArmyRuntimeState army = queue[i];
+                    sb.Append(army.id);
+                    sb.Append(" ");
+                    sb.Append(FormatLogisticsPriority(army.frontlineLogisticsPriority));
+                    sb.Append(army.frontlineLogisticsPaused ? " 暂停" : " 执行");
+                    sb.Append(" ");
+                    sb.Append(army.frontlineLogisticsCompletedSegments);
+                    sb.Append("/");
+                    sb.Append(army.frontlineLogisticsTotalTurns);
+                    sb.Append(" -> ");
+                    sb.Append(GetRegionName(army.frontlineLogisticsTargetRegionId));
+                    sb.Append(" 截");
+                    sb.Append(army.frontlineLogisticsRaidPressure);
+                    if (i + 1 < count) sb.AppendLine();
+                }
+
+                logisticsQueueText.text = sb.ToString();
+            }
+
+            bool canManage = managedArmy != null && HasActiveLogistics(managedArmy);
+            SetButtonInteractable(logisticsPriorityUpButton, canManage && managedArmy.frontlineLogisticsPriority < 2);
+            SetButtonInteractable(logisticsPriorityDownButton, canManage && managedArmy.frontlineLogisticsPriority > 0);
+            SetButtonInteractable(logisticsPauseButton, canManage);
+            SetButtonInteractable(logisticsCancelButton, canManage);
+            SetButtonLabel(logisticsPauseButton, canManage && managedArmy.frontlineLogisticsPaused ? "继续" : "暂停");
+        }
+
+        private List<ArmyRuntimeState> CollectPlayerLogisticsQueue()
+        {
+            List<ArmyRuntimeState> queue = new List<ArmyRuntimeState>();
+            if (gameManager == null || gameManager.State == null || gameManager.World == null || gameManager.World.Map == null) return queue;
+
+            foreach (ArmyRuntimeState army in gameManager.World.Map.ArmiesById.Values)
+            {
+                if (army == null || army.ownerFactionId != gameManager.State.playerFactionId || !HasActiveLogistics(army)) continue;
+                queue.Add(army);
+            }
+
+            queue.Sort(CompareLogisticsQueueForUi);
+            return queue;
+        }
+
+        private static int CompareLogisticsQueueForUi(ArmyRuntimeState left, ArmyRuntimeState right)
+        {
+            if (left == null && right == null) return 0;
+            if (left == null) return 1;
+            if (right == null) return -1;
+            int priority = right.frontlineLogisticsPriority.CompareTo(left.frontlineLogisticsPriority);
+            if (priority != 0) return priority;
+            int paused = left.frontlineLogisticsPaused.CompareTo(right.frontlineLogisticsPaused);
+            if (paused != 0) return paused;
+            return string.Compare(left.id, right.id, System.StringComparison.Ordinal);
+        }
+
+        private string ResolveManagedLogisticsArmyId(List<ArmyRuntimeState> queue)
+        {
+            if (!string.IsNullOrEmpty(selectedLogisticsArmyId) && gameManager != null && gameManager.MapQueries != null)
+            {
+                ArmyRuntimeState selected = gameManager.MapQueries.GetArmy(selectedLogisticsArmyId);
+                if (HasActiveLogistics(selected)) return selectedLogisticsArmyId;
+                selectedLogisticsArmyId = null;
+            }
+
+            if (selectionContext != null && !string.IsNullOrEmpty(selectionContext.selectedArmyId) && gameManager != null && gameManager.MapQueries != null)
+            {
+                ArmyRuntimeState selectedArmy = gameManager.MapQueries.GetArmy(selectionContext.selectedArmyId);
+                if (HasActiveLogistics(selectedArmy))
+                {
+                    selectedLogisticsArmyId = selectedArmy.id;
+                    return selectedArmy.id;
+                }
+            }
+
+            if (queue != null && queue.Count > 0)
+            {
+                selectedLogisticsArmyId = queue[0].id;
+                return queue[0].id;
+            }
+
+            return null;
+        }
+
+        private void AdjustSelectedLogisticsPriority(int delta)
+        {
+            string armyId = ResolveManagedLogisticsArmyId(CollectPlayerLogisticsQueue());
+            if (string.IsNullOrEmpty(armyId) || gameManager == null) return;
+
+            gameManager.AdjustFrontlineLogisticsPriority(armyId, delta);
+            selectedLogisticsArmyId = armyId;
+            RefreshHUD();
+        }
+
+        private void ToggleSelectedLogisticsPause()
+        {
+            string armyId = ResolveManagedLogisticsArmyId(CollectPlayerLogisticsQueue());
+            if (string.IsNullOrEmpty(armyId) || gameManager == null) return;
+
+            gameManager.ToggleFrontlineLogisticsPause(armyId);
+            selectedLogisticsArmyId = armyId;
+            RefreshHUD();
+        }
+
+        private void CancelSelectedLogistics()
+        {
+            string armyId = ResolveManagedLogisticsArmyId(CollectPlayerLogisticsQueue());
+            if (string.IsNullOrEmpty(armyId) || gameManager == null) return;
+
+            gameManager.CancelFrontlineLogistics(armyId);
+            if (selectedLogisticsArmyId == armyId) selectedLogisticsArmyId = null;
+            RefreshHUD();
+        }
+
+        private static bool HasActiveLogistics(ArmyRuntimeState army)
+        {
+            return army != null && !string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId);
+        }
+
+        private static string FormatLogisticsPriority(int priority)
+        {
+            if (priority >= 2) return "加急";
+            if (priority <= 0) return "后置";
+            return "常规";
+        }
+
+        private static void SetButtonInteractable(Button button, bool interactable)
+        {
+            if (button != null) button.interactable = interactable;
+        }
+
+        private static void SetButtonLabel(Button button, string label)
+        {
+            if (button == null) return;
+            Text text = button.GetComponentInChildren<Text>();
+            if (text != null) text.text = label;
         }
 
         private void CreateStrategyOutlinerEntryButton(int index, StrategyOutlinerEntry entry)
@@ -1053,18 +1520,18 @@ namespace WanChaoGuiYi
             if (strategyOutlinerRoot == null || entry == null) return;
 
             string label = ResolveOutlinerButtonLabel(entry);
-            if (label.Length > 42)
+            if (label.Length > 30)
             {
-                label = label.Substring(0, 39) + "...";
+                label = label.Substring(0, 28) + "..";
             }
 
             Button button = CreateRuntimeButton(
                 strategyOutlinerRoot.transform,
                 "StrategyOutlinerEntryButton_" + index,
                 label,
-                new Vector2(146, -112 - index * 30),
+                new Vector2(148, StrategyLayoutSpec.OutlinerEntryStartY - index * StrategyLayoutSpec.OutlinerEntryStepY),
                 new Vector2(0.5f, 1),
-                new Vector2(272, 26));
+                new Vector2(266, 24));
             int capturedIndex = index;
             string capturedCategory = entry.category;
             string capturedTargetId = entry.targetId;
@@ -1077,7 +1544,11 @@ namespace WanChaoGuiYi
             if (gameManager == null || gameManager.Events == null || string.IsNullOrEmpty(targetId)) return;
 
             string regionId = targetId;
-            if (category == "marching_army" || category == "low_supply")
+            if (category == "frontline_logistics")
+            {
+                selectedLogisticsArmyId = targetId;
+            }
+            if (IsArmyOutlinerCategory(category))
             {
                 ArmyRuntimeState army = gameManager.MapQueries != null ? gameManager.MapQueries.GetArmy(targetId) : null;
                 if (army != null)
@@ -1088,14 +1559,41 @@ namespace WanChaoGuiYi
 
             if (string.IsNullOrEmpty(regionId)) return;
 
-            gameManager.State.AddLog("ui", "outliner selected " + index + ": " + category + " -> " + regionId);
+            gameManager.State.AddLog("ui", "待办选中 " + index + ": " + ResolveOutlinerCategoryLogLabel(category) + " -> " + GetRegionName(regionId));
+            SelectAndFocusMapRegion(regionId, "待办定位");
+            RefreshLogisticsQueuePanel();
+        }
+
+        private void SelectAndFocusMapRegion(string regionId, string logPrefix)
+        {
+            if (gameManager == null || gameManager.Events == null || string.IsNullOrEmpty(regionId)) return;
+
+            if (gameManager.State != null)
+            {
+                gameManager.State.AddLog("ui", logPrefix + " -> " + regionId);
+            }
+
             gameManager.Events.Publish(new GameEvent(GameEventType.RegionSelected, regionId, null));
+            MapRenderer renderer = Object.FindObjectOfType<MapRenderer>();
+            if (renderer != null)
+            {
+                renderer.PulseRegionFocus(regionId);
+            }
+
+            Vector2 center;
+            if (!TryResolveRegionWorldCenter(regionId, out center)) return;
+
+            CameraController controller = Object.FindObjectOfType<CameraController>();
+            if (controller != null)
+            {
+                controller.SmoothCenterOnRegion(center);
+            }
         }
 
         private void AppendOutlinerSummary(System.Text.StringBuilder sb, List<StrategyOutlinerEntry> entries)
         {
             if (sb == null) return;
-            sb.AppendLine("Lens " + currentLens + " | " + (entries != null ? entries.Count : 0) + " items");
+            sb.AppendLine("图层 " + FormatLensName(currentLens) + " | 待办 " + (entries != null ? entries.Count : 0));
             if (entries == null || entries.Count == 0) return;
 
             List<string> groups = new List<string>();
@@ -1116,7 +1614,7 @@ namespace WanChaoGuiYi
                 }
             }
 
-            int visibleGroups = Mathf.Min(groups.Count, 4);
+            int visibleGroups = Mathf.Min(groups.Count, 5);
             for (int i = 0; i < visibleGroups; i++)
             {
                 if (i > 0) sb.Append("  ");
@@ -1126,10 +1624,40 @@ namespace WanChaoGuiYi
             }
         }
 
-        private static string ResolveOutlinerButtonLabel(StrategyOutlinerEntry entry)
+        private string ResolveOutlinerButtonLabel(StrategyOutlinerEntry entry)
         {
             if (entry == null) return "";
-            return ResolveOutlinerGroupLabel(entry) + " | " + entry.label;
+            string targetName = IsArmyOutlinerCategory(entry.category) || entry.category == "frontline_prepared" || entry.category == "frontline_logistics"
+                ? entry.label
+                : GetRegionName(entry.targetId);
+            if (string.IsNullOrEmpty(targetName) || targetName == entry.targetId)
+            {
+                targetName = entry.targetId;
+            }
+
+            return ResolveOutlinerGroupLabel(entry) + " · " + targetName;
+        }
+
+        private static bool IsArmyOutlinerCategory(string category)
+        {
+            return category == "marching_army" || category == "low_supply" || category == "frontline_logistics";
+        }
+
+        private static string ResolveOutlinerCategoryLogLabel(string category)
+        {
+            switch (category)
+            {
+                case "critical_region": return "高风险地区";
+                case "acceptance": return "高风险地区";
+                case "occupation_chain": return "新占治理";
+                case "occupation_queue": return "新占治理";
+                case "marching_army": return "行军军队";
+                case "low_supply": return "低补给军队";
+                case "frontline_prepared": return "前线整备";
+                case "frontline_logistics": return "前线补给";
+                case "latest_report": return "最新战报";
+                default: return string.IsNullOrEmpty(category) ? "未分类" : category;
+            }
         }
 
         private static string ResolveOutlinerGroupLabel(StrategyOutlinerEntry entry)
@@ -1137,8 +1665,9 @@ namespace WanChaoGuiYi
             if (entry == null) return "其他";
             if (!string.IsNullOrEmpty(entry.groupLabel)) return entry.groupLabel;
             if (entry.category == "critical_region" || entry.category == "acceptance") return "高风险地区";
-            if (entry.category == "occupation_chain") return "新占治理";
-            if (entry.category == "marching_army" || entry.category == "low_supply") return "行军军队";
+            if (entry.category == "occupation_chain" || entry.category == "occupation_queue") return "新占治理";
+            if (entry.category == "marching_army") return "行军军队";
+            if (entry.category == "low_supply" || entry.category == "frontline_prepared" || entry.category == "frontline_logistics") return "前线补给";
             if (entry.category == "latest_report") return "最新战报";
             return "其他";
         }
@@ -1184,11 +1713,17 @@ namespace WanChaoGuiYi
                 RectTransform collapsedRect = strategyOutlinerCollapsedRoot.GetComponent<RectTransform>();
                 if (collapsedRect != null)
                 {
-                    collapsedRect.anchoredPosition = forceCollapsed ? StrategyOutlinerRegionPanelAvoidPosition : StrategyOutlinerDockedPosition;
+                    collapsedRect.anchoredPosition = forceCollapsed ? ResolveCollapsedOutlinerAvoidPosition(collapsedRect) : StrategyLayoutSpec.OutlinerDockedPosition;
                 }
 
                 if (showCollapsed) UIPanelVisibility.Show(strategyOutlinerCollapsedRoot);
                 else UIPanelVisibility.Hide(strategyOutlinerCollapsedRoot);
+            }
+
+            if (logisticsQueuePanel != null)
+            {
+                if (forceCollapsed) UIPanelVisibility.Hide(logisticsQueuePanel);
+                else UIPanelVisibility.Show(logisticsQueuePanel);
             }
         }
 
@@ -1205,6 +1740,41 @@ namespace WanChaoGuiYi
             return regionPanel.gameObject.activeInHierarchy;
         }
 
+        private Vector2 ResolveCollapsedOutlinerAvoidPosition(RectTransform collapsedRect)
+        {
+            RectTransform parentRect = collapsedRect != null ? collapsedRect.parent as RectTransform : null;
+            RectTransform regionRect = regionPanel != null ? regionPanel.GetComponent<RectTransform>() : null;
+            if (parentRect == null || regionRect == null)
+            {
+                return StrategyLayoutSpec.OutlinerRegionPanelAvoidPosition;
+            }
+
+            Rect regionLocalRect = ResolveLocalRect(parentRect, regionRect);
+            Rect parentLocalRect = parentRect.rect;
+            Vector2 size = collapsedRect.sizeDelta;
+            const float gap = 12f;
+
+            float chipRight = Mathf.Clamp(
+                regionLocalRect.xMin - gap,
+                parentLocalRect.xMin + size.x + gap,
+                parentLocalRect.xMax - gap);
+            float chipTop = Mathf.Clamp(
+                parentLocalRect.yMax + StrategyLayoutSpec.OutlinerDockedPosition.y,
+                parentLocalRect.yMin + size.y + gap,
+                parentLocalRect.yMax - gap);
+
+            return new Vector2(chipRight - parentLocalRect.xMax, chipTop - parentLocalRect.yMax);
+        }
+
+        private static Rect ResolveLocalRect(RectTransform parent, RectTransform child)
+        {
+            Vector3[] corners = new Vector3[4];
+            child.GetWorldCorners(corners);
+            Vector3 bottomLeft = parent.InverseTransformPoint(corners[0]);
+            Vector3 topRight = parent.InverseTransformPoint(corners[2]);
+            return Rect.MinMaxRect(bottomLeft.x, bottomLeft.y, topRight.x, topRight.y);
+        }
+
         private static GameObject CreateRuntimePanel(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)
         {
             GameObject panel = new GameObject(name);
@@ -1216,7 +1786,13 @@ namespace WanChaoGuiYi
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
             Image image = panel.AddComponent<Image>();
-            image.color = UITheme.PanelBackground;
+            image.color = UITheme.PanelBackgroundAlpha;
+            Shadow shadow = panel.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.48f);
+            shadow.effectDistance = new Vector2(4f, -4f);
+            Outline outline = panel.AddComponent<Outline>();
+            outline.effectColor = UITheme.ButtonBorder;
+            outline.effectDistance = new Vector2(1f, -1f);
             return panel;
         }
 
@@ -1235,7 +1811,9 @@ namespace WanChaoGuiYi
             text.fontSize = fontSize;
             text.color = UITheme.TextPrimary;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.lineSpacing = 1.05f;
+            text.supportRichText = true;
             text.text = value;
             return text;
         }
@@ -1252,7 +1830,18 @@ namespace WanChaoGuiYi
             rect.sizeDelta = size;
             Image image = obj.AddComponent<Image>();
             image.color = UITheme.ButtonNormal;
+            Shadow shadow = obj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.36f);
+            shadow.effectDistance = new Vector2(2f, -2f);
+            Outline outline = obj.AddComponent<Outline>();
+            outline.effectColor = UITheme.ButtonBorder;
+            outline.effectDistance = new Vector2(1f, -1f);
             Button button = obj.AddComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.normalColor = UITheme.ButtonNormal;
+            colors.highlightedColor = UITheme.ButtonHover;
+            colors.pressedColor = UITheme.ButtonPressed;
+            button.colors = colors;
 
             Text text = CreateRuntimeText(obj.transform, name + "Text", label, Vector2.zero, new Vector2(0.5f, 0.5f), size, 10);
             text.alignment = TextAnchor.MiddleCenter;

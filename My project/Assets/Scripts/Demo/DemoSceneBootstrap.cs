@@ -21,6 +21,7 @@ namespace WanChaoGuiYi
 
             DisableEditorPreviewLayer();
             GameManager gameManager = EnsureGameManager();
+            EnsureAudio(gameManager);
             MapRenderer mapRenderer = EnsureMapRenderer(gameManager);
             EnsureMapSetup(gameManager, mapRenderer);
             EnsureEntityVisuals(gameManager);
@@ -45,6 +46,50 @@ namespace WanChaoGuiYi
             GameObject gameObject = new GameObject("GameManager");
             gameManager = gameObject.AddComponent<GameManager>();
             return gameManager;
+        }
+
+        private static void EnsureAudio(GameManager gameManager)
+        {
+            AudioManager audioManager = FindObjectOfType<AudioManager>();
+            if (audioManager == null)
+            {
+                GameObject audioObject = new GameObject("AudioManager");
+                audioManager = audioObject.AddComponent<AudioManager>();
+            }
+
+            AudioManifestBinder manifestBinder = audioManager.GetComponent<AudioManifestBinder>();
+            if (manifestBinder == null)
+            {
+                manifestBinder = audioManager.gameObject.AddComponent<AudioManifestBinder>();
+            }
+
+            manifestBinder.Bind(audioManager);
+
+            if (audioManager.GetComponent<ChronicleMusicDispatcher>() == null)
+            {
+                audioManager.gameObject.AddComponent<ChronicleMusicDispatcher>();
+            }
+
+            if (audioManager.GetComponent<NarrationDispatcher>() == null)
+            {
+                audioManager.gameObject.AddComponent<NarrationDispatcher>();
+            }
+
+            AudioDebugHUD debugHud = audioManager.GetComponent<AudioDebugHUD>();
+            if (debugHud == null)
+            {
+                debugHud = audioManager.gameObject.AddComponent<AudioDebugHUD>();
+            }
+
+            debugHud.Bind(audioManager);
+
+            AudioEventBridge audioBridge = FindObjectOfType<AudioEventBridge>();
+            if (audioBridge == null)
+            {
+                audioBridge = audioManager.gameObject.AddComponent<AudioEventBridge>();
+            }
+
+            audioBridge.Bind(gameManager);
         }
 
         private MapRenderer EnsureMapRenderer(GameManager gameManager)
@@ -94,8 +139,10 @@ namespace WanChaoGuiYi
             }
 
             camera.orthographic = true;
-            camera.orthographicSize = 6.45f;
-            camera.transform.position = new Vector3(0.75f, -0.05f, -10f);
+            camera.orthographicSize = 6.35f;
+            camera.transform.position = new Vector3(1.55f, -0.05f, -10f);
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.045f, 0.075f, 0.082f, 1f);
 
             if (camera.GetComponent<CameraController>() == null)
             {

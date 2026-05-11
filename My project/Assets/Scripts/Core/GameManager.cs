@@ -81,6 +81,46 @@ namespace WanChaoGuiYi
             return mapCommandService != null && mapCommandService.SiegeRegion(armyId, targetRegionId);
         }
 
+        public bool PrepareFrontline(string armyId, string targetRegionId)
+        {
+            return mapCommandService != null && mapCommandService.PrepareFrontline(armyId, targetRegionId);
+        }
+
+        public bool PrepareFrontline(string targetRegionId)
+        {
+            if (State == null || worldState == null || string.IsNullOrEmpty(targetRegionId)) return false;
+
+            ArmyRuntimeState army = FindPlayerIdleArmyForAttack(targetRegionId);
+            if (army == null)
+            {
+                State.AddLog("war", "没有可为" + targetRegionId + "前线整备的空闲军队。");
+                return false;
+            }
+
+            return PrepareFrontline(army.id, targetRegionId);
+        }
+
+        public bool CancelFrontlineLogistics(string armyId)
+        {
+            return mapCommandService != null && mapCommandService.CancelFrontlineLogistics(armyId);
+        }
+
+        public bool ToggleFrontlineLogisticsPause(string armyId)
+        {
+            return mapCommandService != null && mapCommandService.ToggleFrontlineLogisticsPause(armyId);
+        }
+
+        public bool AdjustFrontlineLogisticsPriority(string armyId, int delta)
+        {
+            return mapCommandService != null && mapCommandService.AdjustFrontlineLogisticsPriority(armyId, delta);
+        }
+
+        public bool ApplyEnemyLogisticsRaid(string raiderFactionId)
+        {
+            return mapCommandService != null && worldState != null && worldState.Map != null &&
+                   mapCommandService.ApplyEnemyLogisticsRaid(worldState.Map, raiderFactionId);
+        }
+
         public bool StartPlayerAttack(string targetRegionId)
         {
             if (State == null || worldState == null || string.IsNullOrEmpty(targetRegionId)) return false;

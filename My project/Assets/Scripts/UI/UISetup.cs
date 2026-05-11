@@ -20,7 +20,8 @@ namespace WanChaoGuiYi
             "MechanismPanel",
             "StrategyLensBar",
             "StrategyOutlinerPanel",
-            "StrategyOutlinerCollapsed"
+            "StrategyOutlinerCollapsed",
+            "LogisticsQueuePanel"
         };
 
         [SerializeField] private GameManager gameManager;
@@ -87,6 +88,7 @@ namespace WanChaoGuiYi
             TechPanelBindings tech = BuildTechPanel(canvas.transform);
             WeatherPanelBindings weather = BuildWeatherPanel(canvas.transform);
             MechanismPanelBindings mechanism = BuildMechanismPanel(canvas.transform);
+            BuildStrategyControls(canvas.transform);
 
             mainMapUI = GetOrAdd<MainMapUI>(gameObject);
             regionPanel = GetOrAdd<RegionPanel>(region.root);
@@ -102,11 +104,11 @@ namespace WanChaoGuiYi
             emperorPanel.Bind(emperor.root, emperor.emperorNameText, emperor.titleText, emperor.mechanicNameText, emperor.mechanicDescText, emperor.statsText, emperor.burdensText, emperor.legitimacyText, emperor.successionText, emperor.heirText, emperor.stableSuccessionsText, emperor.skillText, emperor.resolveSuccessionButton, emperor.useSkillButton, emperor.closeButton);
             courtPanel.Bind(court.root, court.factionNameText, court.emperorNameText, court.moneyText, court.foodText, court.legitimacyText, court.successionText, court.courtPressureText, court.regionCountText, court.talentCountText, court.turnLogText, court.scrollRect, court.generalPortraitGridContent, court.recruitArmyButton, court.equipArmyButton, court.closeButton);
             eventPanel.Bind(events.root, events.eventNameText, events.categoryText, events.choiceText, events.choiceButtons, events.closeButton);
-            battleReportPanel.Bind(battle.root, battle.attackerText, battle.defenderText, battle.resultText, battle.detailsText, battle.closeButton);
+            battleReportPanel.Bind(battle.root, battle.attackerText, battle.defenderText, battle.resultText, battle.detailsText, battle.focusButton, battle.closeButton);
             techPanel.Bind(tech.root, tech.titleText, tech.currentResearchText, tech.progressText, tech.availableTechsText, tech.completedTechsText, tech.setResearchButton, tech.closeButton);
             weatherPanel.Bind(weather.root, weather.weatherNameText, weather.weatherEffectText, weather.celestialEventText, weather.resilienceText, weather.closeButton);
             mechanismPanel.Bind(mechanism.root, mechanism.titleText, mechanism.detailsText, mechanism.applyPolicyButton, mechanism.diplomacyButton, mechanism.borderButton, mechanism.enterWarModeButton, mechanism.espionageButton, mechanism.closeButton);
-            mainMapUI.Bind(gameManager, regionPanel, emperorPanel, courtPanel, eventPanel, battleReportPanel, techPanel, weatherPanel, mechanismPanel, hud.turnText, hud.resourceText, hud.selectionContextText, hud.modeStateText, hud.governanceModeButton, hud.warModeButton, hud.nextTurnButton, hud.courtButton, hud.emperorButton, hud.attackButton, hud.techButton, hud.weatherButton, hud.eventButton, hud.mechanismButton);
+            mainMapUI.Bind(gameManager, regionPanel, emperorPanel, courtPanel, eventPanel, battleReportPanel, techPanel, weatherPanel, mechanismPanel, hud.turnText, hud.resourceText, hud.selectionContextText, hud.modeStateText, hud.overlayBudgetText, hud.governanceModeButton, hud.warModeButton, hud.nextTurnButton, hud.courtButton, hud.emperorButton, hud.attackButton, hud.prepareFrontlineButton, hud.techButton, hud.weatherButton, hud.eventButton, hud.mechanismButton);
             mainMapUI.ActivateBindings();
             uiBuilt = true;
         }
@@ -174,6 +176,8 @@ namespace WanChaoGuiYi
         private HudBindings BuildHUDBar(Transform parent)
         {
             GameObject bar = CreatePanel(parent, "HUDBar", new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -25), new Vector2(0, 50));
+            Image barImage = bar.GetComponent<Image>();
+            if (barImage != null) barImage.color = UITheme.HudBackgroundAlpha;
             HudBindings bindings = new HudBindings();
             bindings.root = bar;
             bindings.turnText = CreateText(bar.transform, "TurnText", "回合 1 | 1年春", new Vector2(20, 0), new Vector2(0, 0.5f), new Vector2(220, 40));
@@ -181,8 +185,12 @@ namespace WanChaoGuiYi
             bindings.governanceModeButton = CreateButton(bar.transform, "GovernanceModeButton", "治理", new Vector2(653, 0), new Vector2(0, 0.5f), new Vector2(66, 36));
             bindings.warModeButton = CreateButton(bar.transform, "WarModeButton", "战争", new Vector2(727, 0), new Vector2(0, 0.5f), new Vector2(66, 36));
             bindings.modeStateText = CreateText(bar.transform, "ModeStateText", "当前：治理模式", new Vector2(770, 0), new Vector2(0, 0.5f), new Vector2(125, 40));
-            bindings.selectionContextText = CreateText(bar.transform, "SelectionContextText", "M:Governance | R:none", new Vector2(902, 0), new Vector2(0, 0.5f), new Vector2(145, 40));
+            bindings.selectionContextText = CreateText(bar.transform, "SelectionContextText", "治理 | 未选区", new Vector2(902, 0), new Vector2(0, 0.5f), new Vector2(145, 40));
+            bindings.overlayBudgetText = CreateText(bar.transform, "OverlayBudgetText", "避让 Z/B/O 0/0/0 | 标 0/0 | 脉 0/0 额0", new Vector2(1026, -48), new Vector2(0, 0.5f), new Vector2(330, 28));
+            bindings.overlayBudgetText.color = UITheme.TextSecondary;
+            bindings.overlayBudgetText.horizontalOverflow = HorizontalWrapMode.Overflow;
             bindings.attackButton = CreateButton(bar.transform, "AttackButton", "进攻选区", new Vector2(1110, 0), new Vector2(0, 0.5f), new Vector2(110, 36));
+            bindings.prepareFrontlineButton = CreateButton(bar.transform, "PrepareFrontlineButton", "整备前线", new Vector2(1110, -48), new Vector2(0, 0.5f), new Vector2(92, 28));
             bindings.techButton = CreateButton(bar.transform, "TechButton", "科技", new Vector2(1238, 0), new Vector2(0, 0.5f), new Vector2(80, 36));
             bindings.weatherButton = CreateButton(bar.transform, "WeatherButton", "天象", new Vector2(1328, 0), new Vector2(0, 0.5f), new Vector2(80, 36));
             bindings.eventButton = CreateButton(bar.transform, "EventButton", "事件", new Vector2(1418, 0), new Vector2(0, 0.5f), new Vector2(80, 36));
@@ -196,21 +204,69 @@ namespace WanChaoGuiYi
 
         private static void ApplyCompactHudLayout(HudBindings bindings)
         {
-            SetRect(bindings.root, new Vector2(0, -46), new Vector2(0, 92));
-            SetRect(bindings.turnText, new Vector2(12, 22), new Vector2(118, 36));
-            SetRect(bindings.resourceText, new Vector2(134, 22), new Vector2(228, 36));
-            SetRect(bindings.governanceModeButton, new Vector2(366, 22), new Vector2(72, 44));
-            SetRect(bindings.warModeButton, new Vector2(442, 22), new Vector2(72, 44));
-            SetRect(bindings.modeStateText, new Vector2(518, 22), new Vector2(100, 36));
-            SetRect(bindings.selectionContextText, new Vector2(622, 22), new Vector2(122, 36));
-            SetRect(bindings.attackButton, new Vector2(748, 22), new Vector2(72, 44));
-            SetRect(bindings.nextTurnButton, new Vector2(824, 22), new Vector2(90, 44));
-            SetRect(bindings.techButton, new Vector2(366, -22), new Vector2(48, 34));
-            SetRect(bindings.weatherButton, new Vector2(418, -22), new Vector2(48, 34));
-            SetRect(bindings.eventButton, new Vector2(470, -22), new Vector2(48, 34));
-            SetRect(bindings.mechanismButton, new Vector2(522, -22), new Vector2(72, 34));
-            SetRect(bindings.emperorButton, new Vector2(598, -22), new Vector2(48, 34));
-            SetRect(bindings.courtButton, new Vector2(650, -22), new Vector2(48, 34));
+            SetRect(bindings.root, new Vector2(0, -28), new Vector2(0, 56));
+            SetRect(bindings.turnText, new Vector2(14, 0), new Vector2(106, 34));
+            SetRect(bindings.resourceText, new Vector2(128, 0), new Vector2(254, 34));
+            SetRect(bindings.governanceModeButton, new Vector2(394, 0), new Vector2(72, 44));
+            SetRect(bindings.warModeButton, new Vector2(472, 0), new Vector2(72, 44));
+            SetRect(bindings.modeStateText, new Vector2(550, 0), new Vector2(106, 34));
+            SetRect(bindings.selectionContextText, new Vector2(662, 0), new Vector2(154, 34));
+            SetRect(bindings.attackButton, new Vector2(824, 0), new Vector2(82, 44));
+            SetRect(bindings.prepareFrontlineButton, new Vector2(824, -48), new Vector2(82, 28));
+            SetRect(bindings.nextTurnButton, new Vector2(914, 0), new Vector2(92, 44));
+            SetRect(bindings.techButton, new Vector2(18, -48), new Vector2(48, 28));
+            SetRect(bindings.weatherButton, new Vector2(72, -48), new Vector2(48, 28));
+            SetRect(bindings.eventButton, new Vector2(126, -48), new Vector2(48, 28));
+            SetRect(bindings.mechanismButton, new Vector2(186, -48), new Vector2(72, 28));
+            SetRect(bindings.emperorButton, new Vector2(264, -48), new Vector2(48, 28));
+            SetRect(bindings.courtButton, new Vector2(318, -48), new Vector2(48, 28));
+            SetRect(bindings.overlayBudgetText, new Vector2(380, -48), new Vector2(300, 28));
+            SetFontSize(bindings.turnText, 11);
+            SetFontSize(bindings.resourceText, 11);
+            SetFontSize(bindings.modeStateText, 11);
+            SetFontSize(bindings.selectionContextText, 10);
+            SetFontSize(bindings.overlayBudgetText, 10);
+            SetButtonFontSize(bindings.governanceModeButton, 12);
+            SetButtonFontSize(bindings.warModeButton, 12);
+            SetButtonFontSize(bindings.attackButton, 11);
+            SetButtonFontSize(bindings.prepareFrontlineButton, 10);
+            SetButtonFontSize(bindings.nextTurnButton, 11);
+            SetButtonFontSize(bindings.techButton, 10);
+            SetButtonFontSize(bindings.weatherButton, 10);
+            SetButtonFontSize(bindings.eventButton, 10);
+            SetButtonFontSize(bindings.mechanismButton, 10);
+            SetButtonFontSize(bindings.emperorButton, 10);
+            SetButtonFontSize(bindings.courtButton, 10);
+        }
+
+        private void BuildStrategyControls(Transform parent)
+        {
+            GameObject lensBar = CreatePanel(parent, "StrategyLensBar", StrategyLayoutSpec.TopLeftAnchor, StrategyLayoutSpec.TopLeftAnchor, StrategyLayoutSpec.LensBarPosition, StrategyLayoutSpec.LensBarSize);
+            CreateText(lensBar.transform, "StrategyLensStateText", "图层:治理", new Vector2(10, -2), new Vector2(0, 1), new Vector2(78, 28));
+            CreateButton(lensBar.transform, "LensGovernanceButton", "治理", new Vector2(StrategyLayoutSpec.LensButtonStartX, -16), new Vector2(0, 1), new Vector2(44, 24));
+            CreateButton(lensBar.transform, "LensRiskButton", "风险", new Vector2(StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX, -16), new Vector2(0, 1), new Vector2(44, 24));
+            CreateButton(lensBar.transform, "LensEconomyButton", "财税", new Vector2(StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX * 2, -16), new Vector2(0, 1), new Vector2(44, 24));
+            CreateButton(lensBar.transform, "LensLegitimacyButton", "法统", new Vector2(StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX * 3, -16), new Vector2(0, 1), new Vector2(44, 24));
+            CreateButton(lensBar.transform, "LensWarButton", "战事", new Vector2(StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX * 4, -16), new Vector2(0, 1), new Vector2(44, 24));
+            CreateButton(lensBar.transform, "LensTerrainButton", "地形", new Vector2(StrategyLayoutSpec.LensButtonStartX + StrategyLayoutSpec.LensButtonStepX * 5, -16), new Vector2(0, 1), new Vector2(44, 24));
+
+            GameObject outliner = CreatePanel(parent, "StrategyOutlinerPanel", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.OutlinerDockedPosition, StrategyLayoutSpec.OutlinerSize);
+            CreateText(outliner.transform, "StrategyOutlinerTitle", "军政待办", new Vector2(12, -10), new Vector2(0, 1), new Vector2(168, 26));
+            CreateButton(outliner.transform, "StrategyOutlinerCollapseButton", "-", new Vector2(268, -12), new Vector2(1, 1), new Vector2(24, 24));
+            Text outlinerText = CreateText(outliner.transform, "StrategyOutlinerText", "", new Vector2(14, -42), new Vector2(0, 1), new Vector2(266, 58));
+            outlinerText.verticalOverflow = VerticalWrapMode.Truncate;
+
+            GameObject collapsed = CreatePanel(parent, "StrategyOutlinerCollapsed", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.OutlinerDockedPosition, StrategyLayoutSpec.OutlinerCollapsedSize);
+            CreateButton(collapsed.transform, "StrategyOutlinerExpandButton", "待办", new Vector2(37, -18), new Vector2(0.5f, 1), new Vector2(60, 26));
+
+            GameObject logistics = CreatePanel(parent, "LogisticsQueuePanel", StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.TopRightAnchor, StrategyLayoutSpec.LogisticsQueuePosition, StrategyLayoutSpec.LogisticsQueueSize);
+            CreateText(logistics.transform, "LogisticsQueueTitle", "后勤队列", new Vector2(12, -8), new Vector2(0, 1), new Vector2(90, 22));
+            Text logisticsText = CreateText(logistics.transform, "LogisticsQueueText", "暂无前线运输队", new Vector2(12, -30), new Vector2(0, 1), new Vector2(270, 42));
+            logisticsText.verticalOverflow = VerticalWrapMode.Truncate;
+            CreateButton(logistics.transform, "LogisticsPriorityUpButton", "加急", new Vector2(42, -92), new Vector2(0, 1), new Vector2(54, 24));
+            CreateButton(logistics.transform, "LogisticsPriorityDownButton", "后置", new Vector2(102, -92), new Vector2(0, 1), new Vector2(54, 24));
+            CreateButton(logistics.transform, "LogisticsPauseButton", "暂停", new Vector2(162, -92), new Vector2(0, 1), new Vector2(54, 24));
+            CreateButton(logistics.transform, "LogisticsCancelButton", "取消", new Vector2(222, -92), new Vector2(0, 1), new Vector2(54, 24));
         }
 
         private static void SetRect(GameObject target, Vector2 anchoredPosition, Vector2 size)
@@ -245,41 +301,71 @@ namespace WanChaoGuiYi
             }
         }
 
+        private static void SetFontSize(Text text, int size)
+        {
+            if (text != null) text.fontSize = size;
+        }
+
+        private static void SetButtonFontSize(Selectable selectable, int size)
+        {
+            if (selectable == null) return;
+            Text label = selectable.GetComponentInChildren<Text>();
+            if (label != null) label.fontSize = size;
+        }
+
         private RegionPanelBindings BuildRegionPanel(Transform parent)
         {
-            GameObject panel = CreatePanel(parent, "RegionPanel", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-370, 0), new Vector2(360, 640));
+            GameObject panel = CreatePanel(parent, "RegionPanel", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-216, -8), new Vector2(408, 620));
             RegionPanelBindings bindings = new RegionPanelBindings();
             bindings.root = panel;
-            CreateText(panel.transform, "Title", "地区治理", new Vector2(-18, -10), new Vector2(0.5f, 1), new Vector2(260, 34));
-            bindings.collapseButton = CreateButton(panel.transform, "CollapseRegionPanelButton", "收起", new Vector2(-42, -14), new Vector2(1, 1), new Vector2(58, 28));
-            bindings.modeText = CreateText(panel.transform, "RegionPanelModeText", "治理模式 | 国内政务", new Vector2(12, -42), new Vector2(0, 1), new Vector2(336, 24));
+            Text title = CreateText(panel.transform, "Title", "地区治理", new Vector2(-24, -10), new Vector2(0.5f, 1), new Vector2(282, 34));
+            title.fontSize = Mathf.RoundToInt(UITheme.TextSizeHeader);
+            title.color = UITheme.TextAccent;
+            bindings.collapseButton = CreateButton(panel.transform, "CollapseRegionPanelButton", "收起", new Vector2(-38, -14), new Vector2(1, 1), new Vector2(54, 26));
+            bindings.modeText = CreateText(panel.transform, "RegionPanelModeText", "治理模式 | 国内政务", new Vector2(16, -42), new Vector2(0, 1), new Vector2(374, 24));
             bindings.modeText.color = UITheme.TextAccent;
             float y = -72;
-            bindings.regionNameText = CreateText(panel.transform, "RegionNameText", "名称：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.terrainText = CreateText(panel.transform, "TerrainText", "地形：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 24)); y -= 28;
-            bindings.ownerText = CreateText(panel.transform, "OwnerText", "归属：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.integrationText = CreateText(panel.transform, "IntegrationText", "整合度：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 24)); y -= 28;
-            bindings.populationText = CreateText(panel.transform, "PopulationText", "人口：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.manpowerText = CreateText(panel.transform, "ManpowerText", "兵源：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 24)); y -= 28;
-            bindings.foodText = CreateText(panel.transform, "FoodText", "粮食：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.taxText = CreateText(panel.transform, "TaxText", "税收：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 24)); y -= 28;
-            bindings.rebellionText = CreateText(panel.transform, "RebellionText", "民变风险：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.localPowerText = CreateText(panel.transform, "LocalPowerText", "地方势力：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 24)); y -= 28;
-            bindings.annexationText = CreateText(panel.transform, "AnnexationText", "土地兼并：", new Vector2(12, y), new Vector2(0, 1), new Vector2(160, 24));
-            bindings.neighborsText = CreateText(panel.transform, "NeighborsText", "相邻：", new Vector2(184, y), new Vector2(0, 1), new Vector2(160, 38)); y -= 42;
-            bindings.landStructureText = CreateText(panel.transform, "LandStructureText", "土地结构：", new Vector2(12, y), new Vector2(0, 1), new Vector2(336, 32)); y -= 34;
-            bindings.customsText = CreateText(panel.transform, "CustomsText", "风俗：", new Vector2(12, y), new Vector2(0, 1), new Vector2(336, 42)); y -= 46;
-            bindings.governanceOverviewText = CreateText(panel.transform, "GovernanceOverviewText", "", new Vector2(12, y), new Vector2(0, 1), new Vector2(336, 154));
-            bindings.governanceOverviewText.fontSize = 10;
+            bindings.regionNameText = CreateText(panel.transform, "RegionNameText", "名称：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.terrainText = CreateText(panel.transform, "TerrainText", "地形：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 24)); y -= 25;
+            bindings.ownerText = CreateText(panel.transform, "OwnerText", "归属：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.integrationText = CreateText(panel.transform, "IntegrationText", "整合度：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 24)); y -= 25;
+            bindings.populationText = CreateText(panel.transform, "PopulationText", "人口：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.manpowerText = CreateText(panel.transform, "ManpowerText", "兵源：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 24)); y -= 25;
+            bindings.foodText = CreateText(panel.transform, "FoodText", "粮食：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.taxText = CreateText(panel.transform, "TaxText", "税收：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 24)); y -= 25;
+            bindings.rebellionText = CreateText(panel.transform, "RebellionText", "民变风险：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.localPowerText = CreateText(panel.transform, "LocalPowerText", "地方势力：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 24)); y -= 25;
+            bindings.annexationText = CreateText(panel.transform, "AnnexationText", "土地兼并：", new Vector2(16, y), new Vector2(0, 1), new Vector2(178, 24));
+            bindings.neighborsText = CreateText(panel.transform, "NeighborsText", "相邻：", new Vector2(204, y), new Vector2(0, 1), new Vector2(186, 30)); y -= 34;
+            CreateBand(panel.transform, "RegionMetricsBand", new Vector2(16, y + 88), new Vector2(374, 166), UITheme.SectionBackground);
+            CreateMetricBar(panel.transform, "GovernanceIntegrationUiBar", new Vector2(278, -116), new Vector2(98, 5));
+            CreateMetricBar(panel.transform, "GovernanceFoodUiBar", new Vector2(90, -166), new Vector2(98, 5));
+            CreateMetricBar(panel.transform, "GovernanceTaxUiBar", new Vector2(278, -166), new Vector2(98, 5));
+            CreateMetricBar(panel.transform, "GovernanceRebellionUiBar", new Vector2(90, -191), new Vector2(98, 5));
+            bindings.landStructureText = CreateText(panel.transform, "LandStructureText", "土地结构：", new Vector2(16, y), new Vector2(0, 1), new Vector2(374, 28)); y -= 30;
+            bindings.customsText = CreateText(panel.transform, "CustomsText", "风俗：", new Vector2(16, y), new Vector2(0, 1), new Vector2(374, 34)); y -= 40;
+            CreateBand(panel.transform, "RegionDecisionBand", new Vector2(16, y + 6), new Vector2(374, 142), UITheme.DecisionBandBackground);
+            CreateGovernanceBadge(panel.transform, "GovernanceStageBadge", new Vector2(20, y - 2), new Vector2(86, 18));
+            CreateGovernanceBadge(panel.transform, "GovernanceRiskBadge", new Vector2(110, y - 2), new Vector2(86, 18));
+            CreateGovernanceBadge(panel.transform, "GovernanceIntegrationBadge", new Vector2(200, y - 2), new Vector2(86, 18));
+            CreateGovernanceBadge(panel.transform, "GovernanceContributionBadge", new Vector2(290, y - 2), new Vector2(96, 18));
+            bindings.governanceOverviewText = CreateText(panel.transform, "GovernanceOverviewText", "", new Vector2(16, y - 24), new Vector2(0, 1), new Vector2(374, 114));
+            bindings.governanceOverviewText.fontSize = 12;
             bindings.governanceOverviewText.verticalOverflow = VerticalWrapMode.Truncate;
-            y -= 170;
-            bindings.governanceSourceText = CreateText(panel.transform, "GovernanceSourceText", "", new Vector2(12, y), new Vector2(0, 1), new Vector2(336, 100));
+            y -= 148;
+            CreateBand(panel.transform, "RegionSourceBand", new Vector2(16, y + 6), new Vector2(374, 82), UITheme.SourceBandBackground);
+            bindings.governanceSourceText = CreateText(panel.transform, "GovernanceSourceText", "", new Vector2(16, y), new Vector2(0, 1), new Vector2(374, 78));
             bindings.governanceSourceText.fontSize = 10;
             bindings.governanceSourceText.color = UITheme.TextSecondary;
             bindings.governanceSourceText.verticalOverflow = VerticalWrapMode.Truncate;
-            bindings.pacifyButton = CreateButton(panel.transform, "PacifyRegionButton", "安抚地区", new Vector2(-116, 20), new Vector2(0.5f, 0), new Vector2(96, 28));
-            bindings.buildButton = CreateButton(panel.transform, "BuildRegionBuildingButton", "建造建筑", new Vector2(-8, 20), new Vector2(0.5f, 0), new Vector2(96, 28));
-            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(92, 20), new Vector2(0.5f, 0), new Vector2(76, 28));
+            bindings.pacifyButton = CreateButton(panel.transform, "PacifyRegionButton", "安抚", new Vector2(-124, 24), new Vector2(0.5f, 0), new Vector2(118, 42));
+            CreateButtonActionIcon(bindings.pacifyButton, "GovernancePacifyActionIcon", "政", UITheme.MeterGood);
+            CreateButtonActionHint(bindings.pacifyButton, "GovernancePacifyActionHintText");
+            bindings.buildButton = CreateButton(panel.transform, "BuildRegionBuildingButton", "建造", new Vector2(0, 24), new Vector2(0.5f, 0), new Vector2(118, 42));
+            CreateButtonActionIcon(bindings.buildButton, "GovernanceBuildActionIcon", "营", UITheme.MoneyColor);
+            CreateButtonActionHint(bindings.buildButton, "GovernanceBuildActionHintText");
+            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(128, 20), new Vector2(0.5f, 0), new Vector2(68, 28));
+            ApplyRegionPanelTextHierarchy(bindings);
 
             GameObject collapsed = CreatePanel(parent, "CollapsedRegionTab", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-58, 0), new Vector2(104, 168));
             bindings.collapsedRoot = collapsed;
@@ -288,6 +374,38 @@ namespace WanChaoGuiYi
             bindings.collapsedTabText.color = UITheme.TextAccent;
             bindings.expandButton = CreateButton(collapsed.transform, "CollapsedRegionTabButton", "展开", new Vector2(0, 20), new Vector2(0.5f, 0), new Vector2(76, 30));
             return bindings;
+        }
+
+        private static void ApplyRegionPanelTextHierarchy(RegionPanelBindings bindings)
+        {
+            SetTextStyle(bindings.regionNameText, 15, UITheme.TextAccent);
+            SetTextStyle(bindings.modeText, 11, UITheme.TextAccent);
+            SetTextStyle(bindings.terrainText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.ownerText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.integrationText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.populationText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.manpowerText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.foodText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.taxText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.rebellionText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.localPowerText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.annexationText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.neighborsText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.landStructureText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.customsText, 11, UITheme.TextSecondary);
+            SetTextStyle(bindings.governanceOverviewText, 11, UITheme.TextPrimary);
+            bindings.governanceOverviewText.lineSpacing = 1.12f;
+            bindings.governanceOverviewText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            SetTextStyle(bindings.governanceSourceText, 9, UITheme.TextSecondary);
+            bindings.governanceSourceText.lineSpacing = 1.04f;
+            bindings.governanceSourceText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+
+        private static void SetTextStyle(Text text, int size, Color color)
+        {
+            if (text == null) return;
+            text.fontSize = size;
+            text.color = color;
         }
 
         private EmperorPanelBindings BuildEmperorPanel(Transform parent)
@@ -379,15 +497,26 @@ namespace WanChaoGuiYi
 
         private BattleReportPanelBindings BuildBattleReportPanel(Transform parent)
         {
-            GameObject panel = CreatePanel(parent, "BattleReportPanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 50), new Vector2(460, 360));
+            GameObject panel = CreatePanel(parent, "BattleReportPanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 44), new Vector2(500, 392));
             BattleReportPanelBindings bindings = new BattleReportPanelBindings();
             bindings.root = panel;
-            CreateText(panel.transform, "Title", "战报", new Vector2(0, -10), new Vector2(0.5f, 1), new Vector2(440, 36));
-            bindings.attackerText = CreateText(panel.transform, "AttackerText", "", new Vector2(10, -50), new Vector2(0, 1), new Vector2(440, 24));
-            bindings.defenderText = CreateText(panel.transform, "DefenderText", "", new Vector2(10, -78), new Vector2(0, 1), new Vector2(440, 24));
-            bindings.resultText = CreateText(panel.transform, "ResultText", "", new Vector2(10, -110), new Vector2(0, 1), new Vector2(440, 28));
-            bindings.detailsText = CreateText(panel.transform, "DetailsText", "", new Vector2(10, -142), new Vector2(0, 1), new Vector2(440, 160));
-            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(0, 10), new Vector2(0.5f, 0), new Vector2(80, 28));
+            CreateText(panel.transform, "Title", "战报", new Vector2(0, -10), new Vector2(0.5f, 1), new Vector2(480, 34));
+            CreateBattleRibbon(panel.transform, "BattleOutcomeRibbon", new Vector2(10, -46), new Vector2(480, 28));
+            bindings.attackerText = CreateText(panel.transform, "AttackerText", "", new Vector2(10, -82), new Vector2(0, 1), new Vector2(220, 22));
+            bindings.defenderText = CreateText(panel.transform, "DefenderText", "", new Vector2(260, -82), new Vector2(0, 1), new Vector2(220, 22));
+            bindings.resultText = CreateText(panel.transform, "ResultText", "", new Vector2(12, -110), new Vector2(0, 1), new Vector2(220, 20));
+            bindings.resultText.fontSize = 10;
+            bindings.resultText.color = UITheme.TextSecondary;
+            CreateMetricBar(panel.transform, "BattleAttackerPowerUiBar", new Vector2(92, -136), new Vector2(136, 8));
+            CreateMetricBar(panel.transform, "BattleDefenderPowerUiBar", new Vector2(342, -136), new Vector2(136, 8));
+            CreateText(panel.transform, "BattleAttackerPowerLabel", "攻方战力", new Vector2(10, -145), new Vector2(0, 1), new Vector2(78, 20)).fontSize = 10;
+            CreateText(panel.transform, "BattleDefenderPowerLabel", "守方战力", new Vector2(260, -145), new Vector2(0, 1), new Vector2(78, 20)).fontSize = 10;
+            CreateBattleBadge(panel.transform, "BattleAttackerSupplyBadge", new Vector2(10, -164), new Vector2(220, 20));
+            CreateBattleBadge(panel.transform, "BattleDefenderSupplyBadge", new Vector2(260, -164), new Vector2(220, 20));
+            bindings.detailsText = CreateText(panel.transform, "DetailsText", "", new Vector2(10, -194), new Vector2(0, 1), new Vector2(480, 128));
+            bindings.detailsText.fontSize = 11;
+            bindings.focusButton = CreateButton(panel.transform, "FocusBattleReportRegionButton", "定位战场", new Vector2(-58, 18), new Vector2(0.5f, 0), new Vector2(96, 28));
+            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(54, 18), new Vector2(0.5f, 0), new Vector2(80, 28));
             return bindings;
         }
 
@@ -422,7 +551,7 @@ namespace WanChaoGuiYi
 
         private MechanismPanelBindings BuildMechanismPanel(Transform parent)
         {
-            GameObject panel = CreatePanel(parent, "MechanismPanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(520, 560));
+            GameObject panel = CreatePanel(parent, "MechanismPanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(520, 560));
             MechanismPanelBindings bindings = new MechanismPanelBindings();
             bindings.root = panel;
             bindings.titleText = CreateText(panel.transform, "Title", "政策、外交、谍报与胜利", new Vector2(0, -10), new Vector2(0.5f, 1), new Vector2(500, 36));
@@ -431,8 +560,13 @@ namespace WanChaoGuiYi
             bindings.diplomacyButton = CreateButton(panel.transform, "DiplomacyActionButton", "外交行动", new Vector2(-70, 44), new Vector2(0.5f, 0), new Vector2(110, 28));
             bindings.borderButton = CreateButton(panel.transform, "BorderControlButton", "边境管控", new Vector2(55, 44), new Vector2(0.5f, 0), new Vector2(110, 28));
             bindings.espionageButton = CreateButton(panel.transform, "EspionageActionButton", "刺探情报", new Vector2(180, 44), new Vector2(0.5f, 0), new Vector2(110, 28));
-            bindings.enterWarModeButton = CreateButton(panel.transform, "EnterWarModeButton", "进入战争", new Vector2(-55, 10), new Vector2(0.5f, 0), new Vector2(110, 28));
-            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(70, 10), new Vector2(0.5f, 0), new Vector2(80, 28));
+            bindings.enterWarModeButton = CreateButton(panel.transform, "EnterWarModeButton", "进入战争", new Vector2(-55, 14), new Vector2(0.5f, 0), new Vector2(110, 28));
+            CreateButtonLeadingIcon(bindings.applyPolicyButton, "PolicyActionIcon", "策", UITheme.MeterGood);
+            CreateButtonLeadingIcon(bindings.diplomacyButton, "DiplomacyActionIcon", "交", UITheme.ResearchColor);
+            CreateButtonLeadingIcon(bindings.borderButton, "BorderActionIcon", "关", UITheme.MeterWarning);
+            CreateButtonLeadingIcon(bindings.espionageButton, "EspionageActionIcon", "谍", UITheme.LegitimacyColor);
+            CreateButtonLeadingIcon(bindings.enterWarModeButton, "EnterWarModeActionIcon", "战", UITheme.DangerColor);
+            bindings.closeButton = CreateButton(panel.transform, "CloseButton", "关闭", new Vector2(70, 14), new Vector2(0.5f, 0), new Vector2(80, 28));
             return bindings;
         }
 
@@ -447,6 +581,12 @@ namespace WanChaoGuiYi
             rt.sizeDelta = size;
             Image img = obj.AddComponent<Image>();
             img.color = UITheme.PanelBackgroundAlpha;
+            Shadow shadow = obj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.48f);
+            shadow.effectDistance = new Vector2(4f, -4f);
+            Outline outline = obj.AddComponent<Outline>();
+            outline.effectColor = UITheme.ButtonBorder;
+            outline.effectDistance = new Vector2(1f, -1f);
             return obj;
         }
 
@@ -467,8 +607,111 @@ namespace WanChaoGuiYi
             text.alignment = TextAnchor.MiddleLeft;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.lineSpacing = 1.03f;
+            text.supportRichText = true;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             return text;
+        }
+
+        private static GameObject CreateBand(Transform parent, string name, Vector2 anchoredPos, Vector2 size, Color color)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            RectTransform rt = obj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image image = obj.AddComponent<Image>();
+            image.color = color;
+            return obj;
+        }
+
+        private static void CreateMetricBar(Transform parent, string name, Vector2 anchoredPos, Vector2 size)
+        {
+            GameObject track = new GameObject(name);
+            track.transform.SetParent(parent, false);
+            RectTransform rt = track.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image trackImage = track.AddComponent<Image>();
+            trackImage.color = UITheme.MeterTrack;
+
+            GameObject fill = new GameObject(name + "Fill");
+            fill.transform.SetParent(track.transform, false);
+            RectTransform fillRect = fill.AddComponent<RectTransform>();
+            fillRect.anchorMin = new Vector2(0, 0);
+            fillRect.anchorMax = new Vector2(0, 1);
+            fillRect.pivot = new Vector2(0, 0.5f);
+            fillRect.anchoredPosition = Vector2.zero;
+            fillRect.sizeDelta = new Vector2(size.x, 0);
+            Image fillImage = fill.AddComponent<Image>();
+            fillImage.color = UITheme.MeterGood;
+        }
+
+        private Text CreateGovernanceBadge(Transform parent, string name, Vector2 anchoredPos, Vector2 size)
+        {
+            GameObject badge = new GameObject(name);
+            badge.transform.SetParent(parent, false);
+            RectTransform rt = badge.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image image = badge.AddComponent<Image>();
+            image.color = UITheme.BadgeNormal;
+
+            Text label = CreateText(badge.transform, name + "Text", "", Vector2.zero, new Vector2(0.5f, 0.5f), size);
+            label.alignment = TextAnchor.MiddleCenter;
+            label.fontSize = 9;
+            label.color = UITheme.ButtonText;
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return label;
+        }
+
+        private Text CreateBattleRibbon(Transform parent, string name, Vector2 anchoredPos, Vector2 size)
+        {
+            GameObject ribbon = new GameObject(name);
+            ribbon.transform.SetParent(parent, false);
+            RectTransform rt = ribbon.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image image = ribbon.AddComponent<Image>();
+            image.color = UITheme.BattleLoss;
+
+            Text label = CreateText(ribbon.transform, name + "Text", "", Vector2.zero, new Vector2(0.5f, 0.5f), size);
+            label.alignment = TextAnchor.MiddleCenter;
+            label.fontSize = 14;
+            label.color = UITheme.ButtonText;
+            return label;
+        }
+
+        private Text CreateBattleBadge(Transform parent, string name, Vector2 anchoredPos, Vector2 size)
+        {
+            GameObject badge = new GameObject(name);
+            badge.transform.SetParent(parent, false);
+            RectTransform rt = badge.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image image = badge.AddComponent<Image>();
+            image.color = UITheme.BadgeNormal;
+
+            Text label = CreateText(badge.transform, name + "Text", "", Vector2.zero, new Vector2(0.5f, 0.5f), size);
+            label.alignment = TextAnchor.MiddleCenter;
+            label.fontSize = 10;
+            label.color = UITheme.ButtonText;
+            return label;
         }
 
         private Button CreateButton(Transform parent, string name, string label, Vector2 anchoredPos, Vector2 anchor, Vector2 size)
@@ -482,6 +725,12 @@ namespace WanChaoGuiYi
             rt.sizeDelta = size;
             Image img = obj.AddComponent<Image>();
             img.color = UITheme.ButtonNormal;
+            Shadow shadow = obj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.36f);
+            shadow.effectDistance = new Vector2(2f, -2f);
+            Outline outline = obj.AddComponent<Outline>();
+            outline.effectColor = UITheme.ButtonBorder;
+            outline.effectDistance = new Vector2(1f, -1f);
             Button btn = obj.AddComponent<Button>();
             ColorBlock colors = btn.colors;
             colors.normalColor = UITheme.ButtonNormal;
@@ -492,6 +741,112 @@ namespace WanChaoGuiYi
             text.alignment = TextAnchor.MiddleCenter;
             text.color = UITheme.ButtonText;
             return btn;
+        }
+
+        private Text CreateButtonActionIcon(Button button, string iconName, string glyph, Color color)
+        {
+            if (button == null) return null;
+
+            RectTransform buttonRect = button.GetComponent<RectTransform>();
+            Vector2 buttonSize = buttonRect != null ? buttonRect.sizeDelta : new Vector2(118, 42);
+            GameObject icon = new GameObject(iconName);
+            icon.transform.SetParent(button.transform, false);
+            RectTransform rt = icon.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(-buttonSize.x * 0.5f + 18f, 10f);
+            rt.sizeDelta = new Vector2(22, 22);
+
+            Image image = icon.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            Outline outline = icon.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, 0.42f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            Text text = CreateText(icon.transform, iconName + "Glyph", glyph, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(22, 22));
+            text.alignment = TextAnchor.MiddleCenter;
+            text.fontSize = 11;
+            text.color = UITheme.ButtonText;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private Text CreateButtonActionHint(Button button, string hintName)
+        {
+            if (button == null) return null;
+
+            RectTransform buttonRect = button.GetComponent<RectTransform>();
+            Vector2 buttonSize = buttonRect != null ? buttonRect.sizeDelta : new Vector2(118, 42);
+            Text label = button.transform.Find("Label") != null ? button.transform.Find("Label").GetComponent<Text>() : null;
+            if (label != null)
+            {
+                RectTransform labelRect = label.rectTransform;
+                labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+                labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+                labelRect.pivot = new Vector2(0.5f, 0.5f);
+                labelRect.anchoredPosition = new Vector2(11, 8);
+                labelRect.sizeDelta = new Vector2(buttonSize.x - 42, 18);
+                label.fontSize = 12;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.verticalOverflow = VerticalWrapMode.Truncate;
+            }
+
+            Text hint = CreateText(button.transform, hintName, "", new Vector2(0, 4), new Vector2(0.5f, 0), new Vector2(buttonSize.x - 10, 16));
+            hint.alignment = TextAnchor.MiddleCenter;
+            hint.fontSize = 9;
+            hint.color = UITheme.TextSecondary;
+            hint.horizontalOverflow = HorizontalWrapMode.Overflow;
+            hint.verticalOverflow = VerticalWrapMode.Truncate;
+            return hint;
+        }
+
+        private Text CreateButtonLeadingIcon(Button button, string iconName, string glyph, Color color)
+        {
+            if (button == null) return null;
+
+            RectTransform buttonRect = button.GetComponent<RectTransform>();
+            Vector2 buttonSize = buttonRect != null ? buttonRect.sizeDelta : new Vector2(110, 28);
+            const float iconSize = 18f;
+            GameObject icon = new GameObject(iconName);
+            icon.transform.SetParent(button.transform, false);
+            RectTransform rt = icon.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(-buttonSize.x * 0.5f + 14f, 0f);
+            rt.sizeDelta = new Vector2(iconSize, iconSize);
+
+            Image image = icon.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            Outline outline = icon.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, 0.42f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            Text text = CreateText(icon.transform, iconName + "Glyph", glyph, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(iconSize, iconSize));
+            text.alignment = TextAnchor.MiddleCenter;
+            text.fontSize = 10;
+            text.color = UITheme.ButtonText;
+            text.raycastTarget = false;
+
+            Transform labelTransform = button.transform.Find("Label");
+            Text label = labelTransform != null ? labelTransform.GetComponent<Text>() : null;
+            if (label != null)
+            {
+                RectTransform labelRect = label.rectTransform;
+                labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+                labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+                labelRect.pivot = new Vector2(0.5f, 0.5f);
+                labelRect.anchoredPosition = new Vector2(10f, 0f);
+                labelRect.sizeDelta = new Vector2(buttonSize.x - 34f, buttonSize.y);
+                label.fontSize = Mathf.Min(label.fontSize, 11);
+                label.alignment = TextAnchor.MiddleCenter;
+                label.verticalOverflow = VerticalWrapMode.Truncate;
+            }
+
+            return text;
         }
 
         private static T GetOrAdd<T>(GameObject target) where T : Component
@@ -507,12 +862,14 @@ namespace WanChaoGuiYi
             public Text resourceText;
             public Text selectionContextText;
             public Text modeStateText;
+            public Text overlayBudgetText;
             public Button governanceModeButton;
             public Button warModeButton;
             public Button nextTurnButton;
             public Button courtButton;
             public Button emperorButton;
             public Button attackButton;
+            public Button prepareFrontlineButton;
             public Button techButton;
             public Button weatherButton;
             public Button eventButton;
@@ -604,6 +961,7 @@ namespace WanChaoGuiYi
             public Text defenderText;
             public Text resultText;
             public Text detailsText;
+            public Button focusButton;
             public Button closeButton;
         }
 

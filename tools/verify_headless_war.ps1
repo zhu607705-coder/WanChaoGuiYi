@@ -33,7 +33,7 @@ $Report = Get-Content -Raw -Encoding UTF8 $ReportPath | ConvertFrom-Json
 
 if ($Report.runName -ne "headless_war_causality_scenarios") { Write-Error "Unexpected runName in $ReportPath" }
 if ($Report.passed -ne $true) { Write-Error "Headless war report did not pass" }
-if ($Report.scenarioCount -lt 14) { Write-Error "Expected at least 14 scenarios in $ReportPath" }
+if ($Report.scenarioCount -lt 16) { Write-Error "Expected at least 16 scenarios in $ReportPath" }
 if ($Report.failedCount -ne 0) { Write-Error "Expected all scenarios to pass in $ReportPath" }
 if ($Report.passedCount -ne $Report.scenarioCount) { Write-Error "Expected passedCount to match scenarioCount in $ReportPath" }
 
@@ -49,12 +49,15 @@ $Required = @{
     )
     attacker_wins_and_occupies = @(
         "command.attack_route_created",
+        "frontline_preparation.reserves_occupation_chain_food",
         "movement.attacker_arrived_at_target_region",
         "engagement.created_with_attacker_and_defender",
         "battle.attacker_won",
         "outcome.region_owner_changed_to_attacker",
         "governance.occupation_reduced_contribution",
         "causal.occupation_reduced_legitimacy",
+        "frontline_reserve.transfers_to_occupation_region",
+        "frontline_reserve.offsets_first_governance_food_cost",
         "economy.money_delta_matches_runtime_contribution",
         "economy.food_delta_matches_runtime_contribution"
     )
@@ -130,6 +133,20 @@ $Required = @{
         "campaign.scouting_reveals_route_risk",
         "campaign.hostile_adjacent_route_interception",
         "campaign.supply_visibility_interception"
+    )
+    logistics_queue_control_and_enemy_raids = @(
+        "queue.schedule_created",
+        "queue.reprioritize_changes_turn_pressure",
+        "queue.pause_stops_progress",
+        "queue.resume_restarts_progress",
+        "queue.enemy_ai_raids_active_logistics",
+        "queue.cancel_clears_active_logistics"
+    )
+    frontline_logistics_schedule_and_occupation_queue = @(
+        "logistics.schedule_created_for_long_route",
+        "logistics.first_turn_builds_supply_node_and_moves_segment",
+        "logistics.plan_completes_with_reserved_food",
+        "occupation_queue.consumes_reserved_food_over_turns"
     )
     relief_and_tax_pressure_causality = @(
         "food_causality.relief_forecast_matches_applied_delta",

@@ -101,6 +101,8 @@ namespace WanChaoGuiYi
             suite.scenarios.Add(RunRegionSpecializationAndForecasts(data, playerFactionId));
             suite.scenarios.Add(RunOccupationControlChainProgression(data, playerFactionId));
             suite.scenarios.Add(RunConnectedCampaignVisionAndInterception(data, playerFactionId));
+            suite.scenarios.Add(RunLogisticsQueueControlAndEnemyRaids(data, playerFactionId));
+            suite.scenarios.Add(RunFrontlineLogisticsScheduleAndOccupationQueue(data, playerFactionId));
             suite.scenarios.Add(RunReliefAndTaxPressureCausality(data, playerFactionId));
             suite.scenarios.Add(RunFoodSupplyOrderDiplomacyCoupling(data, playerFactionId));
 
@@ -266,6 +268,24 @@ namespace WanChaoGuiYi
             int defenderSoldiersBefore = enemyArmy.soldiers;
             int attackerMoraleBefore = playerArmy.morale;
             int defenderMoraleBefore = enemyArmy.morale;
+            FactionState preparingFaction = runtime.state.FindFaction(playerArmy.ownerFactionId);
+            if (preparingFaction != null) preparingFaction.food = DomainMath.Max(preparingFaction.food, 500);
+            int foodBeforeFrontlinePreparation = preparingFaction != null ? preparingFaction.food : 0;
+            bool prepared = runtime.commands.PrepareFrontline(playerArmy.id, targetRegionId);
+            int preparedReserveBeforeOccupation = playerArmy.frontlineReservedFood;
+            AddPhase(result, "frontline_preparation", prepared ? "pass" : "fail",
+                Fields("food", foodBeforeFrontlinePreparation, "supply", playerArmy.supply),
+                Fields("food", preparingFaction != null ? preparingFaction.food : 0, "reservedFood", playerArmy.frontlineReservedFood, "preparedTarget", playerArmy.frontlinePreparedTargetRegionId),
+                "战前整备先支付粮草并把占后军管、安抚、编户口粮挂到目标地区，避免占领后成本凭空消失。");
+            AddAssertion(result, "frontline_preparation.reserves_occupation_chain_food", "frontline_preparation",
+                prepared &&
+                    playerArmy.frontlinePreparedTargetRegionId == targetRegionId &&
+                    preparedReserveBeforeOccupation >= StrategyMapRulebook.OccupationAdministrationFoodCost &&
+                    preparingFaction != null &&
+                    preparingFaction.food < foodBeforeFrontlinePreparation,
+                "reserved occupation administration food with paid faction grain",
+                "prepared=" + prepared + " reserve=" + preparedReserveBeforeOccupation + " food=" + (preparingFaction != null ? preparingFaction.food : 0),
+                "Frontline preparation should pay grain before war and carry a visible occupation reserve.");
             bool issued = runtime.commands.MoveArmy(playerArmy.id, targetRegionId);
             AddPhase(result, "command", issued ? "pass" : "fail",
                 Fields("armyId", playerArmy.id, "from", originRegionId),
@@ -328,6 +348,7 @@ namespace WanChaoGuiYi
 
             if (!HasLogContaining(runtime.state, "进攻方获胜")) return Fail(result, runtime.state, runtime.worldState, "Expected attacker victory wording.");
             if (!HasLogContaining(runtime.state, "新占领")) return Fail(result, runtime.state, runtime.worldState, "Expected governance impact for newly occupied region.");
+            if (!HasLogContaining(runtime.state, "前线预留粮")) return Fail(result, runtime.state, runtime.worldState, "Expected frontline reserve transfer wording.");
 
             ArmyRuntimeState remainingEnemy;
             bool defenderRemaining = runtime.worldState.Map.TryGetArmy(enemyArmy.id, out remainingEnemy);
@@ -365,6 +386,29 @@ namespace WanChaoGuiYi
                 -StrategyCausalRules.OccupationLegitimacyCost,
                 legitimacyAfterOccupation - legitimacyBeforeOccupation,
                 "Occupation should reduce legitimacy and report the legitimacy delta.");
+            RegionState capturedLegacyRegion = runtime.state.FindRegion(targetRegionId);
+            GovernanceActionForecast militaryGovernForecast = StrategyMapRulebook.BuildGovernanceForecast(
+                runtime.context,
+                runtime.context.Data.GetRegion(targetRegionId),
+                capturedLegacyRegion,
+                attackingFactionAfterOccupation,
+                GovernanceActionKind.MilitaryGovern);
+            AddAssertion(result, "frontline_reserve.transfers_to_occupation_region", "governance",
+                capturedLegacyRegion != null &&
+                    targetRegion.occupationReservedFood == preparedReserveBeforeOccupation &&
+                    capturedLegacyRegion.occupationReservedFood == targetRegion.occupationReservedFood &&
+                    playerArmy.frontlineReservedFood == 0 &&
+                    string.IsNullOrEmpty(playerArmy.frontlinePreparedTargetRegionId),
+                "reserve moved from army to captured region",
+                "runtimeReserve=" + targetRegion.occupationReservedFood + " legacyReserve=" + (capturedLegacyRegion != null ? capturedLegacyRegion.occupationReservedFood : -1) + " armyReserve=" + playerArmy.frontlineReservedFood,
+                "Prepared occupation grain should transfer to the newly occupied region and clear the army reserve.");
+            AddAssertion(result, "frontline_reserve.offsets_first_governance_food_cost", "governance",
+                militaryGovernForecast != null &&
+                    militaryGovernForecast.foodDelta == 0 &&
+                    militaryGovernForecast.occupationReservedFoodDelta == -StrategyMapRulebook.MilitaryGovernFoodCost,
+                "military govern forecast consumes reserved food before faction food",
+                militaryGovernForecast != null ? militaryGovernForecast.FormatCompact() : "missing forecast",
+                "Occupation reserve should be forecast/apply same-source and offset the first military governance food cost.");
             AddKeyDelta(result, "faction.legitimacy", playerArmy.ownerFactionId, legitimacyBeforeOccupation, legitimacyAfterOccupation,
                 "新占领会消耗法统合法性，避免扩张无治理代价。");
 
@@ -1484,6 +1528,273 @@ namespace WanChaoGuiYi
             return Pass(result, runtime.state, runtime.worldState);
         }
 
+        public HeadlessSimulationResult RunFrontlineLogisticsScheduleAndOccupationQueue(IDataRepository data, string playerFactionId)
+        {
+            HeadlessSimulationResult result = CreateResult("frontline_logistics_schedule_and_occupation_queue");
+            SimulationRuntime runtime;
+            if (!TryCreateRuntime(data, playerFactionId, result, out runtime)) return result;
+
+            ArmyRuntimeState army;
+            ArmyRuntimeState enemy;
+            if (!TryGetSmokeArmies(result, runtime.worldState, out army, out enemy)) return result;
+
+            string targetRegionId = FindDistantReachableTarget(runtime, army.locationRegionId, army.ownerFactionId);
+            if (string.IsNullOrEmpty(targetRegionId)) return Fail(result, runtime.state, runtime.worldState, "Could not find a distant logistics target.");
+
+            RegionState source = runtime.state.FindRegion(army.locationRegionId);
+            RegionRuntimeState runtimeSource;
+            if (source == null || !runtime.worldState.Map.TryGetRegion(source.id, out runtimeSource)) return Fail(result, runtime.state, runtime.worldState, "Missing logistics source region.");
+
+            MapQueryService queries = new MapQueryService(runtime.worldState.Map, new MapGraphData(data));
+            List<string> route = queries.FindRoute(army.locationRegionId, targetRegionId);
+            if (route.Count < 3) return Fail(result, runtime.state, runtime.worldState, "Logistics route did not require multiple segments.");
+
+            source.supplyNode = false;
+            runtimeSource.supplyNode = false;
+            RegionState target = runtime.state.FindRegion(targetRegionId);
+            if (target != null)
+            {
+                target.visibilityState = VisibilityState.Scouted;
+                target.localPower = 70;
+                target.rebellionRisk = 55;
+            }
+
+            AddSyntheticHostileArmy(runtime, "army_logistics_raider", enemy.ownerFactionId, route[1], enemy.unitId, 700, 55, 80);
+            AddSyntheticHostileArmy(runtime, "army_logistics_raider_2", enemy.ownerFactionId, route[1], enemy.unitId, 650, 52, 80);
+            FactionState faction = runtime.state.FindFaction(army.ownerFactionId);
+            if (faction == null) return Fail(result, runtime.state, runtime.worldState, "Missing logistics faction.");
+            faction.food = 800;
+            int foodBeforePlan = faction.food;
+
+            bool scheduled = runtime.commands.PrepareFrontline(army.id, targetRegionId);
+            AddAssertion(result, "logistics.schedule_created_for_long_route", "command",
+                scheduled &&
+                    army.frontlineLogisticsTargetRegionId == targetRegionId &&
+                    army.frontlineLogisticsTurnsRemaining >= 2 &&
+                    !string.IsNullOrEmpty(army.frontlineLogisticsSupplyNodeRegionId),
+                "multi-turn logistics plan with supply-node work",
+                "scheduled=" + scheduled + " turns=" + army.frontlineLogisticsTurnsRemaining + " node=" + army.frontlineLogisticsSupplyNodeRegionId,
+                "Long-distance frontline preparation should create a multi-turn logistics schedule instead of instantly filling the reserve.");
+
+            RunFullTurn(runtime);
+            result.turnsExecuted = 1;
+            AddAssertion(result, "logistics.first_turn_builds_supply_node_and_moves_segment", "frontline",
+                source.supplyNode &&
+                    runtimeSource.supplyNode &&
+                    army.frontlineLogisticsCompletedSegments >= 1 &&
+                    faction.food < foodBeforePlan,
+                "first logistics turn builds a supply node and spends grain",
+                "sourceNode=" + source.supplyNode + " runtimeNode=" + runtimeSource.supplyNode + " completed=" + army.frontlineLogisticsCompletedSegments + " food=" + faction.food,
+                "The first logistics turn should build or activate the staging supply node and consume faction grain.");
+
+            int safety = 0;
+            while (!string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId) && safety < 8)
+            {
+                runtime.state.AdvanceHalfYear();
+                RunFullTurn(runtime);
+                result.turnsExecuted++;
+                safety++;
+            }
+
+            AddAssertion(result, "logistics.plan_completes_with_reserved_food", "frontline",
+                string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId) &&
+                    army.frontlineReservedFood >= StrategyMapRulebook.OccupationAdministrationFoodCost &&
+                    army.supply >= StrategyCausalRules.FrontlinePreparedSupplyTarget &&
+                    army.frontlineLogisticsLostFood > 0,
+                "logistics complete with reserve, supply, and deterministic interception loss",
+                "reserve=" + army.frontlineReservedFood + " supply=" + army.supply + " lost=" + army.frontlineLogisticsLostFood + " turns=" + result.turnsExecuted,
+                "The logistics schedule should finish with staged occupation food, raised supply, and visible interception loss.");
+
+            RegionState queueRegion = FindFirstOwnedRegion(runtime.state, faction);
+            if (queueRegion == null) return Fail(result, runtime.state, runtime.worldState, "Missing owned region for occupation queue.");
+            RegionRuntimeState runtimeQueueRegion;
+            if (!runtime.worldState.Map.TryGetRegion(queueRegion.id, out runtimeQueueRegion)) return Fail(result, runtime.state, runtime.worldState, "Missing runtime queue region.");
+
+            faction.money = 500;
+            faction.food = 120;
+            faction.legitimacy = 60;
+            queueRegion.occupationStatus = OccupationStatus.Occupied;
+            queueRegion.controlStage = ControlStage.NewlyAttached;
+            queueRegion.integration = 45;
+            queueRegion.localAcceptance = 48;
+            queueRegion.rebellionRisk = 70;
+            queueRegion.localPower = 65;
+            queueRegion.taxContributionPercent = StrategyCausalRules.OccupiedContributionPercent;
+            queueRegion.foodContributionPercent = StrategyCausalRules.OccupiedContributionPercent;
+            queueRegion.occupationReservedFood = StrategyMapRulebook.OccupationAdministrationFoodCost;
+            queueRegion.occupationPacificationQueueStep = 1;
+            queueRegion.occupationPacificationQueueTurnsRemaining = 3;
+            runtimeQueueRegion.occupationStatus = queueRegion.occupationStatus;
+            runtimeQueueRegion.controlStage = queueRegion.controlStage;
+            runtimeQueueRegion.integration = queueRegion.integration;
+            runtimeQueueRegion.localAcceptance = queueRegion.localAcceptance;
+            runtimeQueueRegion.rebellionRisk = queueRegion.rebellionRisk;
+            runtimeQueueRegion.localPower = queueRegion.localPower;
+            runtimeQueueRegion.taxContributionPercent = queueRegion.taxContributionPercent;
+            runtimeQueueRegion.foodContributionPercent = queueRegion.foodContributionPercent;
+            runtimeQueueRegion.occupationReservedFood = queueRegion.occupationReservedFood;
+            runtimeQueueRegion.occupationPacificationQueueStep = queueRegion.occupationPacificationQueueStep;
+            runtimeQueueRegion.occupationPacificationQueueTurnsRemaining = queueRegion.occupationPacificationQueueTurnsRemaining;
+
+            int foodBeforeQueue = faction.food;
+            for (int i = 0; i < 3; i++)
+            {
+                runtime.commands.ExecuteLogisticsTurn(runtime.worldState.Map);
+                result.turnsExecuted++;
+            }
+
+            bool queueCompleted =
+                queueRegion.occupationPacificationQueueTurnsRemaining == 0 &&
+                queueRegion.occupationReservedFood == 0 &&
+                queueRegion.controlStage == ControlStage.Controlled &&
+                queueRegion.taxContributionPercent >= StrategyMapRulebook.ControlledContributionPercent &&
+                faction.food == foodBeforeQueue;
+            AddAssertion(result, "occupation_queue.consumes_reserved_food_over_turns", "governance",
+                queueCompleted,
+                "queue consumed reserve and restored contribution without extra food spend",
+                "queue=" + queueRegion.occupationPacificationQueueTurnsRemaining + " reserve=" + queueRegion.occupationReservedFood + " control=" + queueRegion.controlStage + " food=" + foodBeforeQueue + "->" + faction.food,
+                "Post-occupation pacification queue should use reserved food over turns before restoring normal contribution.");
+
+            AddPhase(result, "frontline", HasAssertionPassed(result, "logistics.schedule_created_for_long_route") &&
+                                          HasAssertionPassed(result, "logistics.first_turn_builds_supply_node_and_moves_segment") &&
+                                          HasAssertionPassed(result, "logistics.plan_completes_with_reserved_food") ? "pass" : "fail",
+                Fields("routeSteps", route.Count - 1, "food", foodBeforePlan),
+                Fields("reserve", army.frontlineReservedFood, "supply", army.supply, "lost", army.frontlineLogisticsLostFood),
+                "Long-route preparation should become a multi-turn logistics plan with supply-node construction, route segments, and interception loss.");
+            AddPhase(result, "governance", queueCompleted ? "pass" : "fail",
+                Fields("queueTurns", 3, "reserve", StrategyMapRulebook.OccupationAdministrationFoodCost),
+                Fields("queueTurns", queueRegion.occupationPacificationQueueTurnsRemaining, "reserve", queueRegion.occupationReservedFood, "control", queueRegion.controlStage.ToString()),
+                "Post-occupation pacification should consume reserve grain over turns instead of using an instant region pool.");
+
+            return queueCompleted ? Pass(result, runtime.state, runtime.worldState) : Fail(result, runtime.state, runtime.worldState, "Occupation queue did not complete with reserved food.");
+        }
+
+        public HeadlessSimulationResult RunLogisticsQueueControlAndEnemyRaids(IDataRepository data, string playerFactionId)
+        {
+            HeadlessSimulationResult result = CreateResult("logistics_queue_control_and_enemy_raids");
+            SimulationRuntime runtime;
+            if (!TryCreateRuntime(data, playerFactionId, result, out runtime)) return result;
+
+            ArmyRuntimeState playerArmy;
+            ArmyRuntimeState enemyArmy;
+            if (!TryGetSmokeArmies(result, runtime.worldState, out playerArmy, out enemyArmy)) return result;
+
+            string targetRegionId = FindDistantReachableTarget(runtime, playerArmy.locationRegionId, playerArmy.ownerFactionId);
+            if (string.IsNullOrEmpty(targetRegionId)) return Fail(result, runtime.state, runtime.worldState, "Could not find a logistics target.");
+
+            MapQueryService queries = new MapQueryService(runtime.worldState.Map, new MapGraphData(data));
+            List<string> route = queries.FindRoute(playerArmy.locationRegionId, targetRegionId);
+            if (route.Count < 3) return Fail(result, runtime.state, runtime.worldState, "Logistics queue smoke needs a long route.");
+
+            RegionState target = runtime.state.FindRegion(targetRegionId);
+            if (target != null)
+            {
+                target.visibilityState = VisibilityState.Scouted;
+                target.ownerFactionId = enemyArmy.ownerFactionId;
+            }
+
+            RegionState source = runtime.state.FindRegion(playerArmy.locationRegionId);
+            if (source != null)
+            {
+                source.supplyNode = false;
+            }
+            RegionRuntimeState runtimeSource;
+            if (source != null && runtime.worldState.Map.TryGetRegion(source.id, out runtimeSource))
+            {
+                runtimeSource.supplyNode = false;
+            }
+
+            FactionState playerFaction = runtime.state.FindFaction(playerArmy.ownerFactionId);
+            if (playerFaction == null) return Fail(result, runtime.state, runtime.worldState, "Missing player faction for logistics queue smoke.");
+            playerFaction.food = 1000;
+
+            bool scheduled = runtime.commands.PrepareFrontline(playerArmy.id, targetRegionId);
+            AddAssertion(result, "queue.schedule_created", "command",
+                scheduled &&
+                    !string.IsNullOrEmpty(playerArmy.frontlineLogisticsConvoyId) &&
+                    playerArmy.frontlineLogisticsPriority == 1 &&
+                    playerArmy.frontlineLogisticsPaused == false,
+                "transport convoy created with default priority",
+                "convoy=" + playerArmy.frontlineLogisticsConvoyId + " priority=" + playerArmy.frontlineLogisticsPriority + " paused=" + playerArmy.frontlineLogisticsPaused,
+                "Long-route frontline preparation should create a managed convoy with queue controls.");
+
+            int foodBeforePriority = playerFaction.food;
+            int turnsBeforePriority = playerArmy.frontlineLogisticsTurnsRemaining;
+            bool prioritized = runtime.commands.AdjustFrontlineLogisticsPriority(playerArmy.id, 1);
+            AddAssertion(result, "queue.reprioritize_changes_turn_pressure", "command",
+                prioritized &&
+                    playerArmy.frontlineLogisticsPriority == 2 &&
+                    playerArmy.frontlineLogisticsFoodPerTurn > 0 &&
+                    playerArmy.frontlineLogisticsTurnsRemaining <= turnsBeforePriority,
+                "queue priority increases and turn pressure shortens",
+                "priority=" + playerArmy.frontlineLogisticsPriority + " foodPerTurn=" + playerArmy.frontlineLogisticsFoodPerTurn + " turns=" + playerArmy.frontlineLogisticsTurnsRemaining + " food=" + foodBeforePriority + "->" + playerFaction.food,
+                "Priority changes should visibly reorder the logistics queue.");
+
+            bool paused = runtime.commands.ToggleFrontlineLogisticsPause(playerArmy.id);
+            int segmentsBeforePause = playerArmy.frontlineLogisticsCompletedSegments;
+            int foodBeforePause = playerFaction.food;
+            runtime.commands.ExecuteLogisticsTurn(runtime.worldState.Map);
+            AddAssertion(result, "queue.pause_stops_progress", "frontline",
+                paused &&
+                    playerArmy.frontlineLogisticsPaused &&
+                    playerArmy.frontlineLogisticsCompletedSegments == segmentsBeforePause &&
+                    playerFaction.food == foodBeforePause,
+                "paused convoy does not advance or spend grain",
+                "paused=" + playerArmy.frontlineLogisticsPaused + " segments=" + playerArmy.frontlineLogisticsCompletedSegments + " food=" + playerFaction.food,
+                "Paused logistics queues should stop consuming food until resumed.");
+
+            bool resumed = runtime.commands.ToggleFrontlineLogisticsPause(playerArmy.id);
+            AddAssertion(result, "queue.resume_restarts_progress", "frontline",
+                resumed && !playerArmy.frontlineLogisticsPaused,
+                "resumed convoy restarts queue",
+                "paused=" + playerArmy.frontlineLogisticsPaused,
+                "Resuming should restore the convoy to the active logistics queue.");
+
+            int turnsBeforeRaid = playerArmy.frontlineLogisticsTurnsRemaining;
+            int foodRemainingBeforeRaid = playerArmy.frontlineLogisticsFoodRemaining;
+            bool raided = runtime.commands.ApplyEnemyLogisticsRaid(runtime.worldState.Map, enemyArmy.ownerFactionId);
+            AddAssertion(result, "queue.enemy_ai_raids_active_logistics", "frontline",
+                raided &&
+                    playerArmy.frontlineLogisticsLastRaidFactionId == enemyArmy.ownerFactionId &&
+                    playerArmy.frontlineLogisticsLostFood > 0 &&
+                    playerArmy.frontlineLogisticsFoodRemaining > foodRemainingBeforeRaid,
+                "enemy faction actively raids the logistics queue",
+                "raidFaction=" + playerArmy.frontlineLogisticsLastRaidFactionId + " lost=" + playerArmy.frontlineLogisticsLostFood + " foodRemaining=" + playerArmy.frontlineLogisticsFoodRemaining + " turns=" + turnsBeforeRaid + "->" + playerArmy.frontlineLogisticsTurnsRemaining,
+                "Enemy AI should be able to raid an exposed logistics convoy and increase the remaining queue load.");
+
+            bool cancelled = runtime.commands.CancelFrontlineLogistics(playerArmy.id);
+            AddAssertion(result, "queue.cancel_clears_active_logistics", "frontline",
+                cancelled &&
+                    string.IsNullOrEmpty(playerArmy.frontlineLogisticsTargetRegionId) &&
+                    string.IsNullOrEmpty(playerArmy.frontlineLogisticsConvoyId) &&
+                    playerArmy.frontlineLogisticsPaused == false,
+                "cancel clears active logistics target and convoy id",
+                "target=" + playerArmy.frontlineLogisticsTargetRegionId + " convoy=" + playerArmy.frontlineLogisticsConvoyId + " paused=" + playerArmy.frontlineLogisticsPaused,
+                "The player must be able to remove an active logistics queue after inspecting it on the map.");
+
+            AddPhase(result, "command", HasAssertionPassed(result, "queue.schedule_created") &&
+                                       HasAssertionPassed(result, "queue.reprioritize_changes_turn_pressure") ? "pass" : "fail",
+                Fields("routeSteps", route.Count - 1, "target", targetRegionId),
+                Fields("convoy", playerArmy.frontlineLogisticsConvoyId, "priority", playerArmy.frontlineLogisticsPriority),
+                "Queue control should expose convoy creation and reprioritization.");
+            AddPhase(result, "frontline", HasAssertionPassed(result, "queue.pause_stops_progress") &&
+                                           HasAssertionPassed(result, "queue.resume_restarts_progress") &&
+                                           HasAssertionPassed(result, "queue.enemy_ai_raids_active_logistics") &&
+                                           HasAssertionPassed(result, "queue.cancel_clears_active_logistics") ? "pass" : "fail",
+                Fields("paused", true, "enemyRaid", enemyArmy.ownerFactionId),
+                Fields("paused", playerArmy.frontlineLogisticsPaused, "raidLoss", playerArmy.frontlineLogisticsLostFood),
+                "Player queue controls and hostile raid pressure should both be visible in the logistics lane.");
+
+            return HasAssertionPassed(result, "queue.schedule_created") &&
+                   HasAssertionPassed(result, "queue.reprioritize_changes_turn_pressure") &&
+                   HasAssertionPassed(result, "queue.pause_stops_progress") &&
+                   HasAssertionPassed(result, "queue.resume_restarts_progress") &&
+                   HasAssertionPassed(result, "queue.enemy_ai_raids_active_logistics") &&
+                   HasAssertionPassed(result, "queue.cancel_clears_active_logistics")
+                ? Pass(result, runtime.state, runtime.worldState)
+                : Fail(result, runtime.state, runtime.worldState, "Logistics queue controls did not fully complete.");
+        }
+
         public HeadlessSimulationResult RunReliefAndTaxPressureCausality(IDataRepository data, string playerFactionId)
         {
             HeadlessSimulationResult result = CreateResult("relief_and_tax_pressure_causality");
@@ -1886,6 +2197,8 @@ namespace WanChaoGuiYi
                     return "战争行军消耗部队补给，经济结算纳入军粮成本。";
                 case "border_control_costs_and_diplomatic_pressure":
                     return "边境管控成功执行，但支付金钱粮食并损伤邻国关系。";
+                case "frontline_logistics_schedule_and_occupation_queue":
+                    return "长线前线整备转为多回合后勤排程，并让占后安抚队列逐回合消耗预留粮。";
                 default:
                     return scenarioName;
             }
@@ -1999,6 +2312,7 @@ namespace WanChaoGuiYi
             if (legacyRegion.integration != runtimeRegion.integration) return "Legacy region integration did not mirror runtime governance impact.";
             if (legacyRegion.taxContributionPercent != runtimeRegion.taxContributionPercent) return "Legacy region tax contribution did not mirror runtime governance impact.";
             if (legacyRegion.foodContributionPercent != runtimeRegion.foodContributionPercent) return "Legacy region food contribution did not mirror runtime governance impact.";
+            if (legacyRegion.occupationReservedFood != runtimeRegion.occupationReservedFood) return "Legacy region occupation reserve did not mirror runtime governance impact.";
             if (legacyRegion.rebellionRisk != runtimeRegion.rebellionRisk) return "Legacy region rebellion risk did not mirror runtime governance impact.";
             if (legacyRegion.localPower != runtimeRegion.localPower) return "Legacy region local power did not mirror runtime governance impact.";
             if (legacyRegion.annexationPressure != runtimeRegion.annexationPressure) return "Legacy region annexation pressure did not mirror runtime governance impact.";
@@ -2009,6 +2323,7 @@ namespace WanChaoGuiYi
             if (rebuiltRegion.occupationStatus != OccupationStatus.Occupied) return "Rebuilt runtime region did not preserve occupied status.";
             if (rebuiltRegion.taxContributionPercent != OccupiedContributionPercent) return "Rebuilt runtime region did not preserve occupied tax contribution.";
             if (rebuiltRegion.foodContributionPercent != OccupiedContributionPercent) return "Rebuilt runtime region did not preserve occupied food contribution.";
+            if (rebuiltRegion.occupationReservedFood != runtimeRegion.occupationReservedFood) return "Rebuilt runtime region did not preserve occupation reserved food.";
 
             FactionState previousOwner = runtime.state.FindFaction(previousOwnerFactionId);
             if (previousOwner != null && previousOwner.regionIds.Contains(regionId)) return "Previous owner still lists captured region.";

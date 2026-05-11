@@ -25,12 +25,14 @@ namespace WanChaoGuiYi
         public int localAcceptanceDelta;
         public int taxContributionPercentDelta;
         public int foodContributionPercentDelta;
+        public int occupationReservedFoodDelta;
         public ControlStage nextControlStage;
 
         public string FormatCompact()
         {
             return label + " | money " + FormatDelta(moneyDelta) +
                    " food " + FormatDelta(foodDelta) +
+                   (occupationReservedFoodDelta != 0 ? " reservedFood " + FormatDelta(occupationReservedFoodDelta) : "") +
                    " legitimacy " + FormatDelta(legitimacyDelta) +
                    " integration " + FormatDelta(integrationDelta) +
                    " acceptance " + FormatDelta(localAcceptanceDelta) +
@@ -78,6 +80,102 @@ namespace WanChaoGuiYi
     }
 
     [Serializable]
+    public sealed class RegionSpecializationPlanForecast
+    {
+        public RegionSpecialization specialization;
+        public string routeStage;
+        public GovernanceActionKind nextAction;
+        public string nextActionLabel;
+        public string buildingFocus;
+        public string policyFocus;
+        public string expectedBenefit;
+        public string tradeoff;
+        public int readinessScore;
+        public string sourceReference;
+
+        public string FormatCompact()
+        {
+            return "专精路线: " + FormatSpecializationName(specialization) +
+                   " | 阶段 " + routeStage +
+                   " | 下一步 " + nextActionLabel +
+                   " | 建设 " + buildingFocus +
+                   " | 政策 " + policyFocus +
+                   " | 取舍 " + tradeoff;
+        }
+
+        private static string FormatSpecializationName(RegionSpecialization specialization)
+        {
+            switch (specialization)
+            {
+                case RegionSpecialization.Grain: return "粮仓";
+                case RegionSpecialization.Military: return "兵源";
+                case RegionSpecialization.Tax: return "财税";
+                case RegionSpecialization.Border: return "边防";
+                case RegionSpecialization.Legitimacy: return "法统";
+                case RegionSpecialization.Culture: return "文化";
+                case RegionSpecialization.Capital: return "都城";
+                default: return "未定";
+            }
+        }
+    }
+
+    [Serializable]
+    public sealed class FrontlineSupplyPlanForecast
+    {
+        public CampaignRouteForecast routeForecast;
+        public int supplyNodeCoverage;
+        public int reserveTurnsAfterContact;
+        public int reserveFoodCost;
+        public int occupationAdministrationFoodCost;
+        public int preparedReserveFood;
+        public int frontlineSupplyTarget;
+        public bool alreadyPrepared;
+        public int logisticsTurns;
+        public int logisticsFoodPerTurn;
+        public int logisticsSegmentCount;
+        public string supplyNodeBuildRegionId;
+        public int interceptionLossRisk;
+        public int activeLogisticsTurnsRemaining;
+        public string activeLogisticsConvoyId;
+        public int activeLogisticsPriority;
+        public bool activeLogisticsPaused;
+        public int activeLogisticsRaidPressure;
+        public int activeLogisticsLastRaidLoss;
+        public int readinessScore;
+        public string readinessLabel;
+        public string recommendedStep;
+        public string sourceReference;
+
+        public string FormatCompact()
+        {
+            return "前线补给规划: " + readinessLabel +
+                   " | 兵站" + supplyNodeCoverage +
+                   " | 接敌后可撑" + reserveTurnsAfterContact + "回合" +
+                   " | 预留粮" + reserveFoodCost +
+                   " | 已预留" + preparedReserveFood +
+                   " | 占后粮政" + occupationAdministrationFoodCost +
+                   " | 目标供给" + frontlineSupplyTarget +
+                   " | 排程" + logisticsTurns + "回合" +
+                    " | 分段" + logisticsSegmentCount +
+                    " | 截粮" + interceptionLossRisk + "%" +
+                    (string.IsNullOrEmpty(supplyNodeBuildRegionId) ? "" : " | 兵站" + supplyNodeBuildRegionId) +
+                    (activeLogisticsTurnsRemaining > 0 ? " | 运输队" + (string.IsNullOrEmpty(activeLogisticsConvoyId) ? "执行中" : activeLogisticsConvoyId) +
+                                                          " " + FormatLogisticsPriority(activeLogisticsPriority) +
+                                                          (activeLogisticsPaused ? "暂停" : "执行中") +
+                                                          activeLogisticsTurnsRemaining + "回合" : "") +
+                    (activeLogisticsRaidPressure > 0 ? " | 截粮压力" + activeLogisticsRaidPressure + " 上次损" + activeLogisticsLastRaidLoss : "") +
+                    " | 下一步 " + recommendedStep;
+        }
+
+        private static string FormatLogisticsPriority(int priority)
+        {
+            if (priority >= 2) return "加急";
+            if (priority <= 0) return "后置";
+            return "常规";
+        }
+    }
+
+    [Serializable]
     public sealed class StrategyOutlinerEntry
     {
         public string category;
@@ -114,6 +212,7 @@ namespace WanChaoGuiYi
         public const int RegisterIntegrationGain = 18;
         public const int RegisterAcceptanceGain = 6;
         public const int RegisterContributionGain = 25;
+        public const int OccupationAdministrationFoodCost = MilitaryGovernFoodCost + PacifyFoodCost + RegisterFoodCost;
 
         public const int ReliefFoodCost = 60;
         public const int ReliefRebellionReduction = 10;
@@ -147,6 +246,9 @@ namespace WanChaoGuiYi
             {
                 runtime.regionSpecialization = legacy.regionSpecialization;
                 runtime.controlStage = legacy.controlStage;
+                runtime.occupationReservedFood = legacy.occupationReservedFood;
+                runtime.occupationPacificationQueueStep = legacy.occupationPacificationQueueStep;
+                runtime.occupationPacificationQueueTurnsRemaining = legacy.occupationPacificationQueueTurnsRemaining;
                 runtime.localAcceptance = legacy.localAcceptance;
                 runtime.visibilityState = legacy.visibilityState;
                 runtime.supplyNode = legacy.supplyNode;
@@ -212,6 +314,27 @@ namespace WanChaoGuiYi
             ChooseBetter(RegionSpecialization.Culture, culture, ref best, ref bestScore);
             ChooseBetter(RegionSpecialization.Capital, capital, ref best, ref bestScore);
             return best;
+        }
+
+        public static RegionSpecializationPlanForecast BuildSpecializationPlanForecast(GameContext context, RegionDefinition definition, RegionState state, FactionState faction)
+        {
+            RegionSpecialization specialization = ResolveSpecialization(definition, state, context != null ? context.Data : null);
+            GovernanceActionForecast actionForecast = BuildRecommendedGovernanceForecast(context, definition, state, faction);
+            GovernanceActionKind action = actionForecast != null ? actionForecast.action : GovernanceActionKind.Hold;
+
+            return new RegionSpecializationPlanForecast
+            {
+                specialization = specialization,
+                routeStage = ResolveSpecializationRouteStage(state),
+                nextAction = action,
+                nextActionLabel = FormatLocalizedActionLabel(action),
+                buildingFocus = ResolveSpecializationBuildingFocus(specialization, state),
+                policyFocus = ResolveSpecializationPolicyFocus(specialization, state, faction),
+                expectedBenefit = ResolveSpecializationExpectedBenefit(specialization, definition, state),
+                tradeoff = ResolveSpecializationTradeoff(specialization, actionForecast, state),
+                readinessScore = CalculateSpecializationReadiness(state),
+                sourceReference = GovernanceSource
+            };
         }
 
         private static RegionSpecialization ResolveStrongHistoricalIdentity(string regionId)
@@ -417,6 +540,7 @@ namespace WanChaoGuiYi
                     break;
             }
 
+            ApplyOccupationReservedFoodOffset(state, forecast);
             forecast.canApply = CanApplyForecast(faction, state, forecast);
             forecast.disabledReason = forecast.canApply ? null : ResolveDisabledReason(faction, state, forecast);
             return forecast;
@@ -462,6 +586,7 @@ namespace WanChaoGuiYi
             state.localAcceptance = DomainMath.Clamp(state.localAcceptance + forecast.localAcceptanceDelta, 0, 100);
             state.taxContributionPercent = DomainMath.Clamp(state.taxContributionPercent + forecast.taxContributionPercentDelta, 0, 100);
             state.foodContributionPercent = DomainMath.Clamp(state.foodContributionPercent + forecast.foodContributionPercentDelta, 0, 100);
+            state.occupationReservedFood = DomainMath.Max(0, state.occupationReservedFood + forecast.occupationReservedFoodDelta);
             state.controlStage = forecast.nextControlStage;
 
             if ((state.controlStage == ControlStage.Registered || state.controlStage == ControlStage.Controlled) &&
@@ -526,6 +651,50 @@ namespace WanChaoGuiYi
             return forecast;
         }
 
+        public static FrontlineSupplyPlanForecast BuildFrontlineSupplyPlanForecast(MapQueryService queries, GameContext context, ArmyRuntimeState army, string targetRegionId)
+        {
+            CampaignRouteForecast routeForecast = BuildCampaignRouteForecast(queries, context, army, targetRegionId);
+            int supplyNodeCoverage = CountOwnedSupplyNodesOnRoute(context, routeForecast != null ? routeForecast.route : null, army != null ? army.ownerFactionId : null);
+            int reserveTurns = CalculateReserveTurnsAfterContact(routeForecast);
+            int occupationFood = OccupationAdministrationFoodCost;
+            int preparedReserveFood = ResolvePreparedReserveFood(army, targetRegionId);
+            int frontlineSupplyTarget = CalculateFrontlineSupplyTarget(routeForecast);
+            int supplyNeed = CalculateFrontlineSupplyNeed(frontlineSupplyTarget, army);
+            int reserveFoodCost = supplyNeed + DomainMath.Max(0, occupationFood - preparedReserveFood);
+            bool alreadyPrepared = preparedReserveFood >= occupationFood && supplyNeed <= 0;
+            int logisticsTurns = CalculateFrontlineLogisticsTurns(routeForecast, supplyNodeCoverage);
+            int interceptionLossRisk = routeForecast != null ? routeForecast.interceptionRisk : 0;
+            string supplyNodeBuildRegionId = ResolveSupplyNodeBuildRegionId(context, routeForecast != null ? routeForecast.route : null, army != null ? army.ownerFactionId : null, supplyNodeCoverage);
+            int readinessScore = CalculateFrontlineReadiness(routeForecast, supplyNodeCoverage, reserveTurns, context, army, reserveFoodCost, preparedReserveFood, alreadyPrepared);
+
+            return new FrontlineSupplyPlanForecast
+            {
+                routeForecast = routeForecast,
+                supplyNodeCoverage = supplyNodeCoverage,
+                reserveTurnsAfterContact = reserveTurns,
+                reserveFoodCost = reserveFoodCost,
+                occupationAdministrationFoodCost = occupationFood,
+                preparedReserveFood = preparedReserveFood,
+                frontlineSupplyTarget = frontlineSupplyTarget,
+                alreadyPrepared = alreadyPrepared,
+                logisticsTurns = logisticsTurns,
+                logisticsFoodPerTurn = CalculateLogisticsFoodPerTurn(reserveFoodCost, logisticsTurns, supplyNodeBuildRegionId),
+                logisticsSegmentCount = routeForecast != null ? routeForecast.routeSteps : 0,
+                supplyNodeBuildRegionId = supplyNodeBuildRegionId,
+                interceptionLossRisk = interceptionLossRisk,
+                activeLogisticsTurnsRemaining = army != null ? army.frontlineLogisticsTurnsRemaining : 0,
+                activeLogisticsConvoyId = army != null ? army.frontlineLogisticsConvoyId : null,
+                activeLogisticsPriority = army != null ? army.frontlineLogisticsPriority : 0,
+                activeLogisticsPaused = army != null && army.frontlineLogisticsPaused,
+                activeLogisticsRaidPressure = army != null ? army.frontlineLogisticsRaidPressure : 0,
+                activeLogisticsLastRaidLoss = army != null ? army.frontlineLogisticsLastRaidLoss : 0,
+                readinessScore = readinessScore,
+                readinessLabel = ResolveFrontlineReadinessLabel(readinessScore),
+                recommendedStep = ResolveFrontlineRecommendedStep(routeForecast, supplyNodeCoverage, reserveTurns, context, army, reserveFoodCost, preparedReserveFood, alreadyPrepared),
+                sourceReference = WarSource + " " + FoodSource
+            };
+        }
+
         public static List<StrategyOutlinerEntry> BuildOutliner(GameState state, WorldState world)
         {
             List<StrategyOutlinerEntry> entries = new List<StrategyOutlinerEntry>();
@@ -545,6 +714,10 @@ namespace WanChaoGuiYi
                 {
                     entries.Add(CreateOutlinerEntry("occupation_chain", "occupation", "新占治理", 90, region.id, region.id + " control " + stage, 80));
                 }
+                if (region.occupationPacificationQueueTurnsRemaining > 0)
+                {
+                    entries.Add(CreateOutlinerEntry("occupation_queue", "occupation", "新占治理", 92, region.id, region.id + " queue step " + region.occupationPacificationQueueStep + " reserve " + region.occupationReservedFood, 86));
+                }
                 if (region.localAcceptance > 0 && region.localAcceptance < 45)
                 {
                     entries.Add(CreateOutlinerEntry("acceptance", "risk", "高风险地区", 100, region.id, region.id + " acceptance " + region.localAcceptance, 70));
@@ -560,9 +733,24 @@ namespace WanChaoGuiYi
                     {
                         entries.Add(CreateOutlinerEntry("marching_army", "army", "行军军队", 80, army.id, army.id + " " + army.task + " -> " + army.targetRegionId, 75));
                     }
+                    if (!string.IsNullOrEmpty(army.frontlinePreparedTargetRegionId))
+                    {
+                        string preparedLabel = army.id + " reserve " + army.frontlineReservedFood + " -> " + army.frontlinePreparedTargetRegionId;
+                        entries.Add(CreateOutlinerEntry("frontline_prepared", "frontline", "前线补给", 95, army.frontlinePreparedTargetRegionId, preparedLabel, 88));
+                    }
+                    if (!string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId))
+                    {
+                        string logisticsLabel = army.id + " " + FormatLogisticsPriorityLabel(army.frontlineLogisticsPriority) +
+                                                (army.frontlineLogisticsPaused ? " paused " : " convoy ") +
+                                                (string.IsNullOrEmpty(army.frontlineLogisticsConvoyId) ? "" : army.frontlineLogisticsConvoyId + " ") +
+                                                army.frontlineLogisticsCompletedSegments + "/" + army.frontlineLogisticsTotalTurns +
+                                                " -> " + army.frontlineLogisticsTargetRegionId +
+                                                " raid " + army.frontlineLogisticsRaidPressure;
+                        entries.Add(CreateOutlinerEntry("frontline_logistics", "frontline", "前线补给", 96 + army.frontlineLogisticsPriority, army.id, logisticsLabel, 92));
+                    }
                     if (army.supply < StrategyCausalRules.LowSupplyBattleThreshold)
                     {
-                        entries.Add(CreateOutlinerEntry("low_supply", "army", "行军军队", 80, army.id, army.id + " supply " + army.supply, 85));
+                        entries.Add(CreateOutlinerEntry("low_supply", "frontline", "前线补给", 90, army.id, army.id + " supply " + army.supply, 85));
                     }
                 }
             }
@@ -571,6 +759,13 @@ namespace WanChaoGuiYi
 
             entries.Sort(CompareOutlinerEntries);
             return entries;
+        }
+
+        private static string FormatLogisticsPriorityLabel(int priority)
+        {
+            if (priority >= 2) return "加急";
+            if (priority <= 0) return "后置";
+            return "常规";
         }
 
         public static int CalculateLensScore(MapLensMode lens, RegionDefinition definition, RegionState state)
@@ -598,6 +793,227 @@ namespace WanChaoGuiYi
         {
             if (runtime == null) return 50;
             return DomainMath.Clamp(runtime.integration - runtime.rebellionRisk / 2 - runtime.localPower / 5, 15, 90);
+        }
+
+        private static string ResolveSpecializationRouteStage(RegionState state)
+        {
+            if (state == null) return "未定";
+            ControlStage controlStage = ResolveControlStage(state);
+            if (controlStage != ControlStage.Controlled) return "收权";
+            if (state.integration < 55 || state.localAcceptance < 45 || state.rebellionRisk >= 45) return "稳民";
+            if (state.taxContributionPercent < ControlledContributionPercent || state.foodContributionPercent < ControlledContributionPercent) return "恢复贡献";
+            return "深化专精";
+        }
+
+        private static string ResolveSpecializationBuildingFocus(RegionSpecialization specialization, RegionState state)
+        {
+            switch (specialization)
+            {
+                case RegionSpecialization.Grain: return "水利仓储";
+                case RegionSpecialization.Military: return "军府兵站";
+                case RegionSpecialization.Tax: return "市肆漕运";
+                case RegionSpecialization.Border: return "关隘驿路";
+                case RegionSpecialization.Legitimacy: return "郡县礼制";
+                case RegionSpecialization.Culture: return "学校礼乐";
+                case RegionSpecialization.Capital: return "都城中枢";
+                default: return state != null && state.supplyNode ? "兵站维护" : "基础治理";
+            }
+        }
+
+        private static string ResolveSpecializationPolicyFocus(RegionSpecialization specialization, RegionState state, FactionState faction)
+        {
+            if (state != null && (state.rebellionRisk >= 50 || state.localAcceptance < 45)) return "安民赈济";
+            if (state != null && ResolveControlStage(state) != ControlStage.Controlled) return "军管编户";
+            if (faction != null && faction.food < 160) return "保粮减役";
+
+            switch (specialization)
+            {
+                case RegionSpecialization.Grain: return "轻徭薄赋";
+                case RegionSpecialization.Military: return "养兵备边";
+                case RegionSpecialization.Tax: return "清丈财税";
+                case RegionSpecialization.Border: return "封关备边";
+                case RegionSpecialization.Legitimacy: return "郡县法统";
+                case RegionSpecialization.Culture: return "招贤礼教";
+                case RegionSpecialization.Capital: return "中枢改制";
+                default: return "守成观察";
+            }
+        }
+
+        private static string ResolveSpecializationExpectedBenefit(RegionSpecialization specialization, RegionDefinition definition, RegionState state)
+        {
+            switch (specialization)
+            {
+                case RegionSpecialization.Grain: return "稳粮税与赈济余裕";
+                case RegionSpecialization.Military: return "兵源和前线补给";
+                case RegionSpecialization.Tax: return "财政和漕运收入";
+                case RegionSpecialization.Border: return "通道控制和拦截缓冲";
+                case RegionSpecialization.Legitimacy: return "法统整合和地方承认";
+                case RegionSpecialization.Culture: return "人才与风俗稳定";
+                case RegionSpecialization.Capital: return "中枢效率和合法性";
+                default: return definition != null ? definition.name + "基础产出" : "基础产出";
+            }
+        }
+
+        private static string ResolveSpecializationTradeoff(RegionSpecialization specialization, GovernanceActionForecast actionForecast, RegionState state)
+        {
+            if (actionForecast != null && actionForecast.foodDelta < 0) return "粮食换秩序";
+            if (actionForecast != null && actionForecast.moneyDelta < 0) return "财政换整合";
+            if (actionForecast != null && actionForecast.legitimacyDelta < 0) return "威压损法统";
+            if (specialization == RegionSpecialization.Military || specialization == RegionSpecialization.Border) return "兵役压民生";
+            if (specialization == RegionSpecialization.Tax) return "增收压民心";
+            return state != null && state.localPower >= 55 ? "削地方势力" : "低压推进";
+        }
+
+        private static int CalculateSpecializationReadiness(RegionState state)
+        {
+            if (state == null) return 0;
+            int score = state.integration + state.localAcceptance;
+            score -= state.rebellionRisk / 2;
+            score -= state.localPower / 3;
+            if (ResolveControlStage(state) != ControlStage.Controlled) score -= 30;
+            return DomainMath.Clamp(score, 0, 100);
+        }
+
+        private static int CountOwnedSupplyNodesOnRoute(GameContext context, string[] route, string ownerFactionId)
+        {
+            if (context == null || context.State == null || route == null || string.IsNullOrEmpty(ownerFactionId)) return 0;
+            int count = 0;
+            for (int i = 0; i < route.Length; i++)
+            {
+                RegionState region = context.State.FindRegion(route[i]);
+                if (region != null && region.ownerFactionId == ownerFactionId && region.supplyNode)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private static int CalculateReserveTurnsAfterContact(CampaignRouteForecast routeForecast)
+        {
+            if (routeForecast == null) return 0;
+            return routeForecast.supplyAtContact / StrategyCausalRules.WarMovementSupplyCost;
+        }
+
+        private static int CalculateFrontlineReadiness(CampaignRouteForecast routeForecast, int supplyNodeCoverage, int reserveTurns, GameContext context, ArmyRuntimeState army, int reserveFoodCost, int preparedReserveFood, bool alreadyPrepared)
+        {
+            if (routeForecast == null) return 0;
+            int score = routeForecast.canDispatch ? 40 : 10;
+            score += routeForecast.supplyPowerPercent / 3;
+            score += DomainMath.Min(25, reserveTurns * 4);
+            score += DomainMath.Min(20, supplyNodeCoverage * 10);
+            score -= routeForecast.contactRisk / 4;
+            score -= routeForecast.interceptionRisk / 4;
+            if (routeForecast.hasUnknownRisk) score -= 10;
+            if (alreadyPrepared) score += 14;
+            else score += DomainMath.Min(10, preparedReserveFood / 10);
+
+            FactionState faction = context != null && context.State != null && army != null ? context.State.FindFaction(army.ownerFactionId) : null;
+            if (faction != null && faction.food < reserveFoodCost) score -= 18;
+            if (army != null && army.supply < StrategyCausalRules.LowSupplyBattleThreshold) score -= 18;
+            return DomainMath.Clamp(score, 0, 100);
+        }
+
+        private static int CalculateFrontlineSupplyTarget(CampaignRouteForecast routeForecast)
+        {
+            if (routeForecast == null) return StrategyCausalRules.FrontlinePreparedSupplyTarget;
+            int target = StrategyCausalRules.FrontlinePreparedSupplyTarget + DomainMath.Max(0, routeForecast.routeSteps - 1) * 4;
+            if (routeForecast.interceptionRisk >= 65) target += 6;
+            if (routeForecast.contactRisk >= 65) target += 4;
+            return DomainMath.Clamp(target, StrategyCausalRules.LowSupplyBattleThreshold + 10, StrategyCausalRules.FrontlinePreparedSupplyCap);
+        }
+
+        private static int CalculateFrontlineSupplyNeed(int frontlineSupplyTarget, ArmyRuntimeState army)
+        {
+            if (army == null) return frontlineSupplyTarget;
+            return DomainMath.Max(0, frontlineSupplyTarget - army.supply);
+        }
+
+        private static int ResolvePreparedReserveFood(ArmyRuntimeState army, string targetRegionId)
+        {
+            if (army == null || string.IsNullOrEmpty(targetRegionId)) return 0;
+            if (army.frontlinePreparedTargetRegionId != targetRegionId) return 0;
+            return DomainMath.Max(0, army.frontlineReservedFood);
+        }
+
+        private static string ResolveFrontlineReadinessLabel(int readinessScore)
+        {
+            if (readinessScore >= 75) return "可开战";
+            if (readinessScore >= 50) return "需谨慎";
+            return "先整备";
+        }
+
+        private static string ResolveFrontlineRecommendedStep(CampaignRouteForecast routeForecast, int supplyNodeCoverage, int reserveTurns, GameContext context, ArmyRuntimeState army, int reserveFoodCost, int preparedReserveFood, bool alreadyPrepared)
+        {
+            if (routeForecast == null) return "补齐路线情报";
+            if (army != null && !string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId)) return "等待后勤排程";
+            if (!routeForecast.canDispatch) return "先建兵站或邻接推进";
+            if (routeForecast.hasUnknownRisk) return "先侦察目标";
+            if (supplyNodeCoverage <= 0 && routeForecast.routeSteps > 1) return "先占补给节点";
+            if (routeForecast.supplyPowerPercent < 100 || reserveTurns < 3) return "先补粮再战";
+
+            FactionState faction = context != null && context.State != null && army != null ? context.State.FindFaction(army.ownerFactionId) : null;
+            if (alreadyPrepared) return "可发起出征";
+            if (preparedReserveFood > 0 && preparedReserveFood < OccupationAdministrationFoodCost) return "补齐占后粮政";
+            if (faction != null && faction.food < reserveFoodCost) return "预留占后粮政";
+            if (routeForecast.interceptionRisk >= 65) return "绕开高拦截线";
+            return "可推进并预留军管";
+        }
+
+        private static void ApplyOccupationReservedFoodOffset(RegionState state, GovernanceActionForecast forecast)
+        {
+            if (state == null || forecast == null || state.occupationReservedFood <= 0) return;
+            if (!IsOccupationAdministrationAction(forecast.action)) return;
+
+            int foodCost = DomainMath.Max(0, -forecast.foodDelta);
+            if (foodCost <= 0) return;
+
+            int offset = DomainMath.Min(state.occupationReservedFood, foodCost);
+            forecast.foodDelta += offset;
+            forecast.occupationReservedFoodDelta = -offset;
+        }
+
+        private static bool IsOccupationAdministrationAction(GovernanceActionKind action)
+        {
+            return action == GovernanceActionKind.MilitaryGovern ||
+                   action == GovernanceActionKind.Pacify ||
+                   action == GovernanceActionKind.RegisterHouseholds;
+        }
+
+        private static int CalculateFrontlineLogisticsTurns(CampaignRouteForecast routeForecast, int supplyNodeCoverage)
+        {
+            if (routeForecast == null || routeForecast.routeSteps <= 1) return 1;
+            int nodeTurn = supplyNodeCoverage <= 0 ? 1 : 0;
+            return DomainMath.Clamp(routeForecast.routeSteps + nodeTurn, 2, StrategyCausalRules.FrontlineLogisticsMaxTurns);
+        }
+
+        private static int CalculateLogisticsFoodPerTurn(int reserveFoodCost, int logisticsTurns, string supplyNodeBuildRegionId)
+        {
+            int total = DomainMath.Max(0, reserveFoodCost);
+            if (!string.IsNullOrEmpty(supplyNodeBuildRegionId))
+            {
+                total += StrategyCausalRules.FrontlineSupplyNodeBuildFoodCost;
+            }
+
+            int turns = DomainMath.Max(1, logisticsTurns);
+            return (total + turns - 1) / turns;
+        }
+
+        private static string ResolveSupplyNodeBuildRegionId(GameContext context, string[] route, string ownerFactionId, int supplyNodeCoverage)
+        {
+            if (context == null || context.State == null || route == null || route.Length < 3 || string.IsNullOrEmpty(ownerFactionId)) return null;
+            if (supplyNodeCoverage > 0) return null;
+
+            for (int i = 0; i < route.Length - 1; i++)
+            {
+                RegionState region = context.State.FindRegion(route[i]);
+                if (region != null && region.ownerFactionId == ownerFactionId && !region.supplyNode)
+                {
+                    return region.id;
+                }
+            }
+
+            return null;
         }
 
         private static ControlStage AdvanceControlStage(RegionState state, ControlStage target)

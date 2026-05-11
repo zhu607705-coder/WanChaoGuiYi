@@ -193,7 +193,7 @@ namespace WanChaoGuiYi
 
             if (!CanPayBorderControl())
             {
-                context.State.AddLog("border", "边境管控资源不足：money " + StrategyCausalRules.BorderControlMoneyCost + " food " + StrategyCausalRules.BorderControlFoodCost);
+                context.State.AddLog("border", "边境管控资源不足：金钱" + StrategyCausalRules.BorderControlMoneyCost + " 粮食" + StrategyCausalRules.BorderControlFoodCost);
                 RefreshDetails();
                 return;
             }
@@ -204,7 +204,7 @@ namespace WanChaoGuiYi
                 context.Events.Publish(new GameEvent(GameEventType.DiplomacyProposalRejected, target.id, relation));
             }
 
-            context.State.AddLog("border", "边境管控执行：" + target.name + " | Source: " + BorderSourceReference);
+            context.State.AddLog("border", "边境管控执行：" + target.name + " | 来源: " + BorderSourceReference);
             RefreshDetails();
             RefreshActionButtons();
         }
@@ -281,12 +281,12 @@ namespace WanChaoGuiYi
             foreach (PolicyDefinition policy in context.Data.Policies.Values)
             {
                 if (policy == null || faction.completedReformIds.Contains(policy.id)) continue;
-                if (!CanPay(policy.cost)) continue;
+            if (!CanPay(policy.cost)) continue;
 
                 sb.AppendLine("  · " + policy.name + " [" + policy.category + "] " + FormatCost(policy.cost));
                 if (!string.IsNullOrEmpty(policy.sourceReference))
                 {
-                    sb.AppendLine("    Source: " + policy.sourceReference);
+                    sb.AppendLine("    来源: " + policy.sourceReference);
                 }
                 count++;
                 if (count >= 5) break;
@@ -321,17 +321,17 @@ namespace WanChaoGuiYi
             sb.AppendLine("  目标：" + target.name);
             if (selectionContext != null && !string.IsNullOrEmpty(selectionContext.selectedRegionId))
             {
-                sb.AppendLine("  选区：" + ResolveSelectedRegionLabel() + " | 模式：" + selectionContext.mode + " | 原因：" + selectionContext.modeEntryReason);
+                sb.AppendLine("  选区：" + ResolveSelectedRegionLabel() + " | 模式：" + FormatSelectionMode(selectionContext.mode) + " | 判定：" + FormatModeEntryReason(selectionContext.modeEntryReason));
             }
             sb.AppendLine("  状态：" + FormatDiplomacyStatus(relation.status));
             sb.AppendLine("  好感：" + relation.opinion + " | 宿怨：" + relation.grudge);
             sb.AppendLine("  剩余回合：" + (relation.turnsRemaining > 0 ? relation.turnsRemaining.ToString() : "长期"));
-            sb.AppendLine("  Diplomacy Cost: neutral war 0; treaty break costs legitimacy.");
-            sb.AppendLine("  Diplomacy Source: " + DiplomacySourceReference);
-            sb.AppendLine("  Border Cost: money " + StrategyCausalRules.BorderControlMoneyCost + " food " + StrategyCausalRules.BorderControlFoodCost);
-            sb.AppendLine("  Border Impact: pressure only with opinion -" + StrategyCausalRules.BorderControlOpinionPenalty + " and grudge +" + StrategyCausalRules.BorderControlGrudgeIncrease + "; no direct positive state is granted.");
-            sb.AppendLine("  Border Source: " + BorderSourceReference);
-            sb.AppendLine("  War Mode: enter explicitly before dispatch.");
+            sb.AppendLine("  外交代价: 中立开战无金粮消耗；撕毁盟约会损合法性。");
+            sb.AppendLine("  外交来源: " + DiplomacySourceReference);
+            sb.AppendLine("  封关代价: 金钱" + StrategyCausalRules.BorderControlMoneyCost + " 粮食" + StrategyCausalRules.BorderControlFoodCost);
+            sb.AppendLine("  封关影响: 只形成压力，好感-" + StrategyCausalRules.BorderControlOpinionPenalty + "、宿怨+" + StrategyCausalRules.BorderControlGrudgeIncrease + "；不直接给本国正收益。");
+            sb.AppendLine("  封关来源: " + BorderSourceReference);
+            sb.AppendLine("  战争入口: 需要显式进入战争模式后再调兵。");
         }
 
         private void AppendEspionageStatus(System.Text.StringBuilder sb)
@@ -462,11 +462,36 @@ namespace WanChaoGuiYi
         {
             if (context == null || context.Data == null || selectionContext == null || string.IsNullOrEmpty(selectionContext.selectedRegionId))
             {
-                return "none";
+                return "未选区";
             }
 
             RegionDefinition definition = context.Data.GetRegion(selectionContext.selectedRegionId);
             return definition != null ? definition.name + "(" + definition.id + ")" : selectionContext.selectedRegionId;
+        }
+
+        private static string FormatSelectionMode(MapInteractionMode mode)
+        {
+            switch (mode)
+            {
+                case MapInteractionMode.War: return "战争模式";
+                case MapInteractionMode.Diplomacy: return "外交过渡";
+                default: return "治理模式";
+            }
+        }
+
+        private static string FormatModeEntryReason(string reason)
+        {
+            switch (reason)
+            {
+                case "friendly_region": return "己方地区";
+                case "neighbor_region": return "邻接外邦";
+                case "distant_foreign_region": return "远邻外邦";
+                case "war_neighbor_target": return "邻接战场";
+                case "war_foreign_target": return "远征目标";
+                case "missing_state": return "局势未初始化";
+                case "region_not_found": return "地区不存在";
+                default: return string.IsNullOrEmpty(reason) ? "未判定" : reason;
+            }
         }
 
         private bool CanPayBorderControl()

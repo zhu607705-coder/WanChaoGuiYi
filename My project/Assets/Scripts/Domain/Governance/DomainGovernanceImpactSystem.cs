@@ -4,7 +4,7 @@ namespace WanChaoGuiYi
 {
     public sealed class DomainGovernanceImpactSystem
     {
-        public GovernanceImpactPayload ApplyOccupationImpact(GameContext context, MapState mapState, string regionId)
+        public GovernanceImpactPayload ApplyOccupationImpact(GameContext context, MapState mapState, string regionId, int occupationReservedFoodTransferred = 0)
         {
             if (context == null || mapState == null || string.IsNullOrEmpty(regionId)) return null;
 
@@ -21,6 +21,9 @@ namespace WanChaoGuiYi
 
             runtimeRegion.occupationStatus = OccupationStatus.Occupied;
             runtimeRegion.controlStage = ControlStage.NewlyAttached;
+            runtimeRegion.occupationReservedFood = DomainMath.Max(0, occupationReservedFoodTransferred);
+            runtimeRegion.occupationPacificationQueueStep = runtimeRegion.occupationReservedFood > 0 ? 1 : 0;
+            runtimeRegion.occupationPacificationQueueTurnsRemaining = runtimeRegion.occupationReservedFood > 0 ? 3 : 0;
             runtimeRegion.integration = Math.Min(runtimeRegion.integration, StrategyCausalRules.OccupiedIntegration);
             runtimeRegion.taxContributionPercent = Math.Min(runtimeRegion.taxContributionPercent, StrategyCausalRules.OccupiedContributionPercent);
             runtimeRegion.foodContributionPercent = Math.Min(runtimeRegion.foodContributionPercent, StrategyCausalRules.OccupiedContributionPercent);
@@ -32,6 +35,9 @@ namespace WanChaoGuiYi
             legacyRegion.integration = runtimeRegion.integration;
             legacyRegion.occupationStatus = runtimeRegion.occupationStatus;
             legacyRegion.controlStage = runtimeRegion.controlStage;
+            legacyRegion.occupationReservedFood = runtimeRegion.occupationReservedFood;
+            legacyRegion.occupationPacificationQueueStep = runtimeRegion.occupationPacificationQueueStep;
+            legacyRegion.occupationPacificationQueueTurnsRemaining = runtimeRegion.occupationPacificationQueueTurnsRemaining;
             legacyRegion.taxContributionPercent = runtimeRegion.taxContributionPercent;
             legacyRegion.foodContributionPercent = runtimeRegion.foodContributionPercent;
             legacyRegion.rebellionRisk = runtimeRegion.rebellionRisk;
@@ -50,10 +56,15 @@ namespace WanChaoGuiYi
                 annexationPressure = runtimeRegion.annexationPressure,
                 legitimacyBefore = legitimacyBefore,
                 legitimacyAfter = legitimacyAfter,
-                legitimacyDelta = legitimacyAfter - legitimacyBefore
+                legitimacyDelta = legitimacyAfter - legitimacyBefore,
+                occupationReservedFoodTransferred = DomainMath.Max(0, occupationReservedFoodTransferred),
+                occupationReservedFoodAvailable = runtimeRegion.occupationReservedFood
             };
 
-            context.State.AddLog("governance", regionId + "新占领：整合度降至" + runtimeRegion.integration + "，税粮贡献暂为" + StrategyCausalRules.OccupiedContributionPercent + "% ，民变与地方势力上升，合法性" + legitimacyBefore + "→" + legitimacyAfter + "。");
+            string reserveText = runtimeRegion.occupationReservedFood > 0
+                ? "，前线预留粮转入占后治理" + runtimeRegion.occupationReservedFood + "，将优先抵扣军管、安抚、编户粮耗"
+                : "";
+            context.State.AddLog("governance", regionId + "新占领：整合度降至" + runtimeRegion.integration + "，税粮贡献暂为" + StrategyCausalRules.OccupiedContributionPercent + "% ，民变与地方势力上升，合法性" + legitimacyBefore + "→" + legitimacyAfter + reserveText + "。");
             context.Events.Publish(new GameEvent(GameEventType.GovernanceImpactApplied, regionId, payload));
             return payload;
         }

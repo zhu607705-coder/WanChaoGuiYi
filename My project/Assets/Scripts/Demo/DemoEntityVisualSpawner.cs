@@ -31,6 +31,19 @@ namespace WanChaoGuiYi
 
         public int LastVisibleLabelCount { get; private set; }
         public int LastHiddenLabelCount { get; private set; }
+        public int LastHiddenByZoomCount { get; private set; }
+        public int LastHiddenByBudgetCount { get; private set; }
+        public int LastHiddenByOverlapCount { get; private set; }
+        public int LastLabelCandidateCount { get; private set; }
+        public int LastActivePulseCount { get; private set; }
+        public int LastInactivePulseCount { get; private set; }
+        public int LastPulseBudget { get; private set; }
+        public int LastWarOverlayObjectCount { get; private set; }
+        public int LastWarRouteObjectCount { get; private set; }
+        public int LastWarContactObjectCount { get; private set; }
+        public int LastWarOccupationObjectCount { get; private set; }
+        public int LastWarTargetObjectCount { get; private set; }
+        public int LastWarLabelObjectCount { get; private set; }
 
         private void Start()
         {
@@ -86,6 +99,7 @@ namespace WanChaoGuiYi
             CaptureRefreshState();
             forceRefresh = false;
             ApplyLabelDensityForCurrentZoom();
+            RefreshOverlayObjectStats();
         }
 
         private void SpawnEmperorPortraits()
@@ -183,19 +197,42 @@ namespace WanChaoGuiYi
 
             if (routePoints.Count < 2) return;
 
+            Color color = ResolveRoutePressureColor(army);
+            CreateRouteUnderlay(army.id, routePoints, color);
+
             GameObject routeObject = new GameObject("WarRoute_" + army.id);
             routeObject.transform.SetParent(transform, false);
+
+            float routeWidth = ResolveRoutePressureWidth(army);
+            CreateRouteLine(routeObject, routePoints, routeWidth, 38, color);
+            CreateRouteContactNode(army.id, routePoints[routePoints.Count - 1], color);
+
+            CreateLabel(routeObject.transform, "WarRoutePressureLabel_" + army.id, FormatRoutePressureLabel(army), ResolveRouteLabelPosition(routePoints), 47, 0.085f, color);
+        }
+
+        private void CreateRouteUnderlay(string armyId, List<Vector3> routePoints, Color color)
+        {
+            if (routePoints == null || routePoints.Count < 2) return;
+
+            GameObject underlayObject = new GameObject("WarRouteUnderlay_" + armyId);
+            underlayObject.transform.SetParent(transform, false);
+            Color underlayColor = new Color(0.03f, 0.02f, 0.015f, Mathf.Clamp01(color.a * 0.74f));
+            CreateRouteLine(underlayObject, routePoints, 0.22f, 37, underlayColor);
+        }
+
+        private void CreateRouteLine(GameObject routeObject, List<Vector3> routePoints, float width, int sortingOrder, Color color)
+        {
+            if (routeObject == null || routePoints == null || routePoints.Count < 2) return;
 
             LineRenderer line = routeObject.AddComponent<LineRenderer>();
             line.useWorldSpace = false;
             line.positionCount = routePoints.Count;
-            float routeWidth = ResolveRoutePressureWidth(army);
-            line.startWidth = routeWidth;
-            line.endWidth = routeWidth;
-            line.numCapVertices = 4;
-            line.sortingOrder = 38;
+            line.startWidth = width;
+            line.endWidth = width;
+            line.numCapVertices = 6;
+            line.numCornerVertices = 3;
+            line.sortingOrder = sortingOrder;
             line.material = ResolveOverlayMaterial();
-            Color color = ResolveRoutePressureColor(army);
             line.startColor = color;
             line.endColor = color;
 
@@ -203,8 +240,34 @@ namespace WanChaoGuiYi
             {
                 line.SetPosition(i, routePoints[i]);
             }
+        }
 
-            CreateLabel(routeObject.transform, "WarRoutePressureLabel_" + army.id, FormatRoutePressureLabel(army), ResolveRouteLabelPosition(routePoints), 47, 0.085f, color);
+        private void CreateRouteContactNode(string armyId, Vector3 routeEnd, Color color)
+        {
+            GameObject nodeObject = new GameObject("WarRouteContactNode_" + armyId);
+            nodeObject.transform.SetParent(transform, false);
+            nodeObject.transform.localPosition = routeEnd + new Vector3(0f, 0f, -0.01f);
+
+            LineRenderer ring = nodeObject.AddComponent<LineRenderer>();
+            ring.useWorldSpace = false;
+            ring.loop = true;
+            ring.positionCount = 18;
+            ring.startWidth = 0.055f;
+            ring.endWidth = 0.055f;
+            ring.numCapVertices = 4;
+            ring.sortingOrder = 40;
+            ring.material = ResolveOverlayMaterial();
+            ring.startColor = new Color(color.r, color.g, color.b, 0.96f);
+            ring.endColor = ring.startColor;
+
+            const float radius = 0.24f;
+            for (int i = 0; i < ring.positionCount; i++)
+            {
+                float angle = Mathf.PI * 2f * i / ring.positionCount;
+                ring.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f));
+            }
+
+            ConfigurePressurePulse(nodeObject, ring, 0.055f, 0.16f, 0.28f, 5.2f, 0f);
         }
 
         private void SpawnTargetHighlight(string regionId)
@@ -235,6 +298,7 @@ namespace WanChaoGuiYi
                 line.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f));
             }
 
+            ConfigurePressurePulse(highlightObject, line, 0.07f, 0.08f, 0.18f, 3.6f, 1.3f);
             CreateLabel(highlightObject.transform, "WarTargetLabel_" + regionId, "目标", new Vector3(0f, 0.5f, -0.02f), 47, 0.075f, new Color(1f, 0.9f, 0.45f, 1f));
         }
 
@@ -272,7 +336,14 @@ namespace WanChaoGuiYi
 
             int projectedSupply = CalculateProjectedSupplyAfterRoute(army);
             int powerPercent = StrategyCausalRules.CalculateBattleSupplyPowerPercentForSupply(projectedSupply);
-            return "补给压力 " + powerPercent + "% | " + army.supply + "→" + projectedSupply;
+            return "补给压力 " + ResolveRoutePressureGrade(powerPercent) + " " + powerPercent + "% | " + army.supply + "→" + projectedSupply;
+        }
+
+        private static string ResolveRoutePressureGrade(int powerPercent)
+        {
+            if (powerPercent <= StrategyCausalRules.DepletedSupplyBattlePowerPercent) return "高";
+            if (powerPercent < 100) return "中";
+            return "低";
         }
 
         private static int CalculateProjectedSupplyAfterRoute(ArmyRuntimeState army)
@@ -303,6 +374,26 @@ namespace WanChaoGuiYi
             GameObject marker = new GameObject("WarContactMarker_" + engagement.id);
             marker.transform.SetParent(transform, false);
             marker.transform.localPosition = new Vector3(position.x, position.y + 0.72f, -0.43f);
+            LineRenderer ring = marker.AddComponent<LineRenderer>();
+            ring.useWorldSpace = false;
+            ring.loop = true;
+            ring.positionCount = 22;
+            ring.startWidth = 0.05f;
+            ring.endWidth = 0.05f;
+            ring.numCapVertices = 4;
+            ring.sortingOrder = 48;
+            ring.material = ResolveOverlayMaterial();
+            ring.startColor = new Color(1f, 0.24f, 0.18f, 0.92f);
+            ring.endColor = ring.startColor;
+
+            const float radius = 0.3f;
+            for (int i = 0; i < ring.positionCount; i++)
+            {
+                float angle = Mathf.PI * 2f * i / ring.positionCount;
+                ring.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f));
+            }
+
+            ConfigurePressurePulse(marker, ring, 0.05f, 0.18f, 0.34f, 5.8f, 0.7f);
             CreateLabel(marker.transform, "WarContactLabel_" + engagement.id, "接敌 " + engagement.attackerArmyIds.Count + ":" + engagement.defenderArmyIds.Count, Vector3.zero, 49, 0.095f, new Color(1f, 0.36f, 0.25f, 1f));
         }
 
@@ -416,38 +507,46 @@ namespace WanChaoGuiYi
 
         public void ApplyLabelDensityForCurrentZoom()
         {
-            TextMesh[] labels = GetComponentsInChildren<TextMesh>(true);
             LastVisibleLabelCount = 0;
             LastHiddenLabelCount = 0;
-            if (labels == null || labels.Length == 0) return;
+            LastHiddenByZoomCount = 0;
+            LastHiddenByBudgetCount = 0;
+            LastHiddenByOverlapCount = 0;
+            LastLabelCandidateCount = 0;
 
             Camera camera = Camera.main;
             if (camera == null) return;
 
             MapZoomBand zoomBand = ResolveZoomBand(camera);
             float gapPixels = ResolveLabelGapPixels(zoomBand);
+            int visibleBudget = ResolveVisibleLabelBudget(zoomBand);
+            TextMesh[] labels = GetComponentsInChildren<TextMesh>(true);
             List<LabelCandidate> candidates = new List<LabelCandidate>();
-            for (int i = 0; i < labels.Length; i++)
+            if (labels != null)
             {
-                TextMesh label = labels[i];
-                if (label == null) continue;
-
-                MeshRenderer renderer = label.GetComponent<MeshRenderer>();
-                if (renderer == null) continue;
-
-                int priority = ResolveLabelPriority(label.gameObject.name);
-                bool allowedByZoom = IsLabelAllowedByZoom(priority, zoomBand);
-                candidates.Add(new LabelCandidate
+                for (int i = 0; i < labels.Length; i++)
                 {
-                    textMesh = label,
-                    renderer = renderer,
-                    priority = priority,
-                    screenPosition = camera.WorldToScreenPoint(label.transform.position),
-                    screenRect = ResolveLabelScreenRect(camera, renderer, gapPixels),
-                    allowedByZoom = allowedByZoom
-                });
+                    TextMesh label = labels[i];
+                    if (label == null) continue;
+
+                    MeshRenderer renderer = label.GetComponent<MeshRenderer>();
+                    if (renderer == null) continue;
+
+                    int priority = ResolveLabelPriority(label.gameObject.name);
+                    bool allowedByZoom = IsLabelAllowedByZoom(priority, zoomBand);
+                    candidates.Add(new LabelCandidate
+                    {
+                        textMesh = label,
+                        renderer = renderer,
+                        priority = priority,
+                        screenPosition = camera.WorldToScreenPoint(label.transform.position),
+                        screenRect = ResolveLabelScreenRect(camera, renderer, gapPixels),
+                        allowedByZoom = allowedByZoom
+                    });
+                }
             }
 
+            LastLabelCandidateCount = candidates.Count;
             candidates.Sort((a, b) =>
             {
                 int priority = a.priority.CompareTo(b.priority);
@@ -459,7 +558,10 @@ namespace WanChaoGuiYi
             for (int i = 0; i < candidates.Count; i++)
             {
                 LabelCandidate candidate = candidates[i];
-                bool visible = candidate.allowedByZoom && !OverlapsExistingLabel(candidate, occupied);
+                bool blockedByZoom = !candidate.allowedByZoom;
+                bool blockedByBudget = !blockedByZoom && LastVisibleLabelCount >= visibleBudget;
+                bool blockedByOverlap = !blockedByZoom && !blockedByBudget && OverlapsExistingLabel(candidate, occupied);
+                bool visible = !blockedByZoom && !blockedByBudget && !blockedByOverlap;
                 candidate.renderer.enabled = visible;
 
                 if (visible)
@@ -469,8 +571,123 @@ namespace WanChaoGuiYi
                 }
                 else
                 {
+                    if (blockedByZoom) LastHiddenByZoomCount++;
+                    else if (blockedByBudget) LastHiddenByBudgetCount++;
+                    else if (blockedByOverlap) LastHiddenByOverlapCount++;
                     LastHiddenLabelCount++;
                 }
+            }
+
+            ApplyPulseBudgetForCurrentZoom(zoomBand);
+            RefreshOverlayObjectStats();
+        }
+
+        public void RefreshOverlayObjectStats()
+        {
+            LastWarOverlayObjectCount = 0;
+            LastWarRouteObjectCount = 0;
+            LastWarContactObjectCount = 0;
+            LastWarOccupationObjectCount = 0;
+            LastWarTargetObjectCount = 0;
+            LastWarLabelObjectCount = 0;
+            CountOverlayStats(transform);
+        }
+
+        public string FormatOverlayStats()
+        {
+            return "overlay=" + LastWarOverlayObjectCount +
+                   " routes=" + LastWarRouteObjectCount +
+                   " contacts=" + LastWarContactObjectCount +
+                   " occupations=" + LastWarOccupationObjectCount +
+                   " targets=" + LastWarTargetObjectCount +
+                   " labels=" + LastWarLabelObjectCount +
+                   " visibleLabels=" + LastVisibleLabelCount +
+                   " hiddenLabels=" + LastHiddenLabelCount +
+                   " hiddenZoom=" + LastHiddenByZoomCount +
+                   " hiddenBudget=" + LastHiddenByBudgetCount +
+                   " hiddenOverlap=" + LastHiddenByOverlapCount +
+                   " pulses=" + LastActivePulseCount + "/" + (LastActivePulseCount + LastInactivePulseCount) +
+                   " pulseBudget=" + LastPulseBudget;
+        }
+
+        private void CountOverlayStats(Transform root)
+        {
+            if (root == null) return;
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child == null) continue;
+
+                string objectName = child.gameObject.name;
+                bool counted = false;
+                if (objectName.StartsWith("WarRoute_") ||
+                    objectName.StartsWith("WarRouteUnderlay_") ||
+                    objectName.StartsWith("WarRouteContactNode_"))
+                {
+                    LastWarRouteObjectCount++;
+                    counted = true;
+                }
+                else if (objectName.StartsWith("WarContactMarker_"))
+                {
+                    LastWarContactObjectCount++;
+                    counted = true;
+                }
+                else if (objectName.StartsWith("WarOccupationMarker_"))
+                {
+                    LastWarOccupationObjectCount++;
+                    counted = true;
+                }
+                else if (objectName.StartsWith("WarTargetHighlight_"))
+                {
+                    LastWarTargetObjectCount++;
+                    counted = true;
+                }
+
+                if (objectName.StartsWith("ArmyInfo_") ||
+                    objectName.StartsWith("WarRoutePressureLabel_") ||
+                    objectName.StartsWith("WarTargetLabel_") ||
+                    objectName.StartsWith("WarContactLabel_") ||
+                    objectName.StartsWith("WarOccupationLabel_"))
+                {
+                    LastWarLabelObjectCount++;
+                    counted = true;
+                }
+
+                if (counted)
+                {
+                    LastWarOverlayObjectCount++;
+                }
+
+                CountOverlayStats(child);
+            }
+        }
+
+        private void ApplyPulseBudgetForCurrentZoom(MapZoomBand zoomBand)
+        {
+            WarPressurePulse[] pulses = GetComponentsInChildren<WarPressurePulse>(true);
+            LastActivePulseCount = 0;
+            LastInactivePulseCount = 0;
+            LastPulseBudget = ResolvePulseBudget(zoomBand);
+            if (pulses == null || pulses.Length == 0) return;
+
+            List<WarPressurePulse> ordered = new List<WarPressurePulse>(pulses);
+            ordered.Sort((a, b) =>
+            {
+                int priority = ResolvePulsePriority(a != null ? a.gameObject.name : null).CompareTo(ResolvePulsePriority(b != null ? b.gameObject.name : null));
+                if (priority != 0) return priority;
+                return string.CompareOrdinal(a != null ? a.gameObject.name : string.Empty, b != null ? b.gameObject.name : string.Empty);
+            });
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                WarPressurePulse pulse = ordered[i];
+                if (pulse == null) continue;
+
+                bool active = i < LastPulseBudget;
+                pulse.SetPulseActive(active);
+                if (active) LastActivePulseCount++;
+                else LastInactivePulseCount++;
             }
         }
 
@@ -535,11 +752,51 @@ namespace WanChaoGuiYi
 
         private float ResolveLabelGapPixels(MapZoomBand zoomBand)
         {
+            float viewportScale = 1f;
+            if (Screen.width > 0)
+            {
+                if (Screen.width <= 1024) viewportScale = 1.34f;
+                else if (Screen.width <= 1280) viewportScale = 1.16f;
+            }
+
             switch (zoomBand)
             {
-                case MapZoomBand.Detail: return detailLabelGapPixels;
-                case MapZoomBand.Overview: return overviewLabelGapPixels;
-                default: return operationLabelGapPixels;
+                case MapZoomBand.Detail: return detailLabelGapPixels * viewportScale;
+                case MapZoomBand.Overview: return overviewLabelGapPixels * viewportScale;
+                default: return operationLabelGapPixels * viewportScale;
+            }
+        }
+
+        private static int ResolveVisibleLabelBudget(MapZoomBand zoomBand)
+        {
+            bool smallViewport = Screen.width > 0 && Screen.width <= 1024;
+            switch (zoomBand)
+            {
+                case MapZoomBand.Detail:
+                    return smallViewport ? 18 : 24;
+                case MapZoomBand.Operation:
+                    return smallViewport ? 10 : 15;
+                case MapZoomBand.Overview:
+                    return smallViewport ? 5 : 7;
+                default:
+                    return smallViewport ? 10 : 15;
+            }
+        }
+
+        private static int ResolvePulseBudget(MapZoomBand zoomBand)
+        {
+            bool tinyViewport = Screen.width > 0 && Screen.width <= 1024;
+            bool smallViewport = Screen.width > 0 && Screen.width <= 1280;
+            switch (zoomBand)
+            {
+                case MapZoomBand.Detail:
+                    return tinyViewport ? 6 : (smallViewport ? 8 : 12);
+                case MapZoomBand.Operation:
+                    return tinyViewport ? 5 : (smallViewport ? 6 : 8);
+                case MapZoomBand.Overview:
+                    return tinyViewport ? 3 : (smallViewport ? 4 : 5);
+                default:
+                    return tinyViewport ? 5 : (smallViewport ? 6 : 8);
             }
         }
 
@@ -565,6 +822,15 @@ namespace WanChaoGuiYi
             if (objectName.Contains("WarRoutePressureLabel")) return 1;
             if (objectName.Contains("ArmyInfo")) return 2;
             if (objectName.Contains("WarOccupationLabel")) return 3;
+            return 4;
+        }
+
+        private static int ResolvePulsePriority(string objectName)
+        {
+            if (string.IsNullOrEmpty(objectName)) return 5;
+            if (objectName.Contains("WarContactMarker")) return 0;
+            if (objectName.Contains("WarRouteContactNode")) return 1;
+            if (objectName.Contains("WarTargetHighlight")) return 2;
             return 4;
         }
 
@@ -690,6 +956,14 @@ namespace WanChaoGuiYi
 
             overlayMaterial = shader != null ? new Material(shader) : null;
             return overlayMaterial;
+        }
+
+        private static void ConfigurePressurePulse(GameObject target, LineRenderer line, float baseWidth, float scaleAmount, float alphaAmount, float speed, float phase)
+        {
+            if (target == null || line == null) return;
+
+            WarPressurePulse pulse = target.AddComponent<WarPressurePulse>();
+            pulse.Configure(line, baseWidth, target.transform.localScale, scaleAmount, alphaAmount, speed, phase);
         }
 
         private void TintArmy(GameObject icon, string ownerFactionId)

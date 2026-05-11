@@ -31,9 +31,17 @@ namespace WanChaoGuiYi
         DiplomacyTreatyBroken,
         DiplomacyProposalAccepted,
         DiplomacyProposalRejected,
+        FrontlinePrepared,
+        FrontlineLogisticsAdvanced,
+        FrontlineLogisticsCommanded,
+        FrontlineLogisticsRaided,
+        OccupationPacificationQueueAdvanced,
         EspionageOperationStarted,
         EspionageOperationCompleted,
-        EspionageAgentCaught
+        EspionageAgentCaught,
+        ChronicleEventTriggered,
+        EmperorSelected,
+        SceneMusicRequested
     }
 
     public sealed class GameEvent
@@ -95,6 +103,104 @@ namespace WanChaoGuiYi
         public int legitimacyBefore;
         public int legitimacyAfter;
         public int legitimacyDelta;
+        public int occupationReservedFoodTransferred;
+        public int occupationReservedFoodAvailable;
+    }
+
+    public sealed class FrontlinePreparationPayload
+    {
+        public string armyId;
+        public string targetRegionId;
+        public int foodBefore;
+        public int foodAfter;
+        public int foodCost;
+        public int supplyBefore;
+        public int supplyAfter;
+        public int reserveFoodBefore;
+        public int reserveFoodAfter;
+        public int readinessBefore;
+        public int readinessAfter;
+        public string recommendedStep;
+    }
+
+    public sealed class FrontlineLogisticsPayload
+    {
+        public string armyId;
+        public string convoyId;
+        public string targetRegionId;
+        public string supplyNodeRegionId;
+        public int foodSpent;
+        public int foodDelivered;
+        public int foodLost;
+        public int supplyAfter;
+        public int reserveFoodAfter;
+        public int turnsRemaining;
+        public int completedSegments;
+        public int priority;
+        public bool paused;
+    }
+
+    public sealed class FrontlineLogisticsCommandPayload
+    {
+        public string armyId;
+        public string convoyId;
+        public string targetRegionId;
+        public string command;
+        public int priority;
+        public bool paused;
+        public int turnsRemaining;
+        public int foodPerTurn;
+    }
+
+    public sealed class FrontlineLogisticsRaidPayload
+    {
+        public string armyId;
+        public string convoyId;
+        public string raiderFactionId;
+        public string targetRegionId;
+        public string supplyNodeRegionId;
+        public int foodLost;
+        public int riskBefore;
+        public int riskAfter;
+        public int turnsRemaining;
+        public int raidPressure;
+    }
+
+    public sealed class OccupationPacificationQueuePayload
+    {
+        public string regionId;
+        public string actionId;
+        public int queueStepBefore;
+        public int queueStepAfter;
+        public int turnsRemainingAfter;
+        public int reservedFoodAfter;
+        public ControlStage controlStageAfter;
+    }
+
+    public sealed class VictoryCheckedPayload
+    {
+        public bool isVictory;
+        public bool isDefeat;
+        public int turnsPlayed;
+        public int score;
+    }
+
+    public sealed class ChronicleEventPayload
+    {
+        public string eventId;
+        public string category;
+        public string musicCueId;
+    }
+
+    public sealed class EmperorSelectedPayload
+    {
+        public string emperorId;
+    }
+
+    public sealed class SceneMusicPayload
+    {
+        public string sceneMusicCueId;
+        public bool play;
     }
 
     public sealed class EventBus

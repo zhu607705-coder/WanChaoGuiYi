@@ -57,12 +57,45 @@ namespace WanChaoGuiYi
             context.State.AddLog("war", engagement.regionId + "被" + newOwnerFactionId + "占领。原因：胜利方与原地区归属不同。影响：地区归属改变，并进入新占领治理折损。");
             context.Events.Publish(new GameEvent(GameEventType.RegionOccupied, engagement.regionId, payload));
 
+            int occupationReservedFoodTransferred = ConsumePreparedOccupationReserve(mapState, engagement, winningArmy);
             if (governanceImpactSystem != null)
             {
-                governanceImpactSystem.ApplyOccupationImpact(context, mapState, engagement.regionId);
+                governanceImpactSystem.ApplyOccupationImpact(context, mapState, engagement.regionId, occupationReservedFoodTransferred);
             }
 
             return payload;
+        }
+
+        private static int ConsumePreparedOccupationReserve(MapState mapState, EngagementRuntimeState engagement, ArmyRuntimeState winningArmy)
+        {
+            if (mapState == null || engagement == null || winningArmy == null || string.IsNullOrEmpty(engagement.regionId)) return 0;
+
+            int transferred = 0;
+            int remainingNeed = StrategyMapRulebook.OccupationAdministrationFoodCost;
+            System.Collections.Generic.List<string> winningSideArmyIds = engagement.result.attackerWon ? engagement.attackerArmyIds : engagement.defenderArmyIds;
+            for (int i = 0; i < winningSideArmyIds.Count && remainingNeed > 0; i++)
+            {
+                ArmyRuntimeState army;
+                if (!mapState.TryGetArmy(winningSideArmyIds[i], out army) || army == null) continue;
+                if (army.ownerFactionId != winningArmy.ownerFactionId) continue;
+                if (army.frontlinePreparedTargetRegionId != engagement.regionId) continue;
+
+                int used = DomainMath.Min(DomainMath.Max(0, army.frontlineReservedFood), remainingNeed);
+                if (used <= 0) continue;
+
+                army.frontlineReservedFood -= used;
+                transferred += used;
+                remainingNeed -= used;
+
+                if (army.frontlineReservedFood <= 0)
+                {
+                    army.frontlineReservedFood = 0;
+                    army.frontlinePreparedTargetRegionId = null;
+                    army.frontlinePreparedTurn = 0;
+                }
+            }
+
+            return transferred;
         }
 
         private static string ResolveWinningArmyId(EngagementRuntimeState engagement)

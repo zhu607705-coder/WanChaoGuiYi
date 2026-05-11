@@ -10,6 +10,13 @@ namespace WanChaoGuiYi.Tests
 {
     public sealed class GameManagerPlayModeSmokeTests
     {
+        [UnityTearDown]
+        public IEnumerator TearDownPlayModeSmokeObjects()
+        {
+            DestroyDemoBootstrapRuntimeObjects();
+            yield return null;
+        }
+
         [Test]
         public void RegionMeshBuilderRejectsInvalidPolygonsInsteadOfUsingFanFallback()
         {
@@ -231,6 +238,12 @@ namespace WanChaoGuiYi.Tests
             LineRenderer routeLine = routeObject.GetComponent<LineRenderer>();
             Assert.IsNotNull(routeLine, "War route should keep a LineRenderer.");
             Assert.Greater(routeLine.startWidth, 0.08f, "Low projected supply should make the route line visually heavier.");
+            Assert.IsNotNull(GameObject.Find("WarRouteUnderlay_army_player_1"), "Dispatch should render a wider pressure underlay.");
+            GameObject routeContactNode = GameObject.Find("WarRouteContactNode_army_player_1");
+            Assert.IsNotNull(routeContactNode, "Dispatch should render a contact node on the projected route.");
+            LineRenderer routeContactRing = routeContactNode.GetComponent<LineRenderer>();
+            Assert.IsNotNull(routeContactRing, "Projected contact node should use a pulsing ring renderer.");
+            float routeContactWidthBefore = routeContactRing.startWidth;
             GameObject routePressureObject = GameObject.Find("WarRoutePressureLabel_army_player_1");
             Assert.IsNotNull(routePressureObject, "Dispatch should render a route pressure label.");
             TextMesh routePressure = routePressureObject.GetComponent<TextMesh>();
@@ -241,14 +254,20 @@ namespace WanChaoGuiYi.Tests
             TextMesh armyInfo = GameObject.Find("ArmyInfo_army_player_1").GetComponent<TextMesh>();
             Assert.IsTrue(armyInfo.text.Contains("主将"), "Operable army label should include general information.");
             Assert.IsTrue(armyInfo.text.Contains("兵力"), "Operable army label should include soldier information.");
+            yield return AssertLineWidthPulse(routeContactRing, routeContactWidthBefore, 0.001f, "Projected contact node should pulse to show route pressure is active.");
 
             manager.NextTurn();
             yield return null;
 
             Assert.IsNotNull(playerArmy.engagementId, "Arrival should create an engagement.");
             Assert.IsNotNull(GameObject.Find("Army_army_enemy_1"), "Enemy army should appear once contact makes it relevant.");
-            Assert.IsNotNull(FindObjectNameStartsWith("WarContactMarker_"), "Contact should create a map marker.");
+            GameObject contactMarker = FindObjectNameStartsWith("WarContactMarker_");
+            Assert.IsNotNull(contactMarker, "Contact should create a map marker.");
+            LineRenderer contactRing = contactMarker.GetComponent<LineRenderer>();
+            Assert.IsNotNull(contactRing, "Contact marker should use a pulsing ring renderer.");
+            float contactWidthBefore = contactRing.startWidth;
             Assert.IsNotNull(GameObject.Find("WarOccupationMarker_" + enemyArmy.locationRegionId), "Contested target should create an occupation marker.");
+            yield return AssertLineWidthPulse(contactRing, contactWidthBefore, 0.001f, "Contact marker should keep a sustained frontline pressure pulse.");
 
             manager.NextTurn();
             yield return null;
@@ -264,8 +283,9 @@ namespace WanChaoGuiYi.Tests
             Assert.IsTrue(details.text.Contains("→"), "Battle report should name the occupation owner change.");
             Assert.IsTrue(details.text.Contains("治理影响"), "Battle report should show governance impact.");
             Assert.IsTrue(details.text.Contains("税粮"), "Battle report should explain occupied-region tax and food impact.");
-            Assert.IsTrue(details.text.Contains("Negative feedback"), "Battle report should explain negative governance feedback.");
-            Assert.IsTrue(details.text.Contains("legitimacy"), "Battle report should explain occupation legitimacy pressure.");
+            Assert.IsTrue(details.text.Contains("负反馈"), "Battle report should explain negative governance feedback.");
+            Assert.IsTrue(details.text.Contains("合法性"), "Battle report should explain occupation legitimacy pressure.");
+            AssertBattleReportVisualComponents(true);
             Assert.AreEqual(manager.State.playerFactionId, manager.State.FindRegion(enemyArmy.locationRegionId).ownerFactionId, "Boosted player army should occupy the target for this smoke.");
             Assert.AreEqual(MapInteractionMode.Governance, mainMapUI.CurrentMode, "Occupied selected target should rebuild into governance mode.");
             Assert.AreEqual(enemyArmy.locationRegionId, mainMapUI.CurrentSelectionContext.selectedRegionId, "Selection should remain on the occupied region after context refresh.");
@@ -323,6 +343,12 @@ namespace WanChaoGuiYi.Tests
             Assert.IsTrue(details.text.Contains("本次战斗未改变地区归属"), "No-occupation battle report should settle the occupation line.");
             Assert.IsTrue(details.text.Contains("无新增占领治理影响"), "No-occupation battle report should settle the governance line.");
             Assert.IsTrue(details.text.Contains("补给修正"), "Battle report should still show supply pressure on no-occupation outcomes.");
+            AssertBattleReportVisualComponents(false);
+            GameObject.Find("FocusBattleReportRegionButton").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            AssertPanelVisible("RegionPanel", "Battle report focus should select and open the battle region.");
+            RegionDefinition focusedDefinition = manager.Data.GetRegion(enemyArmy.locationRegionId);
+            Assert.IsTrue(GameObject.Find("RegionNameText").GetComponent<Text>().text.Contains(focusedDefinition.name), "Battle report focus should keep the battle region as the selected region.");
 
             Object.Destroy(root);
             yield return null;
@@ -359,6 +385,11 @@ namespace WanChaoGuiYi.Tests
                 Assert.IsNotNull(Object.FindObjectOfType<TechPanel>(), "UISetup should wire TechPanel.");
                 Assert.IsNotNull(Object.FindObjectOfType<WeatherPanel>(), "UISetup should wire WeatherPanel.");
                 Assert.IsNotNull(Object.FindObjectOfType<MechanismPanel>(), "UISetup should wire MechanismPanel.");
+                Assert.IsNotNull(Object.FindObjectOfType<AudioManager>(), "Demo bootstrap should create layered AudioManager.");
+                Assert.IsNotNull(Object.FindObjectOfType<AudioEventBridge>(), "Demo bootstrap should bind game events to the audio system.");
+                Assert.IsNotNull(Object.FindObjectOfType<AudioDebugHUD>(), "Demo bootstrap should create the runtime audio debug HUD.");
+                Assert.IsNotNull(GameObject.Find("AudioDebugHUD"), "Audio debug HUD root should exist for mixer/pool inspection.");
+                Assert.IsNotNull(GameObject.Find("AudioDebugHUDText"), "Audio debug HUD should expose live audio state text.");
                 Assert.IsNotNull(EventSystem.current, "Runtime UI should create an EventSystem for real pointer-driven UGUI input.");
                 Assert.IsNotNull(EventSystem.current.GetComponent<BaseInputModule>(), "Runtime EventSystem should include an input module for buttons and panels.");
                 Assert.IsNotNull(GameObject.Find("Generated_Jiuzhou_Map_Background_Runtime"), "Demo bootstrap should use the generated full-map image as the runtime map background.");
@@ -409,6 +440,40 @@ namespace WanChaoGuiYi.Tests
                 Assert.AreEqual(56, regionSurfaceCount, "Runtime map should use RegionSurface_* objects rather than fake node geography.");
                 Assert.AreEqual(0, fallbackNodeCount, "Runtime map should not create legacy Region_* fallback nodes.");
                 Assert.AreEqual(56, hiddenInteractionSurfaces, "Generated region surfaces should act as a hidden interaction layer over the full-map image.");
+                Assert.AreEqual(56, CountSceneObjectsStartingWith("RegionTerrainShadow_"), "2.5D terrain depth should add one shadow layer per real region.");
+                Assert.AreEqual(56, CountSceneObjectsStartingWith("SelectedRegionElevation_"), "2.5D selection should add one elevation layer per real region.");
+                Assert.AreEqual(0, CountActiveSceneObjectsStartingWith("SelectedRegionElevation_"), "Selection elevation layers should stay hidden before a region is selected.");
+
+                string elevationRegionId = manager.State.FindFaction(manager.State.playerFactionId).regionIds[0];
+                manager.Events.Publish(new GameEvent(GameEventType.RegionSelected, elevationRegionId, null));
+                yield return null;
+                GameObject selectedElevation = FindSceneObjectByNameIncludingInactive("SelectedRegionElevation_" + elevationRegionId);
+                Assert.IsNotNull(selectedElevation, "Selected region should keep an elevation overlay object.");
+                Assert.IsTrue(selectedElevation.activeInHierarchy, "Selected region elevation should become visible after RegionSelected.");
+                float selectedElevationBaseScale = selectedElevation.transform.localScale.x;
+                BattleResult focusResult = new BattleResult
+                {
+                    attackerArmyId = "army_player_1",
+                    defenderArmyId = "army_enemy_1",
+                    battleRegionId = elevationRegionId,
+                    attackerPower = 720,
+                    defenderPower = 520,
+                    attackerSupplyPowerPercent = 100,
+                    defenderSupplyPowerPercent = StrategyCausalRules.LowSupplyBattlePowerPercent,
+                    attackerLowestSupply = 60,
+                    defenderLowestSupply = 20,
+                    attackerSoldiersBefore = 1200,
+                    attackerSoldiersAfter = 1040,
+                    defenderSoldiersBefore = 1000,
+                    defenderSoldiersAfter = 780,
+                    attackerWon = true
+                };
+                manager.Events.Publish(new GameEvent(GameEventType.BattleResolved, "focus_pulse_smoke", focusResult));
+                yield return null;
+                GameObject.Find("FocusBattleReportRegionButton").GetComponent<Button>().onClick.Invoke();
+                yield return null;
+                Assert.IsTrue(selectedElevation.activeInHierarchy, "Battle report focus should keep the real region elevation visible.");
+                Assert.Greater(selectedElevation.transform.localScale.x, selectedElevationBaseScale, "Battle report focus should pulse the selected real-region elevation layer.");
                 AssertAllProjectedRegionHits(manager);
 
                 ArmyRuntimeState playerArmy;
@@ -476,6 +541,35 @@ namespace WanChaoGuiYi.Tests
             Assert.AreEqual(configuredBounds.center.x, controller.transform.position.x, 0.0001f, "CenterOnRegion should center when the viewport exceeds bounds.");
             Assert.AreEqual(configuredBounds.center.y, controller.transform.position.y, 0.0001f, "CenterOnRegion should center when the viewport exceeds bounds.");
 
+            Rect largeBounds = Rect.MinMaxRect(-100f, -100f, 100f, 100f);
+            controller.ConfigureBounds(largeBounds);
+            controller.ConfigureZoomLimits(3f, 12f);
+            controller.transform.position = new Vector3(0f, 0f, controller.transform.position.z);
+            controller.SetZoom(10f);
+            Camera camera = Camera.main;
+            Assert.IsNotNull(camera, "CameraController smoke should have a main camera.");
+            Vector3 focusPoint = new Vector3(Screen.width * 0.68f, Screen.height * 0.42f, 0f);
+            Vector3 worldBeforeZoom = camera.ScreenToWorldPoint(focusPoint);
+            controller.ZoomAroundScreenPoint(focusPoint, 5f);
+            Vector3 worldAfterZoom = camera.ScreenToWorldPoint(focusPoint);
+            Assert.AreEqual(worldBeforeZoom.x, worldAfterZoom.x, 0.02f, "Mouse-wheel zoom should keep the pointed map location stable on x.");
+            Assert.AreEqual(worldBeforeZoom.y, worldAfterZoom.y, 0.02f, "Mouse-wheel zoom should keep the pointed map location stable on y.");
+
+            controller.ConfigureSmoothFocus(0.05f, true);
+            controller.SmoothCenterOnRegion(new Vector2(30f, -20f));
+            Assert.IsTrue(controller.SmoothFocusActive, "Smooth focus should start an in-flight camera transition.");
+            Assert.Greater(Mathf.Abs(controller.transform.position.x - 30f), 0.01f, "Smooth focus should not teleport to the target in the same frame.");
+            yield return new WaitForSeconds(0.08f);
+            Assert.IsFalse(controller.SmoothFocusActive, "Smooth focus should complete after its configured duration.");
+            Assert.AreEqual(30f, controller.transform.position.x, 0.15f, "Smooth focus should reach the requested x when it is inside bounds.");
+            Assert.AreEqual(-20f, controller.transform.position.y, 0.15f, "Smooth focus should reach the requested y when it is inside bounds.");
+
+            controller.ConfigureSmoothFocus(0.5f, true);
+            controller.SmoothCenterOnRegion(new Vector2(-30f, 20f));
+            Assert.IsTrue(controller.SmoothFocusActive, "A second smooth focus should also become active.");
+            controller.PanBy(Vector3.right);
+            Assert.IsFalse(controller.SmoothFocusActive, "Manual pan should cancel an active smooth focus so the user keeps control.");
+
             controller.ConfigureZoomLimits(3f, 12f);
             controller.ConfigureZoomBands(5f, 8f);
             controller.SetZoom(4f);
@@ -484,6 +578,54 @@ namespace WanChaoGuiYi.Tests
             Assert.AreEqual(MapZoomBand.Operation, controller.CurrentZoomBand, "Mid zoom should use the operation label density band.");
             controller.SetZoom(11f);
             Assert.AreEqual(MapZoomBand.Overview, controller.CurrentZoomBand, "Far zoom should use the overview label density band.");
+
+            Vector3 referenceDragDelta = Vector3.zero;
+            int[] widths = { 1024, 1280 };
+            int[] heights = { 576, 720 };
+            for (int i = 0; i < widths.Length; i++)
+            {
+                yield return WaitForResolutionAndLayout(widths[i], heights[i]);
+
+                controller.ConfigureBounds(Rect.MinMaxRect(-64f, -36f, 64f, 36f));
+                controller.ConfigureZoomLimits(3f, 12f);
+                controller.SetZoom(8f);
+                controller.CenterOnRegion(Vector2.zero);
+
+                camera = Camera.main;
+                Assert.IsNotNull(camera, "CameraController drag smoke should have a main camera.");
+                Vector3 dragStart = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
+                Vector3 dragEnd = new Vector3(Screen.width * 0.625f, Screen.height * 0.375f, 0f);
+                Vector3 dragDelta = controller.CalculateScreenDragWorldDelta(dragStart, dragEnd);
+
+                Assert.Less(dragDelta.x, -0.1f, widths[i] + "px drag should move the camera opposite the rightward pointer motion.");
+                Assert.Greater(dragDelta.y, 0.1f, widths[i] + "px drag should move the camera opposite the downward pointer motion.");
+                if (i == 0)
+                {
+                    referenceDragDelta = dragDelta;
+                }
+                else
+                {
+                    Assert.AreEqual(referenceDragDelta.x, dragDelta.x, 0.03f, "Same-aspect small viewports should keep horizontal drag feel consistent.");
+                    Assert.AreEqual(referenceDragDelta.y, dragDelta.y, 0.03f, "Same-aspect small viewports should keep vertical drag feel consistent.");
+                }
+
+                Vector3 positionBeforeDrag = controller.transform.position;
+                controller.PanByScreenDrag(dragStart, dragEnd);
+                Assert.AreEqual(positionBeforeDrag.x + dragDelta.x, controller.transform.position.x, 0.03f, "Screen drag helper should apply the sampled world delta on x.");
+                Assert.AreEqual(positionBeforeDrag.y + dragDelta.y, controller.transform.position.y, 0.03f, "Screen drag helper should apply the sampled world delta on y.");
+                AssertCameraViewportInsideBounds(controller, "Screen drag should keep the full map viewport inside configured bounds at " + widths[i] + "x" + heights[i] + ".");
+
+                Vector3 focusPointAtViewport = new Vector3(Screen.width * 0.72f, Screen.height * 0.38f, 0f);
+                Vector3 worldBeforeViewportZoom = camera.ScreenToWorldPoint(focusPointAtViewport);
+                controller.ZoomAroundScreenPoint(focusPointAtViewport, 6f);
+                Vector3 worldAfterViewportZoom = camera.ScreenToWorldPoint(focusPointAtViewport);
+                Assert.AreEqual(worldBeforeViewportZoom.x, worldAfterViewportZoom.x, 0.03f, "Viewport zoom should keep the pointed map location stable on x at " + widths[i] + "x" + heights[i] + ".");
+                Assert.AreEqual(worldBeforeViewportZoom.y, worldAfterViewportZoom.y, 0.03f, "Viewport zoom should keep the pointed map location stable on y at " + widths[i] + "x" + heights[i] + ".");
+                AssertCameraViewportInsideBounds(controller, "Viewport zoom should keep the full map viewport inside configured bounds at " + widths[i] + "x" + heights[i] + ".");
+
+                controller.PanBy(new Vector3(-999f, 999f, 0f));
+                AssertCameraViewportInsideBounds(controller, "Extreme pan should clamp the full map viewport inside configured bounds at " + widths[i] + "x" + heights[i] + ".");
+            }
 
             DestroyDemoBootstrapRuntimeObjects(bootstrap);
             yield return null;
@@ -509,7 +651,9 @@ namespace WanChaoGuiYi.Tests
             Button attackButton = GameObject.Find("AttackButton").GetComponent<Button>();
             Text selectionText = GameObject.Find("SelectionContextText").GetComponent<Text>();
             Assert.IsFalse(attackButton.interactable, "Attack button should stay disabled before explicit war dispatch mode.");
-            Assert.IsTrue(selectionText.text.Contains("M:Governance"), "HUD should expose the default map mode.");
+            Assert.IsTrue(selectionText.text.Contains("治理"), "HUD should expose the default map mode in player-facing copy.");
+            Assert.IsTrue(selectionText.text.Contains("未选区"), "HUD should explain that no region is selected.");
+            AssertNoVisibleUiCopyTokens();
 
             FactionState playerFaction = manager.State.FindFaction(manager.State.playerFactionId);
             Assert.IsNotNull(playerFaction, "Player faction is required for selection context smoke.");
@@ -531,7 +675,8 @@ namespace WanChaoGuiYi.Tests
             Assert.IsTrue(friendlyContext.HasAvailableAction("open_governance"), "Friendly selection should open governance actions.");
             Assert.IsTrue(friendlyContext.HasDisabledReasonContaining("war_mode"), "Friendly selection should not dispatch an attack.");
             Assert.IsFalse(attackButton.interactable, "Friendly selection should not enable map attack.");
-            Assert.IsTrue(selectionText.text.Contains("F:1"), "HUD should expose friendly selection feedback.");
+            Assert.IsTrue(selectionText.text.Contains("己方"), "HUD should expose friendly selection feedback.");
+            AssertNoVisibleUiCopyTokens();
 
             string enemyRegionId = FirstAdjacentForeignRegion(manager, playerFaction);
             RegionState enemyRegion = manager.State.FindRegion(enemyRegionId);
@@ -556,7 +701,8 @@ namespace WanChaoGuiYi.Tests
             Assert.IsTrue(enemyContext.HasAvailableAction("enter_war_mode"), "Adjacent foreign selection should expose explicit war-mode entry.");
             Assert.IsTrue(enemyContext.HasDisabledReasonContaining("explicit_war_mode"), "Attack should remain disabled until explicit war mode.");
             Assert.IsFalse(attackButton.interactable, "Ordinary foreign region click should not enable attack.");
-            Assert.IsTrue(selectionText.text.Contains("N:1"), "HUD should expose neighbor selection feedback.");
+            Assert.IsTrue(selectionText.text.Contains("邻接"), "HUD should expose neighbor selection feedback.");
+            AssertNoVisibleUiCopyTokens();
 
             attackButton.onClick.Invoke();
             yield return null;
@@ -759,9 +905,9 @@ namespace WanChaoGuiYi.Tests
             Text details = GameObject.Find("MechanismPanel").transform.Find("DetailsText").GetComponent<Text>();
             Assert.IsTrue(details.text.Contains(selectedTargetFaction.name), "Diplomacy bridge should display the selected target faction.");
             Assert.IsTrue(details.text.Contains(targetRegionId), "Diplomacy bridge should display the selected region context.");
-            Assert.IsTrue(details.text.Contains("Diplomacy Source:"), "Diplomacy bridge should expose diplomacy source notes.");
-            Assert.IsTrue(details.text.Contains("Border Source:"), "Diplomacy bridge should expose border source notes.");
-            Assert.IsTrue(details.text.Contains("Border Cost:"), "Diplomacy bridge should expose border action costs.");
+            Assert.IsTrue(details.text.Contains("外交来源:"), "Diplomacy bridge should expose diplomacy source notes.");
+            Assert.IsTrue(details.text.Contains("封关来源:"), "Diplomacy bridge should expose border source notes.");
+            Assert.IsTrue(details.text.Contains("封关代价:"), "Diplomacy bridge should expose border action costs.");
 
             Button espionageButton = GameObject.Find("EspionageActionButton").GetComponent<Button>();
             Assert.IsTrue(espionageButton.interactable, "Selected target should enable scout intel.");
@@ -839,6 +985,12 @@ namespace WanChaoGuiYi.Tests
             Assert.IsNotNull(GameObject.Find("GovernanceModeButton"), "HUD should expose explicit governance mode.");
             Assert.IsNotNull(GameObject.Find("WarModeButton"), "HUD should expose explicit war mode.");
             Assert.IsNotNull(GameObject.Find("ModeStateText"), "HUD should describe the current map mode.");
+            Assert.IsNotNull(GameObject.Find("OverlayBudgetText"), "HUD should expose war overlay label and pulse budgets.");
+            Assert.IsNotNull(GameObject.Find("LogisticsQueuePanel"), "HUD should expose the logistics queue panel.");
+            Assert.IsNotNull(GameObject.Find("LogisticsPriorityUpButton"), "HUD should expose logistics expedite control.");
+            Assert.IsNotNull(GameObject.Find("LogisticsPriorityDownButton"), "HUD should expose logistics delay control.");
+            Assert.IsNotNull(GameObject.Find("LogisticsPauseButton"), "HUD should expose logistics pause/resume control.");
+            Assert.IsNotNull(GameObject.Find("LogisticsCancelButton"), "HUD should expose logistics cancel control.");
             Assert.IsNotNull(GameObject.Find("PacifyRegionButton"), "Region UI should expose pacification.");
             Assert.IsNotNull(GameObject.Find("BuildRegionBuildingButton"), "Region UI should expose building construction.");
             Assert.IsNotNull(GameObject.Find("CollapseRegionPanelButton"), "Region UI should expose sidebar collapse.");
@@ -872,6 +1024,7 @@ namespace WanChaoGuiYi.Tests
             mechanismPanel.Show(manager.Context, playerFaction, manager.GetComponent<ReformSystem>(), manager.GetComponent<VictorySystem>(), manager.GetComponent<DiplomacySystem>(), manager.GetComponent<EspionageSystem>());
             Text mechanismDetails = GameObject.Find("MechanismPanel").transform.Find("DetailsText").GetComponent<Text>();
             Assert.IsTrue(mechanismDetails.text.Contains(firstPolicy.sourceReference), "Mechanism UI should expose policy sourceReference.");
+            AssertMechanismActionIcons();
             playerRegion.integration = 35;
             playerRegion.rebellionRisk = 70;
             playerRegion.localPower = 40;
@@ -879,6 +1032,7 @@ namespace WanChaoGuiYi.Tests
             Text governanceOverview = GameObject.Find("GovernanceOverviewText").GetComponent<Text>();
             Text governanceSource = GameObject.Find("GovernanceSourceText").GetComponent<Text>();
             AssertGovernanceOverviewCoversStageB(governanceOverview, governanceSource, firstPolicy.sourceReference, sourceBuilding.sourceReference, playerRegionDefinition.legitimacyMemory[0]);
+            AssertNoVisibleUiCopyTokens();
             Assert.IsTrue(GameObject.Find("ModeStateText").GetComponent<Text>().text.Contains("治理模式"), "HUD should make governance mode explicit.");
             Assert.IsTrue(GameObject.Find("RegionPanelModeText").GetComponent<Text>().text.Contains("治理模式"), "Region panel should make governance mode explicit.");
             Button collapseRegionPanel = GameObject.Find("CollapseRegionPanelButton").GetComponent<Button>();
@@ -889,6 +1043,7 @@ namespace WanChaoGuiYi.Tests
             Text collapsedText = GameObject.Find("CollapsedRegionTabText").GetComponent<Text>();
             Assert.IsTrue(collapsedText.text.Contains("治理模式"), "Collapsed sidebar should preserve the current mode.");
             Assert.IsTrue(collapsedText.text.Contains(playerRegionDefinition.name), "Collapsed sidebar should preserve the selected region.");
+            AssertNoVisibleUiCopyTokens();
             GameObject.Find("CollapsedRegionTabButton").GetComponent<Button>().onClick.Invoke();
             Canvas.ForceUpdateCanvases();
             AssertPanelVisible("RegionPanel", "Region panel should restore after expanding the minimized sidebar.");
@@ -1044,7 +1199,7 @@ namespace WanChaoGuiYi.Tests
             Text regionMode = GameObject.Find("RegionPanelModeText").GetComponent<Text>();
             Assert.IsTrue(regionMode.text.Contains("外交过渡"), "Sidebar should make the diplomacy bridge mode explicit.");
             Text overview = GameObject.Find("GovernanceOverviewText").GetComponent<Text>();
-            Assert.IsTrue(overview.text.Contains("Diplomacy"), "Hostile selection should not show the default governance decision text.");
+            Assert.IsTrue(overview.text.Contains("外交过渡"), "Hostile selection should not show the default governance decision text.");
             Assert.IsFalse(GameObject.Find("PacifyRegionButton").GetComponent<Button>().interactable, "Hostile selection should disable pacification.");
             Assert.IsFalse(GameObject.Find("BuildRegionBuildingButton").GetComponent<Button>().interactable, "Hostile selection should disable building construction.");
 
@@ -1055,18 +1210,39 @@ namespace WanChaoGuiYi.Tests
             Assert.AreEqual(MapInteractionMode.War, mainMapUI.CurrentMode, "War mode button should switch a selected hostile neighbor into war mode.");
             Assert.IsTrue(GameObject.Find("ModeStateText").GetComponent<Text>().text.Contains("战争模式"), "HUD should make war mode explicit.");
             Assert.IsTrue(GameObject.Find("RegionPanelModeText").GetComponent<Text>().text.Contains("战争模式"), "Sidebar should make war mode explicit.");
-            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("War"), "War selection should show war pressure text.");
-            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("visibility"), "War selection should expose route visibility state before dispatch.");
-            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("interceptionRisk"), "War selection should expose route interception risk before dispatch.");
+            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("战争态势"), "War selection should use a readable Chinese war-status heading.");
+            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("路线可见"), "War selection should show a localized visibility line.");
             Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("补给-" + StrategyCausalRules.WarMovementSupplyCost), "War selection should preview supply cost before dispatch.");
             Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("战力修正"), "War selection should preview supply-driven combat power modifiers.");
             Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("风险等级"), "War selection should expose a coarse risk grade before dispatch.");
+            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("前线补给规划"), "War selection should expose a frontline supply plan before dispatch.");
+            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("占后粮政"), "War selection should reserve occupation administration food pressure.");
             Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("合法性 -" + StrategyCausalRules.OccupationLegitimacyCost), "War selection should preview occupation legitimacy cost.");
             Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("税粮贡献降至" + StrategyCausalRules.OccupiedContributionPercent + "%"), "War selection should preview occupied tax-food contribution.");
             Text warSource = GameObject.Find("GovernanceSourceText").GetComponent<Text>();
-            Assert.IsTrue(warSource.text.Contains("War Source:"), "War mode should move historical war source notes into the source detail block.");
-            Assert.IsTrue(warSource.text.Contains("Occupation Source:"), "War mode should keep occupation source notes visible beside the pressure preview.");
+            Assert.IsTrue(warSource.text.Contains("战争来源:"), "War mode should move historical war source notes into the source detail block.");
+            Assert.IsTrue(warSource.text.Contains("占领来源:"), "War mode should keep occupation source notes visible beside the pressure preview.");
             Assert.IsFalse(GameObject.Find("PacifyRegionButton").GetComponent<Button>().interactable, "War selection should keep governance actions disabled.");
+
+            Button prepareFrontlineButton = GameObject.Find("PrepareFrontlineButton").GetComponent<Button>();
+            Assert.IsTrue(prepareFrontlineButton.interactable, "War selection should expose an actionable frontline preparation command.");
+            ArmyRuntimeState selectedArmy = manager.MapQueries.GetArmy(mainMapUI.CurrentSelectionContext.selectedArmyId);
+            Assert.IsNotNull(selectedArmy, "Frontline preparation needs the selected operable army.");
+            selectedArmy.supply = StrategyCausalRules.WarMovementSupplyCost;
+            int supplyBeforePrepare = selectedArmy.supply;
+            int foodBeforePrepare = playerFaction.food;
+            int expectedOccupationReserve = StrategyMapRulebook.MilitaryGovernFoodCost + StrategyMapRulebook.PacifyFoodCost + StrategyMapRulebook.RegisterFoodCost;
+            prepareFrontlineButton.onClick.Invoke();
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+
+            Assert.Greater(selectedArmy.supply, supplyBeforePrepare, "Frontline preparation should convert food into army supply when the route is under-supplied.");
+            Assert.AreEqual(targetRegionId, selectedArmy.frontlinePreparedTargetRegionId, "Frontline preparation should remember the prepared target.");
+            Assert.GreaterOrEqual(selectedArmy.frontlineReservedFood, expectedOccupationReserve, "Frontline preparation should reserve the occupation administration food chain.");
+            Assert.Less(playerFaction.food, foodBeforePrepare, "Frontline preparation should spend food now instead of hiding the cost until occupation.");
+            AssertHasLog(manager.State, "前线整备");
+            Assert.IsTrue(GameObject.Find("GovernanceOverviewText").GetComponent<Text>().text.Contains("已预留"), "War forecast should show the prepared reserve after frontline preparation.");
+            AssertHasOutlinerCategory(manager.State, manager.World, "frontline_prepared", "Frontline preparation should surface in the right outliner as a visible follow-up.");
 
             Object.Destroy(root);
             yield return null;
@@ -1075,6 +1251,8 @@ namespace WanChaoGuiYi.Tests
         [UnityTest]
         public IEnumerator WarOverlayLabelsCullByZoomDensity()
         {
+            yield return WaitForResolutionAndLayout(1024, 576);
+
             GameObject bootstrapRoot = new GameObject("PlayModeSmoke_LabelDensity");
             bootstrapRoot.AddComponent<DemoSceneBootstrap>();
 
@@ -1087,17 +1265,20 @@ namespace WanChaoGuiYi.Tests
             CameraController cameraController = Object.FindObjectOfType<CameraController>();
             Assert.IsNotNull(cameraController, "Demo bootstrap should create camera controller.");
 
-            ArmyRuntimeState enemyArmy;
-            Assert.IsTrue(manager.World.Map.TryGetArmy("army_enemy_1", out enemyArmy), "Enemy army should exist for label density smoke.");
-            Assert.IsTrue(manager.StartPlayerAttack(enemyArmy.locationRegionId), "Label density smoke needs an active war route.");
+            ArmyRuntimeState attackArmy;
+            string targetRegionId = PreparePlayerAttackRoute(manager, out attackArmy);
+            Assert.IsTrue(manager.StartPlayerAttack(attackArmy.id, targetRegionId), "Label density smoke needs an active war route.");
             yield return null;
 
-            TextMesh armyInfo = GameObject.Find("ArmyInfo_army_player_1").GetComponent<TextMesh>();
-            TextMesh targetLabel = GameObject.Find("WarTargetLabel_" + enemyArmy.locationRegionId).GetComponent<TextMesh>();
-            TextMesh routePressureLabel = GameObject.Find("WarRoutePressureLabel_army_player_1").GetComponent<TextMesh>();
+            TextMesh armyInfo = GameObject.Find("ArmyInfo_" + attackArmy.id).GetComponent<TextMesh>();
+            TextMesh targetLabel = GameObject.Find("WarTargetLabel_" + targetRegionId).GetComponent<TextMesh>();
+            TextMesh routePressureLabel = GameObject.Find("WarRoutePressureLabel_" + attackArmy.id).GetComponent<TextMesh>();
             Assert.IsNotNull(armyInfo, "Moving army should create an army info label.");
             Assert.IsNotNull(targetLabel, "Active attack should create a target label.");
             Assert.IsNotNull(routePressureLabel, "Active attack should create a route pressure label.");
+            Assert.IsNotNull(GameObject.Find("WarRouteUnderlay_" + attackArmy.id), "Active attack should create a route pressure underlay.");
+            Assert.IsNotNull(GameObject.Find("WarRouteContactNode_" + attackArmy.id), "Active attack should create a projected contact node.");
+            Assert.IsTrue(routePressureLabel.text.Contains("补给压力"), "Route pressure label should keep a readable supply-pressure prefix.");
 
             cameraController.ConfigureZoomLimits(3f, 15f);
             cameraController.ConfigureZoomBands(5f, 8f);
@@ -1107,7 +1288,105 @@ namespace WanChaoGuiYi.Tests
             Assert.IsFalse(armyInfo.GetComponent<MeshRenderer>().enabled, "Overview zoom should hide low-priority army detail labels.");
             Assert.IsTrue(targetLabel.GetComponent<MeshRenderer>().enabled, "Overview zoom should preserve high-priority war target labels.");
             Assert.IsTrue(routePressureLabel.GetComponent<MeshRenderer>().enabled || spawner.LastVisibleLabelCount > 0, "Overview zoom should preserve high-priority route pressure information unless it directly collides with a higher-priority label.");
+            Assert.LessOrEqual(spawner.LastVisibleLabelCount, 5, "1024x576 overview zoom should enforce a tight visible label budget.");
             Assert.Greater(spawner.LastHiddenLabelCount, 0, "Label density pass should hide at least one label at overview zoom.");
+            Assert.Greater(spawner.LastHiddenByZoomCount, 0, "Overview zoom should explain hidden low-priority labels as zoom-gated.");
+            Assert.AreEqual(spawner.LastHiddenLabelCount, spawner.LastHiddenByZoomCount + spawner.LastHiddenByBudgetCount + spawner.LastHiddenByOverlapCount, "Hidden label reasons should add up to the hidden label count.");
+            Assert.AreEqual(3, spawner.LastPulseBudget, "1024x576 overview zoom should use the tightest war pulse budget.");
+            Assert.Greater(spawner.LastActivePulseCount + spawner.LastInactivePulseCount, 0, "Active attack should expose pulse candidates for budgeting.");
+            Assert.LessOrEqual(spawner.LastActivePulseCount, spawner.LastPulseBudget, "1024x576 overview zoom should throttle active war pulses.");
+            Assert.GreaterOrEqual(spawner.LastWarRouteObjectCount, 3, "Active attack should count route, underlay, and projected contact node.");
+            Assert.GreaterOrEqual(spawner.LastWarTargetObjectCount, 1, "Active attack should count the target highlight.");
+            Assert.LessOrEqual(spawner.LastWarOverlayObjectCount, 14, "1024x576 single-route overlay should stay within a bounded object budget.");
+            Assert.LessOrEqual(spawner.LastWarLabelObjectCount, spawner.LastLabelCandidateCount, "Overlay label count should stay aligned with label density candidates.");
+
+            DestroyDemoBootstrapRuntimeObjects(bootstrapRoot, manager.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator WarOverlayDenseFrontlineExplainsLabelSuppression()
+        {
+            yield return WaitForResolutionAndLayout(1024, 576);
+
+            GameObject bootstrapRoot = new GameObject("PlayModeSmoke_DenseFrontlineLabels");
+            bootstrapRoot.AddComponent<DemoSceneBootstrap>();
+
+            yield return null;
+
+            GameManager manager = Object.FindObjectOfType<GameManager>();
+            AssertBootstrapped(manager);
+            DemoEntityVisualSpawner spawner = Object.FindObjectOfType<DemoEntityVisualSpawner>();
+            Assert.IsNotNull(spawner, "Demo bootstrap should create entity visual spawner.");
+            CameraController cameraController = Object.FindObjectOfType<CameraController>();
+            Assert.IsNotNull(cameraController, "Dense frontline label smoke needs a camera controller.");
+
+            ArmyRuntimeState baseArmy;
+            string targetRegionId = PreparePlayerAttackRoute(manager, out baseArmy);
+            ArmyRuntimeState stressArmyA = CreatePlayerStressArmy(manager, baseArmy, "army_dense_front_a", 72);
+            ArmyRuntimeState stressArmyB = CreatePlayerStressArmy(manager, baseArmy, "army_dense_front_b", 48);
+
+            Assert.IsTrue(manager.StartPlayerAttack(baseArmy.id, targetRegionId), "Dense frontline smoke needs the first route.");
+            Assert.IsTrue(manager.StartPlayerAttack(stressArmyA.id, targetRegionId), "Dense frontline smoke needs a second route.");
+            Assert.IsTrue(manager.StartPlayerAttack(stressArmyB.id, targetRegionId), "Dense frontline smoke needs a third route.");
+            yield return null;
+
+            cameraController.ConfigureZoomLimits(3f, 15f);
+            cameraController.ConfigureZoomBands(5f, 8f);
+            cameraController.SetZoom(14f);
+            spawner.ApplyLabelDensityForCurrentZoom();
+
+            Assert.GreaterOrEqual(spawner.LastWarRouteObjectCount, 9, "Three dense routes should expose route, underlay, and contact-node counters.");
+            Assert.GreaterOrEqual(spawner.LastWarLabelObjectCount, 7, "Dense frontline should create enough labels to pressure the avoidance budget.");
+            Assert.LessOrEqual(spawner.LastVisibleLabelCount, 5, "1024x576 dense frontline should keep the tight visible label budget.");
+            Assert.Greater(spawner.LastHiddenLabelCount, spawner.LastVisibleLabelCount, "Dense frontline should hide more labels than it shows at overview zoom.");
+            Assert.Greater(spawner.LastHiddenByZoomCount + spawner.LastHiddenByBudgetCount + spawner.LastHiddenByOverlapCount, 0, "Dense frontline should expose why labels were suppressed.");
+            Assert.AreEqual(spawner.LastHiddenLabelCount, spawner.LastHiddenByZoomCount + spawner.LastHiddenByBudgetCount + spawner.LastHiddenByOverlapCount, "Dense frontline hidden-label reasons should add up.");
+            Assert.LessOrEqual(spawner.LastActivePulseCount, spawner.LastPulseBudget, "Dense frontline should still throttle active war pulses.");
+            Assert.AreEqual(3, spawner.LastPulseBudget, "1024x576 dense overview should use the tightest pulse budget.");
+            Assert.Greater(spawner.LastInactivePulseCount, 0, "Dense frontline should pause pulse effects beyond the small-viewport budget.");
+            Assert.LessOrEqual(spawner.LastWarOverlayObjectCount, 22, "Dense frontline overlay should stay inside a bounded object budget.");
+            yield return null;
+            AssertOverlayBudgetHudExplainsSpawnerStats(spawner);
+
+            DestroyDemoBootstrapRuntimeObjects(bootstrapRoot, manager.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator WarOverlayPulseBudgetUsesMediumViewportAt1280()
+        {
+            yield return WaitForResolutionAndLayout(1280, 720);
+
+            GameObject bootstrapRoot = new GameObject("PlayModeSmoke_PulseBudget1280");
+            bootstrapRoot.AddComponent<DemoSceneBootstrap>();
+
+            yield return null;
+
+            GameManager manager = Object.FindObjectOfType<GameManager>();
+            AssertBootstrapped(manager);
+            DemoEntityVisualSpawner spawner = Object.FindObjectOfType<DemoEntityVisualSpawner>();
+            Assert.IsNotNull(spawner, "Demo bootstrap should create entity visual spawner for pulse budget smoke.");
+            CameraController cameraController = Object.FindObjectOfType<CameraController>();
+            Assert.IsNotNull(cameraController, "Demo bootstrap should create camera controller for pulse budget smoke.");
+
+            ArmyRuntimeState attackArmy;
+            string targetRegionId = PreparePlayerAttackRoute(manager, out attackArmy);
+            Assert.IsTrue(manager.StartPlayerAttack(attackArmy.id, targetRegionId), "Pulse budget smoke needs an active war route.");
+            yield return null;
+
+            cameraController.ConfigureZoomLimits(3f, 15f);
+            cameraController.ConfigureZoomBands(5f, 8f);
+            cameraController.SetZoom(14f);
+            spawner.ApplyLabelDensityForCurrentZoom();
+
+            int expectedPulseBudget = Screen.width <= 1024 ? 3 : 4;
+            Assert.AreEqual(expectedPulseBudget, spawner.LastPulseBudget, "Requested 1280x720 overview zoom should use the pulse budget for the actual PlayMode viewport.");
+            Assert.LessOrEqual(spawner.LastVisibleLabelCount, 7, "1280x720 overview zoom should keep the medium visible label budget.");
+            Assert.Greater(spawner.LastActivePulseCount + spawner.LastInactivePulseCount, 0, "1280x720 attack route should expose pulse candidates for budgeting.");
+            Assert.LessOrEqual(spawner.LastActivePulseCount, spawner.LastPulseBudget, "1280x720 overview zoom should throttle active war pulses.");
+            Assert.GreaterOrEqual(spawner.LastWarRouteObjectCount, 3, "1280x720 route should expose route, underlay, and contact node counters.");
+            Assert.LessOrEqual(spawner.LastWarOverlayObjectCount, 14, "1280x720 single-route overlay should stay within a bounded object budget.");
 
             DestroyDemoBootstrapRuntimeObjects(bootstrapRoot, manager.gameObject);
             yield return null;
@@ -1162,6 +1441,8 @@ namespace WanChaoGuiYi.Tests
             AssertChildRectFitsParent("RegionPanel", "GovernanceSourceText");
             AssertChildRectFitsParent("RegionPanel", "PacifyRegionButton");
             AssertChildRectFitsParent("RegionPanel", "BuildRegionBuildingButton");
+            AssertChildRectFitsParent("RegionPanel", "GovernancePacifyActionHintText");
+            AssertChildRectFitsParent("RegionPanel", "GovernanceBuildActionHintText");
             AssertChildRectFitsParent("RegionPanel", "CollapseRegionPanelButton");
             AssertChildRectFitsParent("RegionPanel", "CloseButton");
             AssertRectsDoNotOverlap("GovernanceOverviewText", "GovernanceSourceText", "Governance source details should sit below the action summary.");
@@ -1169,12 +1450,58 @@ namespace WanChaoGuiYi.Tests
             AssertRectsDoNotOverlap("GovernanceSourceText", "PacifyRegionButton", "Governance source details should not cover the pacify action at the smaller viewport.");
             AssertRectsDoNotOverlap("GovernanceOverviewText", "BuildRegionBuildingButton", "Governance overview text should not cover the building action at the smaller viewport.");
             AssertRectsDoNotOverlap("GovernanceSourceText", "BuildRegionBuildingButton", "Governance source details should not cover the building action at the smaller viewport.");
+            AssertRectsDoNotOverlap("GovernanceSourceText", "GovernancePacifyActionHintText", "Governance source details should not cover the pacify forecast hint at the smaller viewport.");
+            AssertRectsDoNotOverlap("GovernanceSourceText", "GovernanceBuildActionHintText", "Governance source details should not cover the building forecast hint at the smaller viewport.");
+            AssertRectsDoNotOverlap("BuildRegionBuildingButton", "CloseButton", "Building and close actions should remain distinct after action hints widen the buttons.");
             AssertRectsDoNotOverlap("GovernanceOverviewText", "CloseButton", "Governance overview text should not cover the close action at the smaller viewport.");
             AssertRectsDoNotOverlap("GovernanceSourceText", "CloseButton", "Governance source details should not cover the close action at the smaller viewport.");
             AssertRectsDoNotOverlap("RegionPanel", "SelectionContextText", "Governance panel should not cover the HUD selection feedback at the smaller viewport.");
 
             Object.Destroy(root);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MechanismPanelActionIconsFitAtSmallViewports()
+        {
+            int[] widths = { 1024, 1280 };
+            int[] heights = { 576, 720 };
+
+            for (int i = 0; i < widths.Length; i++)
+            {
+                yield return WaitForResolutionAndLayout(widths[i], heights[i]);
+
+                GameObject root = new GameObject("PlayModeSmoke_MechanismActionIcons_" + widths[i] + "x" + heights[i]);
+                GameManager manager = root.AddComponent<GameManager>();
+                UISetup uiSetup = root.AddComponent<UISetup>();
+                uiSetup.Bind(manager);
+
+                yield return null;
+
+                AssertBootstrapped(manager);
+                FactionState playerFaction = manager.State.FindFaction(manager.State.playerFactionId);
+                Assert.IsNotNull(playerFaction, "Player faction should exist for mechanism icon smoke.");
+                playerFaction.money = Mathf.Max(playerFaction.money, 1000);
+                playerFaction.food = Mathf.Max(playerFaction.food, 1000);
+
+                MechanismPanel mechanismPanel = Object.FindObjectOfType<MechanismPanel>();
+                Assert.IsNotNull(mechanismPanel, "MechanismPanel should exist for action icon smoke.");
+                mechanismPanel.Show(manager.Context, playerFaction, manager.GetComponent<ReformSystem>(), manager.GetComponent<VictorySystem>(), manager.GetComponent<DiplomacySystem>(), manager.GetComponent<EspionageSystem>());
+                yield return null;
+                Canvas.ForceUpdateCanvases();
+
+                AssertPanelVisible("MechanismPanel", "Mechanism panel should be visible for small-viewport icon smoke.");
+                AssertRectFitsWithinCanvas("MechanismPanel");
+                AssertChildRectFitsParent("MechanismPanel", "ApplyPolicyButton");
+                AssertChildRectFitsParent("MechanismPanel", "DiplomacyActionButton");
+                AssertChildRectFitsParent("MechanismPanel", "BorderControlButton");
+                AssertChildRectFitsParent("MechanismPanel", "EspionageActionButton");
+                AssertChildRectFitsParent("MechanismPanel", "EnterWarModeButton");
+                AssertMechanismActionIcons();
+
+                Object.Destroy(root);
+                yield return null;
+            }
         }
 
         [UnityTest]
@@ -1218,8 +1545,8 @@ namespace WanChaoGuiYi.Tests
 
             Text governanceOverview = GameObject.Find("GovernanceOverviewText").GetComponent<Text>();
             Assert.IsTrue(governanceOverview.text.Contains("军管"), "Newly attached regions should recommend military governance before pacification.");
-            Assert.IsTrue(governanceOverview.text.Contains("nextControl MilitaryGoverned"), "Expected effect should preview the military-governed control stage.");
-            Assert.IsFalse(governanceOverview.text.Contains("Expected 预计效果: 安抚"), "Newly attached forecast should not short-circuit to pacification.");
+            Assert.IsTrue(governanceOverview.text.Contains("下一阶段 军管"), "Expected effect should preview the military-governed control stage.");
+            Assert.IsFalse(governanceOverview.text.Contains("预计效果: 安抚"), "Newly attached forecast should not short-circuit to pacification.");
 
             Button governanceAction = GameObject.Find("PacifyRegionButton").GetComponent<Button>();
             governanceAction.onClick.Invoke();
@@ -1270,7 +1597,11 @@ namespace WanChaoGuiYi.Tests
                 AssertChildRectFitsParent("RegionPanel", "GovernanceSourceText");
                 AssertChildRectFitsParent("RegionPanel", "PacifyRegionButton");
                 AssertChildRectFitsParent("RegionPanel", "BuildRegionBuildingButton");
+                AssertChildRectFitsParent("RegionPanel", "GovernancePacifyActionHintText");
+                AssertChildRectFitsParent("RegionPanel", "GovernanceBuildActionHintText");
                 AssertRectsDoNotOverlap("GovernanceOverviewText", "GovernanceSourceText", "Governance source details should stay separate from the action summary at " + widths[i] + "x" + heights[i] + ".");
+                AssertRectsDoNotOverlap("GovernanceSourceText", "GovernancePacifyActionHintText", "Governance source details should not cover the pacify forecast hint at " + widths[i] + "x" + heights[i] + ".");
+                AssertRectsDoNotOverlap("GovernanceSourceText", "GovernanceBuildActionHintText", "Governance source details should not cover the building forecast hint at " + widths[i] + "x" + heights[i] + ".");
                 AssertWorldRectAtLeast("GovernanceModeButton", 40f, 24f);
                 AssertWorldRectAtLeast("WarModeButton", 40f, 24f);
                 AssertWorldRectAtLeast("AttackButton", 40f, 24f);
@@ -1301,13 +1632,12 @@ namespace WanChaoGuiYi.Tests
         {
             yield return WaitForResolutionAndLayout(1024, 576);
 
-            GameObject root = new GameObject("PlayModeSmoke_StrategyOutliner");
-            GameManager manager = root.AddComponent<GameManager>();
-            UISetup uiSetup = root.AddComponent<UISetup>();
-            uiSetup.Bind(manager);
+            GameObject bootstrapRoot = new GameObject("PlayModeSmoke_StrategyOutliner");
+            bootstrapRoot.AddComponent<DemoSceneBootstrap>();
 
             yield return null;
 
+            GameManager manager = Object.FindObjectOfType<GameManager>();
             AssertBootstrapped(manager);
             FactionState playerFaction = manager.State.FindFaction(manager.State.playerFactionId);
             Assert.IsNotNull(playerFaction, "Player faction should exist for outliner smoke.");
@@ -1366,7 +1696,22 @@ namespace WanChaoGuiYi.Tests
             Assert.IsNotNull(firstEntry, "Critical region should create a clickable outliner entry.");
             Text firstEntryText = firstEntry.GetComponentInChildren<Text>();
             Assert.IsTrue(firstEntryText.text.Contains("高风险地区"), "Highest-priority outliner entry should expose its group label.");
+            GameObject focusedElevation = FindSceneObjectByNameIncludingInactive("SelectedRegionElevation_" + targetRegionId);
+            Assert.IsNotNull(focusedElevation, "Outliner focus should use the real region elevation overlay on the 56-region map.");
+            float elevationBaseScale = focusedElevation.transform.localScale.x;
+            CameraController cameraController = Object.FindObjectOfType<CameraController>();
+            Assert.IsNotNull(cameraController, "Outliner focus should have a camera controller.");
+            cameraController.ConfigureSmoothFocus(0.08f, true);
+            cameraController.SetZoom(4f);
+            Vector2 focusedCenter;
+            Assert.IsTrue(TryGetRegionSurfaceWorldCenter(targetRegionId, out focusedCenter), "Outliner focus should resolve a real projected region center.");
+            cameraController.CenterOnRegion(ResolveOffsetFocusStart(cameraController, focusedCenter));
+            Vector3 cameraBeforeOutlinerFocus = cameraController.transform.position;
+            Assert.Greater(Vector2.Distance(new Vector2(cameraBeforeOutlinerFocus.x, cameraBeforeOutlinerFocus.y), focusedCenter), 0.25f, "Outliner smoke should stage the camera away from the target so smooth focus is observable.");
             firstEntry.onClick.Invoke();
+            Assert.IsTrue(focusedElevation.activeInHierarchy, "Outliner click should activate the matching real-region elevation layer.");
+            Assert.Greater(focusedElevation.transform.localScale.x, elevationBaseScale, "Outliner click should pulse the matching real-region elevation layer.");
+            Assert.IsTrue(cameraController.SmoothFocusActive, "Outliner click should start a smooth camera focus instead of snapping instantly.");
             yield return null;
             Canvas.ForceUpdateCanvases();
 
@@ -1378,7 +1723,7 @@ namespace WanChaoGuiYi.Tests
             AssertPanelHidden("StrategyOutlinerPanel", "Full outliner should hide after a region selection opens the sidebar.");
             AssertRectsDoNotOverlap("RegionPanel", "StrategyOutlinerCollapsed", "Compact outliner should not overlap the expanded region panel at 1024x576.");
 
-            Object.Destroy(root);
+            DestroyDemoBootstrapRuntimeObjects(bootstrapRoot, manager.gameObject);
             yield return null;
         }
 
@@ -1497,11 +1842,13 @@ namespace WanChaoGuiYi.Tests
                 AssertPanelVisible("BattleReportPanel", "Battle report should open after narrow viewport war resolution.");
                 AssertRectFitsWithinCanvas("BattleReportPanel");
                 AssertChildRectFitsParent("BattleReportPanel", "DetailsText");
+                AssertChildRectFitsParent("BattleReportPanel", "FocusBattleReportRegionButton");
                 AssertRectsDoNotOverlap("BattleReportPanel", "ModeStateText", "Battle report should not cover mode text at narrow viewport.");
                 AssertRectsDoNotOverlap("BattleReportPanel", "SelectionContextText", "Battle report should not cover selection feedback at narrow viewport.");
                 AssertRectsDoNotOverlap("BattleReportPanel", "AttackButton", "Battle report should not cover attack action at narrow viewport.");
                 Text details = GameObject.Find("BattleReportPanel").transform.Find("DetailsText").GetComponent<Text>();
                 Assert.IsTrue(details.text.Contains("补给修正"), "Narrow viewport battle report should keep supply pressure readable.");
+                AssertBattleReportVisualComponents(true);
 
                 Object.Destroy(root);
                 yield return null;
@@ -1535,6 +1882,8 @@ namespace WanChaoGuiYi.Tests
             AddDestroyCandidate(objectsToDestroy, GameObject.Find("MapRoot"));
             AddDestroyCandidate(objectsToDestroy, GameObject.Find("EntityVisuals"));
             AddDestroyCandidate(objectsToDestroy, GameObject.Find("UISetup"));
+            AddDestroyCandidate(objectsToDestroy, GameObject.Find("AudioManager"));
+            AddDestroyCandidate(objectsToDestroy, GameObject.Find("AudioEventBridge"));
             AddDestroyCandidate(objectsToDestroy, GameObject.Find("GameCanvas"));
             AddDestroyCandidate(objectsToDestroy, GameObject.Find("Main Camera"));
 
@@ -1750,6 +2099,152 @@ namespace WanChaoGuiYi.Tests
             return null;
         }
 
+        private static string PreparePlayerAttackRoute(GameManager manager, out ArmyRuntimeState army)
+        {
+            Assert.IsNotNull(manager, "GameManager is required.");
+            Assert.IsNotNull(manager.State, "GameState is required.");
+            Assert.IsNotNull(manager.World, "WorldState is required.");
+            Assert.IsNotNull(manager.World.Map, "MapState is required.");
+            Assert.IsNotNull(manager.Data, "DataRepository is required.");
+
+            FactionState playerFaction = manager.State.FindFaction(manager.State.playerFactionId);
+            Assert.IsNotNull(playerFaction, "Player faction is required.");
+
+            army = null;
+            foreach (ArmyRuntimeState candidate in manager.World.Map.ArmiesById.Values)
+            {
+                if (candidate != null && candidate.ownerFactionId == playerFaction.id && candidate.task == ArmyTask.Idle)
+                {
+                    army = candidate;
+                    break;
+                }
+            }
+
+            Assert.IsNotNull(army, "Player attack smoke requires an idle player army.");
+
+            string directTarget = FindAttackTargetForArmy(manager, playerFaction, army);
+            if (!string.IsNullOrEmpty(directTarget))
+            {
+                return directTarget;
+            }
+
+            string stagingRegionId = FindAttackStagingRegion(manager, playerFaction);
+            Assert.IsFalse(string.IsNullOrEmpty(stagingRegionId), "Player attack smoke requires a frontline staging region.");
+            if (army.locationRegionId != stagingRegionId)
+            {
+                manager.World.Map.MoveArmyToRegion(army.id, stagingRegionId);
+                SyncLegacyArmyRegion(manager, army.id, stagingRegionId);
+            }
+
+            army.task = ArmyTask.Idle;
+            army.targetRegionId = null;
+            army.engagementId = null;
+            army.route = new List<string>();
+            army.supply = Mathf.Max(army.supply, StrategyCausalRules.WarMovementSupplyCost + 20);
+
+            string stagedTarget = FindAttackTargetForArmy(manager, playerFaction, army);
+            Assert.IsFalse(string.IsNullOrEmpty(stagedTarget), "Player attack smoke could not find a startable enemy after staging.");
+            return stagedTarget;
+        }
+
+        private static ArmyRuntimeState CreatePlayerStressArmy(GameManager manager, ArmyRuntimeState template, string id, int supply)
+        {
+            Assert.IsNotNull(manager, "GameManager is required for stress army creation.");
+            Assert.IsNotNull(manager.World, "WorldState is required for stress army creation.");
+            Assert.IsNotNull(manager.World.Map, "MapState is required for stress army creation.");
+            Assert.IsNotNull(manager.State, "GameState is required for stress army creation.");
+            Assert.IsNotNull(template, "A staged template army is required for stress army creation.");
+
+            ArmyRuntimeState existing;
+            if (manager.World.Map.TryGetArmy(id, out existing) && existing != null)
+            {
+                existing.ownerFactionId = manager.State.playerFactionId;
+                existing.locationRegionId = template.locationRegionId;
+                existing.targetRegionId = null;
+                existing.route = new List<string>();
+                existing.task = ArmyTask.Idle;
+                existing.unitId = template.unitId;
+                existing.soldiers = Mathf.Max(1, template.soldiers);
+                existing.morale = template.morale;
+                existing.supply = supply;
+                existing.movementPoints = Mathf.Max(template.movementPoints, 1);
+                existing.engagementId = null;
+                manager.World.Map.MoveArmyToRegion(existing.id, template.locationRegionId);
+                return existing;
+            }
+
+            ArmyRuntimeState army = new ArmyRuntimeState
+            {
+                id = id,
+                ownerFactionId = manager.State.playerFactionId,
+                locationRegionId = template.locationRegionId,
+                targetRegionId = null,
+                route = new List<string>(),
+                task = ArmyTask.Idle,
+                unitId = template.unitId,
+                soldiers = Mathf.Max(1, template.soldiers),
+                morale = template.morale,
+                supply = supply,
+                movementPoints = Mathf.Max(template.movementPoints, 1),
+                engagementId = null
+            };
+            manager.World.Map.AddArmy(army);
+            return army;
+        }
+
+        private static string FindAttackTargetForArmy(GameManager manager, FactionState playerFaction, ArmyRuntimeState army)
+        {
+            if (manager == null || manager.MapQueries == null || playerFaction == null || army == null) return null;
+
+            for (int i = 0; i < manager.State.regions.Count; i++)
+            {
+                RegionState candidate = manager.State.regions[i];
+                if (candidate == null || candidate.ownerFactionId == playerFaction.id) continue;
+
+                RegionDefinition definition = manager.Data.GetRegion(candidate.id);
+                if (definition == null || definition.neighbors == null) continue;
+
+                bool stagedNextToTarget = false;
+                for (int j = 0; j < definition.neighbors.Length; j++)
+                {
+                    if (definition.neighbors[j] == army.locationRegionId)
+                    {
+                        stagedNextToTarget = true;
+                        break;
+                    }
+                }
+
+                if (!stagedNextToTarget) continue;
+                if (!manager.MapQueries.HasRoute(army.locationRegionId, candidate.id)) continue;
+                return candidate.id;
+            }
+
+            return null;
+        }
+
+        private static string FindAttackStagingRegion(GameManager manager, FactionState playerFaction)
+        {
+            if (manager == null || playerFaction == null) return null;
+
+            for (int i = 0; i < playerFaction.regionIds.Count; i++)
+            {
+                string ownedRegionId = playerFaction.regionIds[i];
+                RegionDefinition definition = manager.Data.GetRegion(ownedRegionId);
+                if (definition == null || definition.neighbors == null) continue;
+
+                for (int j = 0; j < definition.neighbors.Length; j++)
+                {
+                    RegionState neighbor = manager.State.FindRegion(definition.neighbors[j]);
+                    if (neighbor != null && neighbor.ownerFactionId != playerFaction.id)
+                    {
+                        return ownedRegionId;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private static GameObject FindObjectNameStartsWith(string prefix)
         {
             GameObject[] objects = Object.FindObjectsOfType<GameObject>();
@@ -1762,6 +2257,81 @@ namespace WanChaoGuiYi.Tests
             }
 
             return null;
+        }
+
+        private static int CountSceneObjectsStartingWith(string prefix)
+        {
+            int count = 0;
+            GameObject[] objects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < objects.Length; i++)
+            {
+                GameObject obj = objects[i];
+                if (obj == null || !obj.scene.IsValid()) continue;
+                if (obj.name.StartsWith(prefix)) count++;
+            }
+
+            return count;
+        }
+
+        private static int CountActiveSceneObjectsStartingWith(string prefix)
+        {
+            int count = 0;
+            GameObject[] objects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < objects.Length; i++)
+            {
+                GameObject obj = objects[i];
+                if (obj == null || !obj.scene.IsValid()) continue;
+                if (obj.name.StartsWith(prefix) && obj.activeInHierarchy) count++;
+            }
+
+            return count;
+        }
+
+        private static GameObject FindSceneObjectByNameIncludingInactive(string objectName)
+        {
+            GameObject[] objects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < objects.Length; i++)
+            {
+                GameObject obj = objects[i];
+                if (obj == null || !obj.scene.IsValid()) continue;
+                if (obj.name == objectName) return obj;
+            }
+
+            return null;
+        }
+
+        private static bool TryGetRegionSurfaceWorldCenter(string regionId, out Vector2 center)
+        {
+            center = Vector2.zero;
+            if (string.IsNullOrEmpty(regionId)) return false;
+
+            GameObject regionObject = GameObject.Find("RegionSurface_" + regionId);
+            if (regionObject == null) return false;
+
+            MeshFilter meshFilter = regionObject.GetComponent<MeshFilter>();
+            Vector3 world = regionObject.transform.position;
+            if (meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                world = regionObject.transform.TransformPoint(meshFilter.sharedMesh.bounds.center);
+            }
+
+            center = new Vector2(world.x, world.y);
+            return true;
+        }
+
+        private static Vector2 ResolveOffsetFocusStart(CameraController cameraController, Vector2 targetCenter)
+        {
+            Assert.IsNotNull(cameraController, "CameraController is required for focus staging.");
+            Rect bounds = cameraController.WorldBounds;
+            Vector2 boundsCenter = bounds.center;
+            Vector2 direction = targetCenter - boundsCenter;
+            if (direction.sqrMagnitude < 0.01f)
+            {
+                direction = Vector2.right;
+            }
+
+            direction.Normalize();
+            return targetCenter - direction * 24f;
         }
 
         private static void SyncLegacyArmySoldiers(GameManager manager, string armyId, int soldiers)
@@ -1778,6 +2348,22 @@ namespace WanChaoGuiYi.Tests
             }
 
             Assert.Fail("Expected legacy army for soldier sync: " + armyId);
+        }
+
+        private static void SyncLegacyArmyRegion(GameManager manager, string armyId, string regionId)
+        {
+            Assert.IsNotNull(manager, "GameManager is required for army region sync.");
+            for (int i = 0; i < manager.State.armies.Count; i++)
+            {
+                ArmyState army = manager.State.armies[i];
+                if (army != null && army.id == armyId)
+                {
+                    army.regionId = regionId;
+                    return;
+                }
+            }
+
+            Assert.Fail("Expected legacy army for region sync: " + armyId);
         }
 
         private static void AssertBootstrapped(GameManager manager)
@@ -1798,41 +2384,302 @@ namespace WanChaoGuiYi.Tests
             Assert.IsNotNull(governanceSource, "RegionPanel should expose GovernanceSourceText.");
             string text = governanceOverview.text;
             string sourceText = governanceSource.text;
-            Assert.IsTrue(text.Contains("Governance"), "Governance overview should identify the default governance view.");
             Assert.IsTrue(text.Contains("本回合摘要"), "Governance overview should prioritize a turn summary.");
-            Assert.IsTrue(text.Contains("Politics"), "Governance overview should group politics.");
-            Assert.IsTrue(text.Contains("Civic"), "Governance overview should group civic/livelihood.");
-            Assert.IsTrue(text.Contains("Grain"), "Governance overview should group grain.");
-            Assert.IsTrue(text.Contains("Population"), "Governance overview should group population.");
-            Assert.IsTrue(text.Contains("legitimacy"), "Governance overview should expose legitimacy.");
-            Assert.IsTrue(text.Contains("Risk"), "Governance overview should group risks.");
+            Assert.IsTrue(text.Contains("状态徽标"), "Governance overview should expose compact status badges.");
+            Assert.IsTrue(text.Contains("治理条"), "Governance overview should expose compact governance meters.");
+            Assert.IsTrue(text.Contains("产出条"), "Governance overview should expose compact contribution meters.");
+            AssertGovernanceVisualComponents();
+            AssertGovernanceActionHintsExposeForecast(expectedBuildingSource);
+            Assert.IsTrue(text.Contains("政务"), "Governance overview should group politics.");
+            Assert.IsTrue(text.Contains("民生"), "Governance overview should group civic/livelihood.");
+            Assert.IsTrue(text.Contains("粮政"), "Governance overview should group grain.");
+            Assert.IsTrue(text.Contains("人口"), "Governance overview should group population.");
+            Assert.IsTrue(text.Contains("法统"), "Governance overview should expose legitimacy.");
+            Assert.IsTrue(text.Contains("风险"), "Governance overview should group risks.");
             Assert.IsTrue(text.Contains("最大风险"), "Governance overview should make the main risk readable.");
-            Assert.IsTrue(text.Contains("Decision"), "Governance overview should expose a first-screen decision layer.");
-            Assert.IsTrue(text.Contains("Recommended"), "Governance overview should expose a recommendation layer.");
+            Assert.IsTrue(text.Contains("决策"), "Governance overview should expose a first-screen decision layer.");
+            Assert.IsTrue(text.Contains("推荐"), "Governance overview should expose a recommendation layer.");
+            Assert.IsTrue(text.Contains("专精路线"), "Governance overview should expose the regional specialization route.");
+            Assert.IsTrue(text.Contains("路线收益"), "Governance overview should explain the specialization route payoff.");
             Assert.IsTrue(text.Contains("最优行动"), "Governance overview should expose a decision recommendation.");
             Assert.IsTrue(text.Contains("可执行政务"), "Governance overview should expose action context.");
-            Assert.IsTrue(text.Contains("Expected"), "Governance overview should preview expected action effects.");
             Assert.IsTrue(text.Contains("预计效果"), "Governance overview should label expected effects in Chinese.");
-            Assert.IsTrue(text.Contains("Action State"), "Governance overview should bind recommendations to button state.");
+            Assert.IsTrue(text.Contains("按钮状态"), "Governance overview should bind recommendations to button state.");
             Assert.IsTrue(text.Contains("按钮"), "Governance overview should make action button availability explicit.");
             Assert.IsTrue(text.Contains("安抚 可用"), "Governance overview should show pacification availability when resources allow it.");
             Assert.IsTrue(text.Contains("建造 可用"), "Governance overview should show building availability when a buildable building exists.");
             Assert.IsTrue(text.Contains("整合 +10"), "Governance overview should preview pacification integration gain.");
             Assert.IsTrue(text.Contains("民变 -12"), "Governance overview should preview pacification rebellion reduction.");
-            Assert.IsTrue(text.Contains("Building"), "Governance overview should expose building entry context.");
-            Assert.IsTrue(text.Contains("Policy"), "Governance overview should expose policy entry context.");
-            Assert.IsFalse(text.Contains("Governance Source:"), "Governance overview should keep source notes out of the first-screen action summary.");
-            Assert.IsTrue(sourceText.Contains("Causal"), "Governance source details should separate causal explanation from action choice.");
-            Assert.IsTrue(sourceText.Contains("Negative"), "Governance source details should expose negative feedback explanations.");
-            Assert.IsTrue(sourceText.Contains("Source:"), "Governance source details should expose source notes.");
+            Assert.IsTrue(text.Contains("建设"), "Governance overview should expose building entry context.");
+            Assert.IsTrue(text.Contains("政策"), "Governance overview should expose policy entry context.");
+            Assert.IsTrue(text.Contains("取舍"), "Governance overview should expose the specialization tradeoff.");
+            Assert.IsFalse(text.Contains("治理来源:"), "Governance overview should keep source notes out of the first-screen action summary.");
+            Assert.IsTrue(sourceText.Contains("因果"), "Governance source details should separate causal explanation from action choice.");
+            Assert.IsTrue(sourceText.Contains("负反馈"), "Governance source details should expose negative feedback explanations.");
+            Assert.IsTrue(sourceText.Contains("来源:"), "Governance source details should expose source notes.");
             Assert.IsTrue(sourceText.Contains(expectedPolicySource), "Governance source details should include policy sourceReference.");
-            Assert.IsTrue(sourceText.Contains("Occupation Source:"), "Governance source details should include occupation source notes.");
-            Assert.IsTrue(sourceText.Contains("Building Source:"), "Governance source details should include building source notes even when no building is currently buildable.");
+            Assert.IsTrue(sourceText.Contains("占领来源:"), "Governance source details should include occupation source notes.");
+            Assert.IsTrue(sourceText.Contains("建设来源:"), "Governance source details should include building source notes even when no building is currently buildable.");
             Assert.IsTrue(sourceText.Contains(expectedBuildingSource), "Governance source details should include building sourceReference.");
-            Assert.IsTrue(sourceText.Contains("Governance Source:"), "Governance source details should include governance source notes.");
+            Assert.IsTrue(sourceText.Contains("治理来源:"), "Governance source details should include governance source notes.");
             Assert.IsTrue(sourceText.Contains(expectedGovernanceSource), "Governance source details should include region legitimacy memory as governance source evidence.");
             Assert.LessOrEqual(governanceOverview.preferredHeight, governanceOverview.rectTransform.rect.height + 1f, "Governance overview text should fit inside its container.");
             Assert.LessOrEqual(governanceSource.preferredHeight, governanceSource.rectTransform.rect.height + 1f, "Governance source details should fit inside their container.");
+        }
+
+        private static void AssertNoVisibleUiCopyTokens()
+        {
+            string[] rootNames =
+            {
+                "HUDBar",
+                "RegionPanel",
+                "CollapsedRegionTab",
+                "MechanismPanel",
+                "BattleReportPanel",
+                "StrategyLensBar",
+                "StrategyOutlinerPanel",
+                "StrategyOutlinerCollapsed",
+                "LogisticsQueuePanel"
+            };
+            string[] bannedTokens =
+            {
+                "Governance",
+                "Politics",
+                "Civic",
+                "Expected",
+                "Action State",
+                "War Source",
+                "Diplomacy Cost",
+                "Border Cost",
+                "Border Impact",
+                "War Mode",
+                "Negative feedback",
+                "M:Governance",
+                "M:War",
+                "R:none",
+                "F:",
+                "N:",
+                "H:"
+            };
+
+            for (int rootIndex = 0; rootIndex < rootNames.Length; rootIndex++)
+            {
+                GameObject root = GameObject.Find(rootNames[rootIndex]);
+                if (root == null) continue;
+
+                Text[] texts = root.GetComponentsInChildren<Text>(true);
+                for (int textIndex = 0; textIndex < texts.Length; textIndex++)
+                {
+                    Text text = texts[textIndex];
+                    if (text == null || !IsRuntimeVisible(text.gameObject)) continue;
+
+                    string value = text.text ?? string.Empty;
+                    for (int tokenIndex = 0; tokenIndex < bannedTokens.Length; tokenIndex++)
+                    {
+                        Assert.IsFalse(value.Contains(bannedTokens[tokenIndex]), text.name + " should not show transitional copy token: " + bannedTokens[tokenIndex]);
+                    }
+                }
+            }
+        }
+
+        private static bool IsRuntimeVisible(GameObject target)
+        {
+            if (target == null || !target.activeInHierarchy) return false;
+
+            Transform current = target.transform;
+            while (current != null)
+            {
+                CanvasGroup group = current.GetComponent<CanvasGroup>();
+                if (group != null && (group.alpha <= 0.5f || !group.interactable || !group.blocksRaycasts))
+                {
+                    return false;
+                }
+
+                current = current.parent;
+            }
+
+            return true;
+        }
+
+        private static void AssertGovernanceVisualComponents()
+        {
+            string[] badgeNames =
+            {
+                "GovernanceStageBadge",
+                "GovernanceRiskBadge",
+                "GovernanceIntegrationBadge",
+                "GovernanceContributionBadge"
+            };
+
+            for (int i = 0; i < badgeNames.Length; i++)
+            {
+                GameObject badge = GameObject.Find(badgeNames[i]);
+                Assert.IsNotNull(badge, "Governance sidebar should expose a real UI badge: " + badgeNames[i]);
+                Assert.IsTrue(badge.activeInHierarchy, "Governance badge should be visible in governance mode: " + badgeNames[i]);
+                Assert.IsNotNull(badge.GetComponent<Image>(), "Governance badge should use an Image background: " + badgeNames[i]);
+                Assert.IsNotNull(badge.GetComponentInChildren<Text>(), "Governance badge should bind readable label text: " + badgeNames[i]);
+            }
+
+            string[] fillNames =
+            {
+                "GovernanceIntegrationUiBarFill",
+                "GovernanceFoodUiBarFill",
+                "GovernanceTaxUiBarFill",
+                "GovernanceRebellionUiBarFill"
+            };
+
+            for (int i = 0; i < fillNames.Length; i++)
+            {
+                GameObject fillObject = GameObject.Find(fillNames[i]);
+                Assert.IsNotNull(fillObject, "Governance sidebar should expose a real UI Image meter fill: " + fillNames[i]);
+                Image fill = fillObject.GetComponent<Image>();
+                Assert.IsNotNull(fill, "Governance meter fill should use Image rather than ASCII text: " + fillNames[i]);
+                Assert.Greater(fill.rectTransform.sizeDelta.x, 0.5f, "Governance meter fill width should be data-bound: " + fillNames[i]);
+            }
+
+            AssertActionHintReadable("GovernancePacifyActionHintText");
+            AssertActionHintReadable("GovernanceBuildActionHintText");
+            AssertGovernanceActionIcon("GovernancePacifyActionIcon", "PacifyRegionButton", "GovernancePacifyActionHintText");
+            AssertGovernanceActionIcon("GovernanceBuildActionIcon", "BuildRegionBuildingButton", "GovernanceBuildActionHintText");
+        }
+
+        private static void AssertOverlayBudgetHudExplainsSpawnerStats(DemoEntityVisualSpawner spawner)
+        {
+            Assert.IsNotNull(spawner, "Overlay budget HUD assertion needs entity visual stats.");
+            GameObject budgetObject = GameObject.Find("OverlayBudgetText");
+            Assert.IsNotNull(budgetObject, "HUD should expose overlay label suppression and pulse budget text.");
+            Text budgetText = budgetObject.GetComponent<Text>();
+            Assert.IsNotNull(budgetText, "Overlay budget HUD should use Text.");
+            Assert.IsFalse(string.IsNullOrEmpty(budgetText.text), "Overlay budget HUD should not be empty.");
+            Assert.IsTrue(budgetText.text.Contains("缩放/预算/重叠"), "Overlay budget HUD should name the three label suppression reasons.");
+            Assert.IsTrue(budgetText.text.Contains(spawner.LastHiddenByZoomCount + "/" + spawner.LastHiddenByBudgetCount + "/" + spawner.LastHiddenByOverlapCount), "Overlay budget HUD should bind the current hidden-label reason counts.");
+            Assert.IsTrue(budgetText.text.Contains("标签 " + spawner.LastVisibleLabelCount + "/" + spawner.LastWarLabelObjectCount), "Overlay budget HUD should bind visible and total war labels.");
+            Assert.IsTrue(budgetText.text.Contains("隐" + spawner.LastHiddenLabelCount), "Overlay budget HUD should bind total hidden labels.");
+            Assert.IsTrue(budgetText.text.Contains("脉冲 " + spawner.LastActivePulseCount + "/" + (spawner.LastActivePulseCount + spawner.LastInactivePulseCount)), "Overlay budget HUD should bind active and total pulses.");
+            Assert.IsTrue(budgetText.text.Contains("额" + spawner.LastPulseBudget), "Overlay budget HUD should bind the pulse budget.");
+            AssertRectFitsWithinCanvas("OverlayBudgetText");
+            AssertRectsDoNotOverlap("OverlayBudgetText", "CourtButton", "Overlay budget HUD should not cover compact HUD action buttons.");
+        }
+
+        private static void AssertGovernanceActionHintsExposeForecast(string expectedBuildingSource)
+        {
+            Text pacifyHint = GameObject.Find("GovernancePacifyActionHintText").GetComponent<Text>();
+            Assert.IsTrue(pacifyHint.text.Contains("金50"), "Governance action hint should expose pacification money cost.");
+            Assert.IsTrue(pacifyHint.text.Contains("粮30"), "Governance action hint should expose pacification grain cost.");
+            Assert.IsTrue(pacifyHint.text.Contains("整+10"), "Governance action hint should expose pacification integration gain.");
+            Assert.IsTrue(pacifyHint.text.Contains("乱-12"), "Governance action hint should expose pacification unrest reduction.");
+
+            Text buildHint = GameObject.Find("GovernanceBuildActionHintText").GetComponent<Text>();
+            Assert.IsTrue(buildHint.text.Contains("金"), "Building action hint should expose building money cost.");
+            Assert.IsFalse(buildHint.text.Contains(expectedBuildingSource), "Building action hint should keep source notes in the source block, not inside the action button.");
+        }
+
+        private static void AssertActionHintReadable(string objectName)
+        {
+            GameObject hintObject = GameObject.Find(objectName);
+            Assert.IsNotNull(hintObject, "Governance action button should expose a readable forecast hint: " + objectName);
+            Assert.IsTrue(hintObject.activeInHierarchy, "Governance action hint should be visible in governance mode: " + objectName);
+            Text hint = hintObject.GetComponent<Text>();
+            Assert.IsNotNull(hint, "Governance action hint should use Text: " + objectName);
+            Assert.IsFalse(string.IsNullOrEmpty(hint.text), "Governance action hint should not be empty: " + objectName);
+            Assert.LessOrEqual(hint.preferredHeight, hint.rectTransform.rect.height + 1f, "Governance action hint should fit inside its button: " + objectName);
+        }
+
+        private static void AssertGovernanceActionIcon(string objectName, string buttonName, string hintName)
+        {
+            GameObject iconObject = GameObject.Find(objectName);
+            Assert.IsNotNull(iconObject, "Governance action button should expose a real icon object: " + objectName);
+            Assert.IsTrue(iconObject.activeInHierarchy, "Governance action icon should be visible in governance mode: " + objectName);
+            Image icon = iconObject.GetComponent<Image>();
+            Assert.IsNotNull(icon, "Governance action icon should use an Image swatch: " + objectName);
+            Text glyph = iconObject.GetComponentInChildren<Text>();
+            Assert.IsNotNull(glyph, "Governance action icon should bind a compact glyph: " + objectName);
+            Assert.IsFalse(string.IsNullOrEmpty(glyph.text), "Governance action icon glyph should not be empty: " + objectName);
+            AssertChildRectFitsParent(buttonName, objectName);
+            AssertWorldRectAtLeast(objectName, 12f, 12f);
+            AssertRectsDoNotOverlap(objectName, hintName, "Governance action icon should stay above the forecast hint: " + objectName);
+        }
+
+        private static void AssertMechanismActionIcons()
+        {
+            AssertMechanismActionIcon("PolicyActionIcon", "ApplyPolicyButton");
+            AssertMechanismActionIcon("DiplomacyActionIcon", "DiplomacyActionButton");
+            AssertMechanismActionIcon("BorderActionIcon", "BorderControlButton");
+            AssertMechanismActionIcon("EspionageActionIcon", "EspionageActionButton");
+            AssertMechanismActionIcon("EnterWarModeActionIcon", "EnterWarModeButton");
+        }
+
+        private static void AssertMechanismActionIcon(string objectName, string buttonName)
+        {
+            GameObject buttonObject = GameObject.Find(buttonName);
+            Assert.IsNotNull(buttonObject, "Mechanism action button should exist before icon assertion: " + buttonName);
+            Transform iconTransform = FindChildRecursive(buttonObject.transform, objectName);
+            Assert.IsNotNull(iconTransform, "Mechanism action button should expose a leading icon: " + objectName);
+            GameObject iconObject = iconTransform.gameObject;
+            Assert.IsTrue(iconObject.activeInHierarchy, "Mechanism action icon should be visible: " + objectName);
+            Image icon = iconObject.GetComponent<Image>();
+            Assert.IsNotNull(icon, "Mechanism action icon should use an Image swatch: " + objectName);
+            Text glyph = iconObject.GetComponentInChildren<Text>();
+            Assert.IsNotNull(glyph, "Mechanism action icon should bind a compact glyph: " + objectName);
+            Assert.IsFalse(string.IsNullOrEmpty(glyph.text), "Mechanism action icon glyph should not be empty: " + objectName);
+            AssertChildRectFitsParent(buttonName, objectName);
+            AssertChildRectFitsParent(buttonName, "Label");
+            AssertWorldRectAtLeast(objectName, 10f, 10f);
+
+            Transform labelTransform = FindChildRecursive(buttonObject.transform, "Label");
+            Assert.IsNotNull(labelTransform, "Mechanism action button should keep its text label: " + buttonName);
+            Rect iconRect = GetWorldRect(iconObject.GetComponent<RectTransform>());
+            Rect labelRect = GetWorldRect(labelTransform.GetComponent<RectTransform>());
+            Assert.IsFalse(iconRect.Overlaps(labelRect), "Mechanism action icon should not overlap the button label: " + objectName);
+        }
+
+        private static void AssertBattleReportVisualComponents(bool attackerWon)
+        {
+            GameObject panel = GameObject.Find("BattleReportPanel");
+            Assert.IsNotNull(panel, "Battle report panel should be visible before visual assertions.");
+            Button focusButton = GameObject.Find("FocusBattleReportRegionButton").GetComponent<Button>();
+            Assert.IsNotNull(focusButton, "Battle report should expose a focus button for returning to the battle region.");
+            Assert.IsTrue(focusButton.interactable, "Battle report focus button should be enabled when the result has a battle region.");
+
+            GameObject ribbon = GameObject.Find("BattleOutcomeRibbon");
+            Assert.IsNotNull(ribbon, "Battle report should expose a visible outcome ribbon.");
+            Image ribbonImage = ribbon.GetComponent<Image>();
+            Assert.IsNotNull(ribbonImage, "Battle outcome ribbon should use an Image background.");
+            Text ribbonText = ribbon.GetComponentInChildren<Text>();
+            Assert.IsNotNull(ribbonText, "Battle outcome ribbon should bind a label.");
+            Assert.IsTrue(ribbonText.text.Contains("战报反馈"), "Battle outcome ribbon should label the result as battle feedback.");
+            Assert.IsTrue(attackerWon ? ribbonText.text.Contains("攻方突破") : ribbonText.text.Contains("守方稳住"), "Battle outcome ribbon should summarize the winner.");
+
+            string[] powerFillNames =
+            {
+                "BattleAttackerPowerUiBarFill",
+                "BattleDefenderPowerUiBarFill"
+            };
+
+            for (int i = 0; i < powerFillNames.Length; i++)
+            {
+                GameObject fillObject = GameObject.Find(powerFillNames[i]);
+                Assert.IsNotNull(fillObject, "Battle report should expose a real power meter fill: " + powerFillNames[i]);
+                Image fill = fillObject.GetComponent<Image>();
+                Assert.IsNotNull(fill, "Battle power meter should use Image: " + powerFillNames[i]);
+                Assert.Greater(fill.rectTransform.sizeDelta.x, 0.5f, "Battle power meter width should be data-bound: " + powerFillNames[i]);
+            }
+
+            string[] supplyBadgeNames =
+            {
+                "BattleAttackerSupplyBadge",
+                "BattleDefenderSupplyBadge"
+            };
+
+            for (int i = 0; i < supplyBadgeNames.Length; i++)
+            {
+                GameObject badge = GameObject.Find(supplyBadgeNames[i]);
+                Assert.IsNotNull(badge, "Battle report should expose a supply pressure badge: " + supplyBadgeNames[i]);
+                Assert.IsNotNull(badge.GetComponent<Image>(), "Battle supply badge should use an Image background: " + supplyBadgeNames[i]);
+                Text label = badge.GetComponentInChildren<Text>();
+                Assert.IsNotNull(label, "Battle supply badge should bind readable text: " + supplyBadgeNames[i]);
+                Assert.IsTrue(label.text.Contains("补给"), "Battle supply badge should keep supply pressure readable: " + supplyBadgeNames[i]);
+            }
         }
 
         private static void AssertRectFitsWithinCanvas(string objectName)
@@ -1854,7 +2701,7 @@ namespace WanChaoGuiYi.Tests
         {
             GameObject parent = GameObject.Find(parentName);
             Assert.IsNotNull(parent, "Expected parent UI object: " + parentName);
-            Transform child = parent.transform.Find(childName);
+            Transform child = FindChildRecursive(parent.transform, childName);
             Assert.IsNotNull(child, "Expected child UI object: " + parentName + "/" + childName);
 
             Rect parentRect = GetWorldRect(parent.GetComponent<RectTransform>());
@@ -1863,6 +2710,21 @@ namespace WanChaoGuiYi.Tests
             Assert.LessOrEqual(childRect.xMax, parentRect.xMax + 1f, childName + " should stay inside " + parentName + " right edge.");
             Assert.GreaterOrEqual(childRect.yMin, parentRect.yMin - 1f, childName + " should stay inside " + parentName + " bottom edge.");
             Assert.LessOrEqual(childRect.yMax, parentRect.yMax + 1f, childName + " should stay inside " + parentName + " top edge.");
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null) return null;
+            Transform directChild = root.Find(childName);
+            if (directChild != null) return directChild;
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(i), childName);
+                if (found != null) return found;
+            }
+
+            return null;
         }
 
         private static void AssertRectsDoNotOverlap(string firstName, string secondName, string message)
@@ -1885,6 +2747,18 @@ namespace WanChaoGuiYi.Tests
             Rect rect = GetWorldRect(target.GetComponent<RectTransform>());
             Assert.GreaterOrEqual(rect.width, minWidth, objectName + " should keep a usable screen width.");
             Assert.GreaterOrEqual(rect.height, minHeight, objectName + " should keep a usable screen height.");
+        }
+
+        private static void AssertCameraViewportInsideBounds(CameraController controller, string message)
+        {
+            Assert.IsNotNull(controller, "CameraController is required for viewport bounds assertion.");
+
+            Rect viewport = controller.ViewportWorldRect;
+            Rect bounds = controller.WorldBounds;
+            Assert.GreaterOrEqual(viewport.xMin, bounds.xMin - 0.03f, message + " Left viewport edge escaped.");
+            Assert.LessOrEqual(viewport.xMax, bounds.xMax + 0.03f, message + " Right viewport edge escaped.");
+            Assert.GreaterOrEqual(viewport.yMin, bounds.yMin - 0.03f, message + " Bottom viewport edge escaped.");
+            Assert.LessOrEqual(viewport.yMax, bounds.yMax + 0.03f, message + " Top viewport edge escaped.");
         }
 
         private static void AssertPanelVisible(string objectName, string message)
@@ -2036,6 +2910,21 @@ namespace WanChaoGuiYi.Tests
             return null;
         }
 
+        private static IEnumerator AssertLineWidthPulse(LineRenderer line, float initialWidth, float minDelta, string message)
+        {
+            Assert.IsNotNull(line, "LineRenderer is required for pulse assertion.");
+            float minWidth = initialWidth;
+            float maxWidth = initialWidth;
+            for (int i = 0; i < 10; i++)
+            {
+                yield return new WaitForSeconds(0.04f);
+                minWidth = Mathf.Min(minWidth, line.startWidth);
+                maxWidth = Mathf.Max(maxWidth, line.startWidth);
+            }
+
+            Assert.Greater(maxWidth - minWidth, minDelta, message);
+        }
+
         private static void AssertHasLog(GameState state, string token)
         {
             Assert.IsNotNull(state, "GameState is required for log assertion.");
@@ -2051,6 +2940,21 @@ namespace WanChaoGuiYi.Tests
             }
 
             Assert.Fail("Expected turn log containing: " + token);
+        }
+
+        private static void AssertHasOutlinerCategory(GameState state, WorldState world, string category, string message)
+        {
+            List<StrategyOutlinerEntry> entries = StrategyMapRulebook.BuildOutliner(state, world);
+            for (int i = 0; i < entries.Count; i++)
+            {
+                StrategyOutlinerEntry entry = entries[i];
+                if (entry != null && entry.category == category)
+                {
+                    return;
+                }
+            }
+
+            Assert.Fail(message + " Missing category: " + category);
         }
 
         private static void AssertNoLog(GameState state, string token)

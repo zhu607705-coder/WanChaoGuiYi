@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "description": "万朝归一 - 场景音乐清单，与 AudioManager 的 Governance/War/Event Snapshot 对应",
+  "items": [
+    {
+      "scene": "Governance",
+      "musicCueId": "scene_governance",
+      "fileName": "scene_governance.mp3",
+      "mood": "peaceful",
+      "bpm": 70,
+      "tags": ["governance", "peaceful", "scholar"],
+      "description": "施政 - 和平治理时期，庄严肃穆的朝堂音乐"
+    },
+    {
+      "scene": "War",
+      "musicCueId": "scene_war",
+      "fileName": "scene_war.mp3",
+      "mood": "intense",
+      "bpm": 150,
+      "tags": ["war", "battle", "drums"],
+      "description": "战争 - 战鼓隆隆，战马嘶鸣的军乐"
+    },
+    {
+      "scene": "PalaceConspiracy",
+      "musicCueId": "scene_palace_conspiracy",
+      "fileName": "scene_palace_conspiracy.mp3",
+      "mood": "tense",
+      "bpm": 85,
+      "tags": ["conspiracy", "palace", "mysterious"],
+      "description": "宫变 - 暗流涌动，阴谋潜伏的紧张氛围"
+    },
+    {
+      "scene": "Famine",
+      "musicCueId": "scene_famine",
+      "fileName": "scene_famine.mp3",
+      "mood": "somber",
+      "bpm": 55,
+      "tags": ["famine", "disaster", "sad"],
+      "description": "饥荒 - 天灾人祸，哀鸿遍野的悲怆音乐"
+    },
+    {
+      "scene": "GoldenAge",
+      "musicCueId": "scene_golden_age",
+      "fileName": "scene_golden_age.mp3",
+      "mood": "triumphant",
+      "bpm": 120,
+      "tags": ["prosperity", "celebration", "grand"],
+      "description": "盛世 - 国泰民安，万国来朝的辉煌乐章"
+    },
+    {
+      "scene": "Decline",
+      "musicCueId": "scene_decline",
+      "fileName": "scene_decline.mp3",
+      "mood": "somber",
+      "bpm": 60,
+      "tags": ["decline", "melancholy", "doom"],
+      "description": "末世 - 王朝衰落，风雨飘摇的末日氛围"
+    },
+    {
+      "scene": "Unification",
+      "musicCueId": "scene_unification",
+      "fileName": "scene_unification.mp3",
+      "mood": "triumphant",
+      "bpm": 140,
+      "tags": ["unification", "victory", "grand"],
+      "description": "统一 - 天下一统，四海归心的凯旋之歌"
+    },
+    {
+      "scene": "Banquet",
+      "musicCueId": "scene_banquet",
+      "fileName": "scene_banquet.mp3",
+      "mood": "elegant",
+      "bpm": 90,
+      "tags": ["banquet", "celebration", "elegant"],
+      "description": "宴会 - 宫廷盛宴，觥筹交错的欢乐曲调"
+    },
+    {
+      "scene": "Campaign",
+      "musicCueId": "scene_campaign",
+      "fileName": "scene_campaign.mp3",
+      "mood": "military",
+      "bpm": 130,
+      "tags": ["campaign", "march", "heroic"],
+      "description": "出征 - 大军出发，慷慨激昂的行军乐"
+    },
+    {
+      "scene": "Funeral",
+      "musicCueId": "scene_funeral",
+      "fileName": "scene_funeral.mp3",
+      "mood": "somber",
+      "bpm": 45,
+      "tags": ["funeral", "death", "grief"],
+      "description": "丧钟 - 王朝覆灭，悲壮哀婉的挽歌"
+    }
+  ]
+}

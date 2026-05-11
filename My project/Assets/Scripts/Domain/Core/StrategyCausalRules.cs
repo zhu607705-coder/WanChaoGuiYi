@@ -17,6 +17,17 @@ namespace WanChaoGuiYi
         public const int ConscriptionRebellionIncrease = 5;
 
         public const int WarMovementSupplyCost = 5;
+        public const int FrontlinePreparedSupplyTarget = 45;
+        public const int FrontlinePreparedSupplyCap = 100;
+        public const int FrontlineLogisticsMaxTurns = 4;
+        public const int FrontlineSupplyNodeBuildFoodCost = 20;
+        public const int FrontlineLogisticsMediumRiskLossPercent = 10;
+        public const int FrontlineLogisticsHighRiskLossPercent = 20;
+        public const int FrontlineLogisticsUrgentPriorityPercent = 140;
+        public const int FrontlineLogisticsNormalPriorityPercent = 100;
+        public const int FrontlineLogisticsDelayedPriorityPercent = 70;
+        public const int FrontlineLogisticsAiRaidLossPercent = 18;
+        public const int FrontlineLogisticsAiRaidRiskIncrease = 12;
         public const int LowSupplyBattleThreshold = 20;
         public const int LowSupplyBattlePowerPercent = 75;
         public const int DepletedSupplyBattlePowerPercent = 55;

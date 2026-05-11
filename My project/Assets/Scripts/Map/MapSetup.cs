@@ -18,14 +18,15 @@ namespace WanChaoGuiYi
         [SerializeField] private bool allowNodeFallback;
         [SerializeField] private bool useGeneratedMapBackground = true;
         [SerializeField] private bool hideRegionSurfaceVisualsWhenBackgroundPresent = true;
+        [SerializeField] private bool useTerrainDepthVisuals = true;
 
         [Header("Layout")]
         [SerializeField] private float nodeSpacing = 2.5f;
         [SerializeField] private Vector2 mapOffset = Vector2.zero;
         [SerializeField] private float labelDepthOffset = -0.05f;
         [SerializeField] private int labelSortingOrderOffset = 1000;
-        [SerializeField] private Vector2 generatedMapCenter = new Vector2(-4.55f, 0.7f);
-        [SerializeField] private float generatedMapScale = 0.58f;
+        [SerializeField] private Vector2 generatedMapCenter = new Vector2(-4.25f, 0.52f);
+        [SerializeField] private float generatedMapScale = 0.72f;
         [SerializeField] private Vector2 generatedMapShapeCenter = new Vector2(-3.65f, 0.05f);
         [SerializeField] private float regionProjectionScale = 0.4988f;
         [SerializeField] private float generatedMapSpritePixelsPerUnit = 100f;
@@ -248,6 +249,12 @@ namespace WanChaoGuiYi
 
             RegionController controller = surface.AddComponent<RegionController>();
             controller.Bind(region.id, gameManager);
+            if (useTerrainDepthVisuals)
+            {
+                GameObject terrainShadow = CreateRegionTerrainShadow(surface, mesh, region.id, shape.renderOrder);
+                GameObject selectedElevation = CreateSelectedRegionElevation(surface, mesh, region.id, shape.renderOrder);
+                controller.BindTerrainVisuals(terrainShadow, selectedElevation);
+            }
 
             if (mapRenderer != null)
             {
@@ -309,6 +316,60 @@ namespace WanChaoGuiYi
             }
 
             return new Material(shader);
+        }
+
+        private GameObject CreateRegionTerrainShadow(GameObject surface, Mesh mesh, string regionId, int renderOrder)
+        {
+            if (surface == null || mesh == null) return null;
+
+            GameObject shadow = new GameObject("RegionTerrainShadow_" + regionId);
+            shadow.layer = surface.layer;
+            shadow.transform.SetParent(surface.transform, false);
+            shadow.transform.localPosition = new Vector3(0.055f, -0.065f, 0.035f);
+            shadow.transform.localRotation = Quaternion.identity;
+            shadow.transform.localScale = Vector3.one;
+
+            MeshFilter meshFilter = shadow.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = mesh;
+
+            MeshRenderer meshRenderer = shadow.AddComponent<MeshRenderer>();
+            meshRenderer.material = ResolveRegionVisualMaterial(new Color(0.025f, 0.018f, 0.012f, 0.18f));
+            meshRenderer.sortingOrder = renderOrder - 6;
+            return shadow;
+        }
+
+        private GameObject CreateSelectedRegionElevation(GameObject surface, Mesh mesh, string regionId, int renderOrder)
+        {
+            if (surface == null || mesh == null) return null;
+
+            GameObject selected = new GameObject("SelectedRegionElevation_" + regionId);
+            selected.layer = surface.layer;
+            selected.transform.SetParent(surface.transform, false);
+            selected.transform.localPosition = new Vector3(-0.018f, 0.035f, -0.025f);
+            selected.transform.localRotation = Quaternion.identity;
+            selected.transform.localScale = Vector3.one * 1.006f;
+
+            MeshFilter meshFilter = selected.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = mesh;
+
+            MeshRenderer meshRenderer = selected.AddComponent<MeshRenderer>();
+            meshRenderer.material = ResolveRegionVisualMaterial(new Color(1f, 0.82f, 0.32f, 0.26f));
+            meshRenderer.sortingOrder = renderOrder + 6;
+            selected.SetActive(false);
+            return selected;
+        }
+
+        private Material ResolveRegionVisualMaterial(Color color)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+
+            Material material = new Material(shader);
+            material.color = color;
+            return material;
         }
 
         private bool CreateGeneratedMapBackground()

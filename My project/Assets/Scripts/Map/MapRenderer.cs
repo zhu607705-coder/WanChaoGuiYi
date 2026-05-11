@@ -6,24 +6,25 @@ namespace WanChaoGuiYi
     public sealed class MapRenderer : MonoBehaviour
     {
         [SerializeField] private GameManager gameManager;
-        [SerializeField] private float ownerColorAlpha = 0.72f;
-        [SerializeField] private Color fallbackOwnerColor = new Color(0.72f, 0.72f, 0.72f, 0.72f);
+        [SerializeField] private float ownerColorAlpha = 0.62f;
+        [SerializeField] private Color fallbackOwnerColor = new Color(0.50f, 0.55f, 0.54f, 0.62f);
 
         private readonly Dictionary<string, RegionController> controllers = new Dictionary<string, RegionController>();
         private MapLensMode currentLens = MapLensMode.Governance;
+        private string selectedRegionId;
         private bool hideMeshSurfacesInGovernanceLens;
         private bool subscribed;
 
         private static readonly Dictionary<string, Color> FactionColors = new Dictionary<string, Color>
         {
-            { "faction_qin_shi_huang", new Color(0.08f, 0.07f, 0.06f, 1f) },
-            { "faction_liu_bang", new Color(0.62f, 0.22f, 0.12f, 1f) },
-            { "faction_han_wu_di", new Color(0.78f, 0.08f, 0.08f, 1f) },
-            { "faction_cao_cao", new Color(0.30f, 0.30f, 0.34f, 1f) },
-            { "faction_li_shi_min", new Color(0.95f, 0.66f, 0.18f, 1f) },
-            { "faction_zhao_kuang_yin", new Color(0.55f, 0.17f, 0.15f, 1f) },
-            { "faction_zhu_yuan_zhang", new Color(0.70f, 0.05f, 0.04f, 1f) },
-            { "faction_kang_xi", new Color(0.95f, 0.78f, 0.22f, 1f) }
+            { "faction_qin_shi_huang", new Color(0.22f, 0.32f, 0.29f, 1f) },
+            { "faction_liu_bang", new Color(0.58f, 0.36f, 0.27f, 1f) },
+            { "faction_han_wu_di", new Color(0.53f, 0.26f, 0.25f, 1f) },
+            { "faction_cao_cao", new Color(0.34f, 0.38f, 0.42f, 1f) },
+            { "faction_li_shi_min", new Color(0.68f, 0.52f, 0.24f, 1f) },
+            { "faction_zhao_kuang_yin", new Color(0.48f, 0.30f, 0.31f, 1f) },
+            { "faction_zhu_yuan_zhang", new Color(0.62f, 0.28f, 0.22f, 1f) },
+            { "faction_kang_xi", new Color(0.49f, 0.60f, 0.38f, 1f) }
         };
 
         public void Bind(GameManager manager)
@@ -50,11 +51,13 @@ namespace WanChaoGuiYi
         {
             if (controller == null || string.IsNullOrEmpty(controller.RegionId)) return;
             controllers[controller.RegionId] = controller;
+            controller.SetSelected(controller.RegionId == selectedRegionId);
         }
 
         public void ClearRegions()
         {
             controllers.Clear();
+            selectedRegionId = null;
         }
 
         public void Refresh()
@@ -95,6 +98,17 @@ namespace WanChaoGuiYi
             ApplyRegionColor(controller, region);
         }
 
+        public void PulseRegionFocus(string regionId)
+        {
+            if (string.IsNullOrEmpty(regionId)) return;
+
+            RegionController controller;
+            if (!controllers.TryGetValue(regionId, out controller)) return;
+            if (controller == null) return;
+
+            controller.PlayFocusPulse();
+        }
+
         private void ApplyRegionColor(RegionController controller, RegionState region)
         {
             if (region == null)
@@ -104,7 +118,7 @@ namespace WanChaoGuiYi
             }
 
             Color color = currentLens == MapLensMode.Governance ? ResolveOwnerColor(region.ownerFactionId) : ResolveLensColor(region);
-            color.a = currentLens == MapLensMode.Governance ? ownerColorAlpha : 0.48f;
+            color.a = currentLens == MapLensMode.Governance ? ownerColorAlpha : 0.54f;
             ApplyColor(controller, color, currentLens != MapLensMode.Governance);
         }
 
@@ -143,17 +157,17 @@ namespace WanChaoGuiYi
             switch (currentLens)
             {
                 case MapLensMode.Risk:
-                    return Color.Lerp(new Color(0.20f, 0.55f, 0.28f, 1f), new Color(0.85f, 0.12f, 0.08f, 1f), t);
+                    return Color.Lerp(new Color(0.22f, 0.48f, 0.34f, 1f), new Color(0.78f, 0.30f, 0.22f, 1f), t);
                 case MapLensMode.Economy:
-                    return Color.Lerp(new Color(0.15f, 0.32f, 0.62f, 1f), new Color(0.90f, 0.72f, 0.18f, 1f), t);
+                    return Color.Lerp(new Color(0.20f, 0.36f, 0.48f, 1f), new Color(0.76f, 0.60f, 0.26f, 1f), t);
                 case MapLensMode.Legitimacy:
-                    return Color.Lerp(new Color(0.52f, 0.18f, 0.18f, 1f), new Color(0.20f, 0.58f, 0.72f, 1f), t);
+                    return Color.Lerp(new Color(0.50f, 0.25f, 0.24f, 1f), new Color(0.26f, 0.52f, 0.58f, 1f), t);
                 case MapLensMode.War:
-                    return region.supplyNode ? new Color(0.95f, 0.65f, 0.18f, 1f) : new Color(0.45f, 0.18f, 0.12f, 1f);
+                    return region.supplyNode ? new Color(0.82f, 0.60f, 0.25f, 1f) : new Color(0.46f, 0.25f, 0.20f, 1f);
                 case MapLensMode.Terrain:
-                    return Color.Lerp(new Color(0.18f, 0.43f, 0.24f, 1f), new Color(0.52f, 0.48f, 0.32f, 1f), t);
+                    return Color.Lerp(new Color(0.22f, 0.42f, 0.30f, 1f), new Color(0.54f, 0.48f, 0.34f, 1f), t);
                 default:
-                    return Color.Lerp(new Color(0.25f, 0.40f, 0.58f, 1f), new Color(0.88f, 0.55f, 0.18f, 1f), t);
+                    return Color.Lerp(new Color(0.25f, 0.39f, 0.50f, 1f), new Color(0.74f, 0.50f, 0.24f, 1f), t);
             }
         }
 
@@ -185,6 +199,7 @@ namespace WanChaoGuiYi
             if (subscribed || gameManager == null || gameManager.Events == null) return;
 
             gameManager.Events.Subscribe(GameEventType.GameStarted, OnMapStateChanged);
+            gameManager.Events.Subscribe(GameEventType.RegionSelected, OnRegionSelected);
             gameManager.Events.Subscribe(GameEventType.RegionOwnerChanged, OnRegionOwnerChanged);
             gameManager.Events.Subscribe(GameEventType.RegionOccupied, OnRegionStateChanged);
             gameManager.Events.Subscribe(GameEventType.GovernanceImpactApplied, OnRegionStateChanged);
@@ -201,6 +216,7 @@ namespace WanChaoGuiYi
             if (!subscribed || gameManager == null || gameManager.Events == null) return;
 
             gameManager.Events.Unsubscribe(GameEventType.GameStarted, OnMapStateChanged);
+            gameManager.Events.Unsubscribe(GameEventType.RegionSelected, OnRegionSelected);
             gameManager.Events.Unsubscribe(GameEventType.RegionOwnerChanged, OnRegionOwnerChanged);
             gameManager.Events.Unsubscribe(GameEventType.RegionOccupied, OnRegionStateChanged);
             gameManager.Events.Unsubscribe(GameEventType.GovernanceImpactApplied, OnRegionStateChanged);
@@ -215,6 +231,16 @@ namespace WanChaoGuiYi
         private void OnMapStateChanged(GameEvent gameEvent)
         {
             Refresh();
+        }
+
+        private void OnRegionSelected(GameEvent gameEvent)
+        {
+            selectedRegionId = gameEvent != null ? gameEvent.EntityId : null;
+            foreach (RegionController controller in controllers.Values)
+            {
+                if (controller == null) continue;
+                controller.SetSelected(controller.RegionId == selectedRegionId);
+            }
         }
 
         private void OnRegionOwnerChanged(GameEvent gameEvent)

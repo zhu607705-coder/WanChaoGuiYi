@@ -259,6 +259,9 @@ namespace WanChaoGuiYi
         public int annexationPressure;
         public RegionSpecialization regionSpecialization;
         public ControlStage controlStage;
+        public int occupationReservedFood;
+        public int occupationPacificationQueueStep;
+        public int occupationPacificationQueueTurnsRemaining;
         public int localAcceptance;
         public VisibilityState visibilityState;
         public bool supplyNode;
@@ -279,6 +282,28 @@ namespace WanChaoGuiYi
         public int supply;
         public int movementPoints;
         public string engagementId;
+        public string frontlinePreparedTargetRegionId;
+        public int frontlineReservedFood;
+        public int frontlinePreparedTurn;
+        public string frontlineLogisticsTargetRegionId;
+        public string frontlineLogisticsSupplyNodeRegionId;
+        public int frontlineLogisticsTotalTurns;
+        public int frontlineLogisticsTurnsRemaining;
+        public int frontlineLogisticsFoodRemaining;
+        public int frontlineLogisticsFoodPerTurn;
+        public int frontlineLogisticsSupplyNeedRemaining;
+        public int frontlineLogisticsReserveNeedRemaining;
+        public int frontlineLogisticsSupplyNodeBuildFoodRemaining;
+        public int frontlineLogisticsCompletedSegments;
+        public int frontlineLogisticsInterceptionRisk;
+        public int frontlineLogisticsLostFood;
+        public string frontlineLogisticsConvoyId;
+        public int frontlineLogisticsPriority;
+        public bool frontlineLogisticsPaused;
+        public int frontlineLogisticsRaidPressure;
+        public int frontlineLogisticsLastRaidTurn;
+        public string frontlineLogisticsLastRaidFactionId;
+        public int frontlineLogisticsLastRaidLoss;
     }
 
     [Serializable]
