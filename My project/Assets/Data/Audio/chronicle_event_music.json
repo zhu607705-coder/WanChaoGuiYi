@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "description": "万朝归一 - 历史大事件音乐清单，精选30+个最重要事件",
+  "items": [
+    {
+      "eventId": "yellow_river_flood",
+      "musicCueId": "event_yellow_river_flood",
+      "fileName": "event_yellow_river_flood.mp3",
+      "category": "disaster",
+      "mood": "tragic",
+      "bpm": 65,
+      "tags": ["disaster", "flood", "river"]
+    },
+    {
+      "eventId": "great_drought",
+      "musicCueId": "event_great_drought",
+      "fileName": "event_great_drought.mp3",
+      "category": "disaster",
+      "mood": "somber",
+      "bpm": 55,
+      "tags": ["disaster", "drought", "famine"]
+    },
+    {
+      "eventId": "plague_outbreak",
+      "musicCueId": "event_plague_outbreak",
+      "fileName": "event_plague_outbreak.mp3",
+      "category": "disaster",
+      "mood": "ominous",
+      "bpm": 70,
+      "tags": ["disaster", "plague", "death"]
+    },
+    {
+      "eventId": "locust_plague",
+      "musicCueId": "event_locust_plague",
+      "fileName": "event_locust_plague.mp3",
+      "category": "disaster",
+      "mood": "tragic",
+      "bpm": 60,
+      "tags": ["disaster", "locust", "famine"]
+    },
+    {
+      "eventId": "guandu_crisis",
+      "musicCueId": "event_guandu_crisis",
+      "fileName": "event_guandu_crisis.mp3",
+      "category": "military",
+      "mood": "intense",
+      "bpm": 140,
+      "tags": ["military", "three_kingdoms", "battle"]
+    },
+    {
+      "eventId": "red_cliffs_plague",
+      "musicCueId": "event_red_cliffs_plague",
+      "fileName": "event_red_cliffs_plague.mp3",
+      "category": "military",
+      "mood": "epic",
+      "bpm": 135,
+      "tags": ["military", "three_kingdoms", "epic"]
+    },
+    {
+      "eventId": "xuanwu_gate",
+      "musicCueId": "event_xuanwu_gate",
+      "fileName": "event_xuanwu_gate.mp3",
+      "category": "political",
+      "mood": "conspiracy",
+      "bpm": 85,
+      "tags": ["political", "coup", "tang"]
+    },
+    {
+      "eventId": "xuanzang_pilgrimage",
+      "musicCueId": "event_xuanzang_pilgrimage",
+      "fileName": "event_xuanzang_pilgrimage.mp3",
+      "category": "prosperity",
+      "mood": "cultural",
+      "bpm": 80,
+      "tags": ["prosperity", "buddhism", "culture"]
+    },
+    {
+      "eventId": "an_shi_rebellion",
+      "musicCueId": "event_an_shi_rebellion",
+      "fileName": "event_an_shi_rebellion.mp3",
+      "category": "military",
+      "mood": "tragic",
+      "bpm": 130,
+      "tags": ["military", "rebellion", "tang"]
+    },
+    {
+      "eventId": "huang_chao_uprising",
+      "musicCueId": "event_huang_chao_uprising",
+      "fileName": "event_huang_chao_uprising.mp3",
+      "category": "military",
+      "mood": "chaotic",
+      "bpm": 145,
+      "tags": ["military", "rebellion", "chaos"]
+    },
+    {
+      "eventId": "kaiyuan_prosperity",
+      "musicCueId": "event_kaiyuan_prosperity",
+      "fileName": "event_kaiyuan_prosperity.mp3",
+      "category": "prosperity",
+      "mood": "glorious",
+      "bpm": 125,
+      "tags": ["prosperity", "tang", "golden_age"]
+    },
+    {
+      "eventId": "fei_river_crisis",
+      "musicCueId": "event_fei_river_crisis",
+      "fileName": "event_fei_river_crisis.mp3",
+      "category": "military",
+      "mood": "epic",
+      "bpm": 150,
+      "tags": ["military", "juyan", "epic"]
+    },
+    {
+      "eventId": "sui_destroy_chen",
+      "musicCueId": "event_sui_destroy_chen",
+      "fileName": "event_sui_destroy_chen.mp3",
+      "category": "military",
+      "mood": "triumphant",
+      "bpm": 140,
+      "tags": ["military", "unification", "triumph"]
+    },
+    {
+      "eventId": "li_shimin_hulao_battle",
+      "musicCueId": "event_li_shimin_hulao_battle",
+      "fileName": "event_li_shimin_hulao_battle.mp3",
+      "category": "military",
+      "mood": "heroic",
+      "bpm": 145,
+      "tags": ["military", "tang", "heroic"]
+    },
+    {
+      "eventId": "wu_zetian_concubine",
+      "musicCueId": "event_wu_zetian_concubine",
+      "fileName": "event_wu_zetian_concubine.mp3",
+      "category": "political",
+      "mood": "conspiracy",
+      "bpm": 80,
+      "tags": ["political", "tang", "conspiracy"]
+    },
+    {
+      "eventId": "empress_wu_zhou",
+      "musicCueId": "event_empress_wu_zhou",
+      "fileName": "event_empress_wu_zhou.mp3",
+      "category": "political",
+      "mood": "ominous",
+      "bpm": 90,
+      "tags": ["political", "tang", "imperial"]
+    },
+    {
+      "eventId": "jinkang_catastrophe",
+      "musicCueId": "event_jinkang_catastrophe",
+      "fileName": "event_jinkang_catastrophe.mp3",
+      "category": "military",
+      "mood": "tragic",
+      "bpm": 70,
+      "tags": ["military", "song", "tragedy"]
+    },
+    {
+      "eventId": "yue_fei_northern_expedition",
+      "musicCueId": "event_yue_fei_northern_expedition",
+      "fileName": "event_yue_fei_northern_expedition.mp3",
+      "category": "military",
+      "mood": "heroic",
+      "bpm": 135,
+      "tags": ["military", "song", "heroic"]
+    },
+    {
+      "eventId": "wang_anshi_reform",
+      "musicCueId": "event_wang_anshi_reform",
+      "fileName": "event_wang_anshi_reform.mp3",
+      "category": "political",
+      "mood": "tense",
+      "bpm": 95,
+      "tags": ["political", "song", "reform"]
+    },
+    {
+      "eventId": "bei_wei_equal_field",
+      "musicCueId": "event_bei_wei_equal_field",
+      "fileName": "event_bei_wei_equal_field.mp3",
+      "category": "political",
+      "mood": "ambitious",
+      "bpm": 100,
+      "tags": ["political", "wei", "reform"]
+    },
+    {
+      "eventId": "xiaowen_sinicization",
+      "musicCueId": "event_xiaowen_sinicization",
+      "fileName": "event_xiaowen_sinicization.mp3",
+      "category": "political",
+      "mood": "cultural",
+      "bpm": 85,
+      "tags": ["political", "wei", "cultural"]
+    },
+    {
+      "eventId": "zhu_wen_kill_all_ministers",
+      "musicCueId": "event_zhu_wen_kill_all_ministers",
+      "fileName": "event_zhu_wen_kill_all_ministers.mp3",
+      "category": "political",
+      "mood": "ominous",
+      "bpm": 75,
+      "tags": ["political", "betrayal", "cruel"]
+    },
+    {
+      "eventId": "gaopingling_coup",
+      "musicCueId": "event_gaopingling_coup",
+      "fileName": "event_gaopingling_coup.mp3",
+      "category": "political",
+      "mood": "conspiracy",
+      "bpm": 90,
+      "tags": ["political", "coup", "wei"]
+    },
+    {
+      "eventId": "liu_yu_northern_expedition",
+      "musicCueId": "event_liu_yu_northern_expedition",
+      "fileName": "event_liu_yu_northern_expedition.mp3",
+      "category": "military",
+      "mood": "heroic",
+      "bpm": 145,
+      "tags": ["military", "jin", "heroic"]
+    },
+    {
+      "eventId": "yang_jian_take_northern_zhou",
+      "musicCueId": "event_yang_jian_take_northern_zhou",
+      "fileName": "event_yang_jian_take_northern_zhou.mp3",
+      "category": "political",
+      "mood": "imperial",
+      "bpm": 120,
+      "tags": ["political", "sui", "unification"]
+    },
+    {
+      "eventId": "dong_zhuo_burn_luoyang",
+      "musicCueId": "event_dong_zhuo_burn_luoyang",
+      "fileName": "event_dong_zhuo_burn_luoyang.mp3",
+      "category": "military",
+      "mood": "tragic",
+      "bpm": 85,
+      "tags": ["military", "han", "tragedy"]
+    },
+    {
+      "eventId": "liu_bei_three_visits",
+      "musicCueId": "event_liu_bei_three_visits",
+      "fileName": "event_liu_bei_three_visits.mp3",
+      "category": "political",
+      "mood": "serene",
+      "bpm": 70,
+      "tags": ["political", "three_kingdoms", "wisdom"]
+    },
+    {
+      "eventId": "zhuge_liang_northern_expedition",
+      "musicCueId": "event_zhuge_liang_northern_expedition",
+      "fileName": "event_zhuge_liang_northern_expedition.mp3",
+      "category": "military",
+      "mood": "tragic",
+      "bpm": 115,
+      "tags": ["military", "three_kingdoms", "tragedy"]
+    },
+    {
+      "eventId": "zhao_kuangyin_drinking",
+      "musicCueId": "event_zhao_kuangyin_drinking",
+      "fileName": "event_zhao_kuangyin_drinking.mp3",
+      "category": "political",
+      "mood": "restrained",
+      "bpm": 80,
+      "tags": ["political", "song", "restraint"]
+    },
+    {
+      "eventId": "hou_jing_cross_yangtze",
+      "musicCueId": "event_hou_jing_cross_yangtze",
+      "fileName": "event_hou_jing_cross_yangtze.mp3",
+      "category": "military",
+      "mood": "chaotic",
+      "bpm": 140,
+      "tags": ["military", "chaos", "rebellion"]
+    },
+    {
+      "eventId": "qin_shi_huang_book_burning",
+      "musicCueId": "event_qin_shi_huang_book_burning",
+      "fileName": "event_qin_shi_huang_book_burning.mp3",
+      "category": "political",
+      "mood": "ominous",
+      "bpm": 90,
+      "tags": ["political", "qin", "cruelty"]
+    },
+    {
+      "eventId": "huo_qubing_lightning_war",
+      "musicCueId": "event_huo_qubing_lightning_war",
+      "fileName": "event_huo_qubing_lightning_war.mp3",
+      "category": "military",
+      "mood": "heroic",
+      "bpm": 150,
+      "tags": ["military", "han", "heroic"]
+    },
+    {
+      "eventId": "chen_sheng_wu_jiang_uprising",
+      "musicCueId": "event_chen_sheng_wu_jiang_uprising",
+      "fileName": "event_chen_sheng_wu_jiang_uprising.mp3",
+      "category": "military",
+      "mood": "rebellious",
+      "bpm": 130,
+      "tags": ["military", "rebellion", "qin"]
+    },
+    {
+      "eventId": "crown_prince_education",
+      "musicCueId": "event_crown_prince_education",
+      "fileName": "event_crown_prince_education.mp3",
+      "category": "political",
+      "mood": "tense",
+      "bpm": 75,
+      "tags": ["political", "education", "court"]
+    },
+    {
+      "eventId": "inheritance_dispute",
+      "musicCueId": "event_inheritance_dispute",
+      "fileName": "event_inheritance_dispute.mp3",
+      "category": "political",
+      "mood": "conspiracy",
+      "bpm": 85,
+      "tags": ["political", "succession", "conspiracy"]
+    },
+    {
+      "eventId": "corruption_scandal",
+      "musicCueId": "event_corruption_scandal",
+      "fileName": "event_corruption_scandal.mp3",
+      "category": "political",
+      "mood": "tense",
+      "bpm": 80,
+      "tags": ["political", "corruption", "scandal"]
+    }
+  ]
+}

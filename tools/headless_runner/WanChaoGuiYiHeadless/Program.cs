@@ -40,7 +40,7 @@ namespace WanChaoGuiYi
             string current = Directory.GetCurrentDirectory();
             for (int i = 0; i < 8; i++)
             {
-                string candidate = Path.Combine(current, "WanChaoGuiYi", "Assets", "Data");
+                string candidate = Path.Combine(current, "My project", "Assets", "Data");
                 if (Directory.Exists(candidate)) return candidate;
 
                 DirectoryInfo parent = Directory.GetParent(current);
@@ -48,7 +48,7 @@ namespace WanChaoGuiYi
                 current = parent.FullName;
             }
 
-            return Path.Combine(Directory.GetCurrentDirectory(), "WanChaoGuiYi", "Assets", "Data");
+            return Path.Combine(Directory.GetCurrentDirectory(), "My project", "Assets", "Data");
         }
 
         private static string FindReportPath()
@@ -67,7 +67,7 @@ namespace WanChaoGuiYi
             for (int i = 0; i < 8; i++)
             {
                 if (Directory.Exists(Path.Combine(current, "tools", "headless_runner")) &&
-                    Directory.Exists(Path.Combine(current, "WanChaoGuiYi", "Assets", "Data")))
+                    Directory.Exists(Path.Combine(current, "My project", "Assets", "Data")))
                 {
                     return current;
                 }

@@ -72,7 +72,7 @@ project-development-report.md
 ## 验证规则
 
 - 修改 JSON 后必须做解析验证。
-- 修改 JSON 引用关系后必须运行 `python3 tools/validate_data.py`。
+- 修改 JSON 引用关系后必须运行 `python tools/validate_data.py` 或 `python3 tools/validate_data.py`。
 - 修改核心逻辑后必须运行对应测试、Unity PlayMode 测试或最小手动验收。
 - 新机制只有在至少运行一次后才算完成。
 - 一次验证只能形成假说；需要重复验证或独立证据后才能沉淀为通用规则。

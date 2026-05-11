@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "mapScope": "china",
+  "precision": "map_aligned_region_v1",
+  "sourceImage": "Assets/Art/Map/jiuzhou_generated_map.png",
+  "imageSize": {
+    "width": 2048,
+    "height": 1536
+  },
+  "shapeCenter": {
+    "x": -3.65,
+    "y": 0.05
+  },
+  "pixelsPerShapeUnit": 86.0,
+  "spritePixelsPerUnit": 100.0
+}

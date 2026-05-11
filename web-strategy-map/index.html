@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>万朝归一：九州帝业</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="map-canvas" aria-label="九州战略地图"></canvas>
+      <div id="label-layer" aria-hidden="true"></div>
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="title">万朝归一：九州帝业</div>
+          <div class="subtitle">国内治理 / 前线战争</div>
+        </div>
+        <div class="mode-switch" role="group" aria-label="地图模式">
+          <button id="governance-mode" class="mode-button active" type="button">治理</button>
+          <button id="war-mode" class="mode-button" type="button">战争</button>
+        </div>
+        <div class="top-metrics" aria-label="国家状态">
+          <span>粮 <b id="metric-food">--</b></span>
+          <span>钱 <b id="metric-money">--</b></span>
+          <span>兵 <b id="metric-army">--</b></span>
+          <span>法统 <b id="metric-legitimacy">--</b></span>
+        </div>
+      </header>
+      <div class="map-legend" data-testid="map-legend" aria-label="地图图层">
+        <span><i class="legend-mountain"></i>山地</span>
+        <span><i class="legend-water"></i>水系</span>
+        <span><i class="legend-field"></i>田畴</span>
+        <span><i class="legend-building"></i>建设</span>
+      </div>
+      <div id="emperor-dock" class="emperor-dock" data-testid="emperor-dock" aria-label="帝皇选择"></div>
+      <details class="audio-hud" data-testid="audio-hud" aria-label="音频控制">
+        <summary class="audio-summary">
+          <span>音频</span>
+          <b id="audio-status">点击启用音频</b>
+          <em id="audio-mode">治理混音</em>
+        </summary>
+        <div class="audio-panel-body">
+        <div class="audio-main">
+          <button id="audio-enable" class="small-action" type="button">启用音频</button>
+        </div>
+        <div class="audio-actions">
+          <button class="audio-action" type="button" data-audio-action="mode">模式音乐</button>
+          <button class="audio-action" type="button" data-audio-action="emperor">帝王主题</button>
+          <button class="audio-action" type="button" data-audio-action="event">事件短曲</button>
+        </div>
+        <div class="audio-readout">
+          <span>音乐 <b id="audio-music">未启用</b></span>
+          <span>旁白 <b id="audio-narration">未播放</b></span>
+          <span>配音 <b id="audio-voice">未播放</b></span>
+        </div>
+        <div id="audio-catalog" class="audio-catalog">曲目 -- / 帝王 -- / 事件 --</div>
+        <div id="audio-error" class="audio-error"></div>
+        </div>
+      </details>
+      <aside id="sidebar" class="sidebar" aria-label="选区详情">
+        <button id="sidebar-toggle" class="icon-button" type="button" aria-label="折叠侧栏">›</button>
+        <div class="sidebar-content">
+          <div class="section-head">
+            <div>
+              <div id="selected-name" class="region-name">--</div>
+              <div id="selected-tags" class="region-tags">--</div>
+            </div>
+            <span id="mode-pill" class="mode-pill">治理</span>
+          </div>
+          <div id="save-panel" class="save-panel" data-testid="save-panel" aria-label="本地存档槽"></div>
+          <div id="governance-panel" class="panel-stack"></div>
+          <div id="war-panel" class="panel-stack hidden"></div>
+          <div class="outliner">
+            <div class="outliner-title">本回合压力</div>
+            <div id="outliner-list"></div>
+          </div>
+        </div>
+      </aside>
+      <footer class="command-strip">
+        <div id="selection-summary">选择地区查看治理和战争预案</div>
+        <div class="route-pressure-wrap" data-testid="route-pressure-wrap">
+          <div id="route-summary" class="route-pressure-summary" tabindex="0" aria-describedby="route-pressure-detail">前线未选定</div>
+          <div id="route-pressure-detail" class="route-pressure-detail" role="tooltip">悬停查看路线压力位置详情</div>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

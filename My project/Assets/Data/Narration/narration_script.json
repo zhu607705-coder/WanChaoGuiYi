@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "description": "万朝归一 - 旁白及帝王配音清单",
+  "narrator": {
+    "language": "zh-CN",
+    "voiceProfile": "deep_male_baritone",
+    "description": "历史深沉旁白男声，适合帝王叙事风格"
+  },
+  "tutorial": {
+    "title": "新手引导旁白",
+    "segments": [
+      {
+        "segmentId": "tutorial_intro",
+        "text": "天下大势，分久必合，合久必分。自秦始皇一统六合，至康熙帝盛世终章，中华文明走过了两千余年的兴衰更替。今日，你将继承天命，率领历代帝王，重塑华夏山河。",
+        "trigger": "game_start",
+        "priority": 1
+      },
+      {
+        "segmentId": "tutorial_select_emperor",
+        "text": "每位帝王皆有独特天赋与治国之策。始皇帝以霸道统六合，汉武帝以武功震四方，唐太宗以仁政治盛世。慎重选择，这将决定你的文明走向。",
+        "trigger": "emperor_selection",
+        "priority": 1
+      },
+      {
+        "segmentId": "tutorial_first_governance",
+        "text": "治理天下，首重民生。轻徭薄赋则民富国强，严刑峻法则秩序井然。平衡各方势力，方为长久之道。",
+        "trigger": "first_governance_action",
+        "priority": 2
+      },
+      {
+        "segmentId": "tutorial_war_intro",
+        "text": "战争是将领智慧与军力强弱的较量。以少胜多者，名垂青史；以众欺寡者，留骂千古。善用计谋，方为上策。",
+        "trigger": "first_war",
+        "priority": 2
+      },
+      {
+        "segmentId": "tutorial_event_approach",
+        "text": "天有不测风云，人有旦夕祸福。历史大事件往往改变文明走向。把握机遇，或可开创盛世；应对失当，则大厦将倾。",
+        "trigger": "first_event",
+        "priority": 2
+      },
+      {
+        "segmentId": "tutorial_victory",
+        "text": "万朝归一，四海升平。你完成了历代帝王未竟之业，天下重归一统！此乃天命所归，实至名归。",
+        "trigger": "game_victory",
+        "priority": 1
+      },
+      {
+        "segmentId": "tutorial_defeat",
+        "text": "大厦倾颓，帝王陨落。天下大势，终非一人所能逆转。然虽败犹荣，你的故事将流传于青史之中。",
+        "trigger": "game_defeat",
+        "priority": 1
+      },
+      {
+        "segmentId": "tutorial_prosperity",
+        "text": "国泰民安，风调雨顺。百姓安居乐业，四方来朝。此乃治世之象，帝王之幸也。",
+        "trigger": "prosperity_achieved",
+        "priority": 3
+      },
+      {
+        "segmentId": "tutorial_decline",
+        "text": "朝政日非，民不聊生。内有奸佞当道，外有强敌环伺。帝国正在衰落，时间所剩无几。",
+        "trigger": "decline_started",
+        "priority": 1
+      },
+      {
+        "segmentId": "tutorial_unification",
+        "text": "天下一统，四海归心。百姓免于战乱之苦，天下享太平之福。此功此德，当铭刻于青史之上。",
+        "trigger": "unification_achieved",
+        "priority": 1
+      }
+    ]
+  },
+  "emperor_voices": [
+    {
+      "emperorId": "qin_shi_huang",
+      "emperorName": "秦始皇",
+      "voiceProfile": "authoritative_male_deep",
+      "personality": "霸道威严",
+      "lines": {
+        "select": "寡人横扫六合，天下一统，舍我其谁！",
+        "idle": "天下之大，尽在朕掌握之中。",
+        "attack": "大军所至，寸草不生！",
+        "defend": "朕的江山，固若金汤！",
+        "victory": "普天之下，莫非王土！",
+        "defeat": "朕之基业，竟毁于一旦……",
+        "special_event": "焚书坑儒，钳制思想，此乃治国之需。"
+      }
+    },
+    {
+      "emperorId": "liu_bang",
+      "emperorName": "汉高祖刘邦",
+      "voiceProfile": "folk_male_warm",
+      "personality": "草根亲和",
+      "lines": {
+        "select": "当年我也只是一介亭长，如今坐拥天下，靠的就是人心。",
+        "idle": "打天下容易，坐天下难。",
+        "attack": "兄弟们，跟我上！",
+        "defend": "守住，我们能守住！",
+        "victory": "哈哈！我刘邦也能当皇帝！",
+        "defeat": "……时也，命也。",
+        "special_event": "约法三章，除秦苛法，与民休息。"
+      }
+    },
+    {
+      "emperorId": "han_wu_di",
+      "emperorName": "汉武帝刘彻",
+      "voiceProfile": "expansive_male_strong",
+      "personality": "雄才大略",
+      "lines": {
+        "select": "寇可往，我亦可往！开疆拓土，方显帝王本色！",
+        "idle": "匈奴未灭，何以家为？",
+        "attack": "冠军侯的军队，到哪里去了！给我冲！",
+        "defend": "大汉天威，不容侵犯！",
+        "victory": "犯强汉者，虽远必诛！",
+        "defeat": "朕……愧对先祖……",
+        "special_event": "罢黜百家，独尊儒术，中华文明由此而定。"
+      }
+    },
+    {
+      "emperorId": "cao_cao",
+      "emperorName": "魏武帝曹操",
+      "voiceProfile": "tragic_male_gravelly",
+      "personality": "乱世奸雄",
+      "lines": {
+        "select": "宁教我负天下人，休教天下人负我！",
+        "idle": "对酒当歌，人生几何。",
+        "attack": "全军出击，直取敌营！",
+        "defend": "守住此地，便是守住天下！",
+        "victory": "天下英雄，唯使君与操耳！",
+        "defeat": "既生操，何生亮……",
+        "special_event": "挟天子以令诸侯，霸业由此而成。"
+      }
+    },
+    {
+      "emperorId": "li_shi_min",
+      "emperorName": "唐太宗李世民",
+      "voiceProfile": "glorious_male_confident",
+      "personality": "天可汗",
+      "lines": {
+        "select": "天可汗之号，非朕自封，乃万国所敬！",
+        "idle": "以史为镜，可以知兴替。",
+        "attack": "贞观之威，所向披靡！",
+        "defend": "大唐铁骑，坚不可摧！",
+        "victory": "万国来朝，四海升平！",
+        "defeat": "……朕失大唐……",
+        "special_event": "玄武门之变，刀光剑影，成王败寇。"
+      }
+    },
+    {
+      "emperorId": "zhao_kuang_yin",
+      "emperorName": "宋太祖赵匡胤",
+      "voiceProfile": "restrained_male_wiseful",
+      "personality": "重文抑武",
+      "lines": {
+        "select": "杯酒释兵权，你们都回家享福去吧。",
+        "idle": "书生治国，方能久安。",
+        "attack": "大宋铁骑，随我出征！",
+        "defend": "文治天下，以守为攻。",
+        "victory": "天下太平，文化昌盛！",
+        "defeat": "重文轻武，积弱成疾……",
+        "special_event": "黄袍加身，陈桥兵变，皇权天授。"
+      }
+    },
+    {
+      "emperorId": "zhu_yuan_zhang",
+      "emperorName": "明太祖朱元璋",
+      "voiceProfile": "harsh_male_gruff",
+      "personality": "严刑峻法",
+      "lines": {
+        "select": "朕本淮右布衣，天下于朕何加焉！",
+        "idle": "空印案、郭桓案，贪官污吏，一个不留！",
+        "attack": "驱除胡虏，恢复中华！",
+        "defend": "大明江山，容不得半点腐败！",
+        "victory": "日月重开，大明永昌！",
+        "defeat": "朕杀尽贪官，为何还是亡了……",
+        "special_event": "废除丞相，集权于朕，严刑峻法以治国。"
+      }
+    },
+    {
+      "emperorId": "kang_xi",
+      "emperorName": "清圣祖康熙",
+      "voiceProfile": "magnificent_male_elder",
+      "personality": "多元一体",
+      "lines": {
+        "select": "朕要做一个为中国开创盛世的帝王！",
+        "idle": "九州万方，皆是朕的子民。",
+        "attack": "八旗铁骑，所向披靡！",
+        "defend": "盛世的根基，不可动摇！",
+        "victory": "康乾盛世，千古一帝！",
+        "defeat": "……朕的大清……",
+        "special_event": "六下江南，亲征葛尔丹，文治武功皆有建树。"
+      }
+    },
+    {
+      "emperorId": "yang_jian",
+      "emperorName": "隋文帝杨坚",
+      "voiceProfile": "reform_male_dignified",
+      "personality": "结束乱世",
+      "lines": {
+        "select": "结束了南北朝的分裂，天下重归一统。",
+        "idle": "开皇之治，百姓安康。",
+        "attack": "隋军一出，谁与争锋！",
+        "defend": "一统的江山，绝不分裂！",
+        "victory": "天下一家，四海升平！",
+        "defeat": "朕的隋朝，竟如此短命……",
+        "special_event": "杨坚受禅，建立隋朝，结束三百年乱世。"
+      }
+    },
+    {
+      "emperorId": "chai_rong",
+      "emperorName": "后周世宗柴荣",
+      "voiceProfile": "ambitious_male_youthful",
+      "personality": "壮志未酬",
+      "lines": {
+        "select": "朕要用十年开拓天下，十年养百姓，十年致太平！",
+        "idle": "十年之约，何其短暂……",
+        "attack": "北伐幽燕，直捣黄龙！",
+        "defend": "中原复兴，绝不后退！",
+        "victory": "还我中原！",
+        "defeat": "朕的十年……来不及了……",
+        "special_event": "柴荣早逝，赵匡胤陈桥兵变，建立北宋。"
+      }
+    },
+    {
+      "emperorId": "yuan_hong",
+      "emperorName": "北魏孝文帝元宏",
+      "voiceProfile": "cultured_male_refined",
+      "personality": "汉化改革",
+      "lines": {
+        "select": "胡汉融合，方能长治久安。",
+        "idle": "移都洛阳，改汉姓，穿汉服。",
+        "attack": "改革的意志，无可阻挡！",
+        "defend": "文化的融合，需要时间。",
+        "victory": "鲜卑与汉族，从此一家！",
+        "defeat": "改革未尽，朕心不甘……",
+        "special_event": "孝文汉化，迁都洛阳，鲜卑融入华夏。"
+      }
+    },
+    {
+      "emperorId": "shi_le",
+      "emperorName": "后赵高祖石勒",
+      "voiceProfile": "epic_male_rough",
+      "personality": "逆天改命",
+      "lines": {
+        "select": "朕从奴隶到皇帝，逆天改命！",
+        "idle": "读书不多，但朕知道要向前走。",
+        "attack": "石勒的军队，踏平一切！",
+        "defend": "朕的江山，是用命换来的！",
+        "victory": "从奴隶到帝王，朕做到了！",
+        "defeat": "……朕这一生，如梦一场……",
+        "special_event": "石勒从奴隶到皇帝，史上最传奇的逆袭。"
+      }
+    },
+    {
+      "emperorId": "liu_bei",
+      "emperorName": "汉昭烈帝刘备",
+      "voiceProfile": "righteous_male_warm",
+      "personality": "汉室正统",
+      "lines": {
+        "select": "朕乃中山靖王之后，匡扶汉室，天经地义！",
+        "idle": "以人为本，以德服人。",
+        "attack": "为复兴汉室而战！",
+        "defend": "汉室的江山，不能丢！",
+        "victory": "汉室复兴，指日可待！",
+        "defeat": "朕的蜀汉……诸葛先生……",
+        "special_event": "三顾茅庐，请诸葛亮出山，匡扶汉室。"
+      }
+    }
+  ]
+}

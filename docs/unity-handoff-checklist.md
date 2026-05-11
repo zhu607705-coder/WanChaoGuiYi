@@ -1,70 +1,71 @@
-# Unity Handoff Checklist
+# Unity/Tuanjie Handoff Checklist
 
-This checklist is for the machine that has Unity Editor installed.
+This checklist is for a machine that has Unity Editor or Tuanjie installed.
 
 ## Goal
 
-Prove the same war loop that passed on the laptop also boots, compiles, and runs inside Unity Editor before any scene setup work begins.
+Prove the same strategy loop that passed in headless and Web verification can still boot, compile, and run inside the Unity/Tuanjie project before scene setup or visual smoke work begins.
 
-## Before Opening Unity
+## Before Opening The Editor
 
-1. Pull or copy the repository.
-2. From the repository root, run the one-step handoff gate:
+1. Pull the repository.
+2. From the repository root, run the handoff gate:
 
-```bash
-tools/verify_unity_handoff.sh
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\verify_unity_handoff.ps1
 ```
 
 This gate runs:
 
-```bash
-python3 tools/unity/preflight_without_unity.py
-tools/verify_headless_war.sh WanChaoGuiYi/Assets/Data faction_qin_shi_huang
+```powershell
+python tools\unity\preflight_without_unity.py
+powershell -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1 "My project\Assets\Data" faction_qin_shi_huang
 ```
 
-Expected headless result:
+Expected result:
 
 ```text
-DATA VALIDATION PASSED
-[domain-core] OK: Domain folder is Unity-free and adapters delegate to Domain types.
-Headless war verification: passed=True scenarioCount=4
-[PASS] defender_holds_and_attacker_retreats turns=2
-[PASS] attacker_wins_and_occupies turns=2
-[PASS] reinforcement_joins_existing_engagement turns=2
-[PASS] active_retreat_leaves_engagement turns=2
+[unity-preflight] OK
+Headless war verification: passed=True scenarioCount=16
 ```
 
 The command rewrites `tools/headless_runner/latest-war-report.json`. That file is generated output and should not be committed.
 
-## Unity Editor Smoke
+## Editor Smoke
 
-1. Open `WanChaoGuiYi` as the Unity project.
-2. Let Unity import packages and compile scripts.
+1. Open `My project` as the Unity/Tuanjie project.
+2. Let the editor import packages and compile scripts.
 3. Run PlayMode tests:
 
-```bash
-tools/unity/run_playmode_tests.sh
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\unity\run_playmode_tests.ps1 "My project"
 ```
 
-4. If the script cannot find Unity, set:
+or:
 
-```bash
-export UNITY_BIN="/path/to/Unity.app/Contents/MacOS/Unity"
-tools/unity/run_playmode_tests.sh
+```cmd
+tools\unity\run_playmode_tests.cmd "My project"
+```
+
+If the editor is not auto-detected, set `UNITY_BIN` first:
+
+```powershell
+$env:UNITY_BIN="E:\万朝归一\Editor\Tuanjie.exe"
+powershell -ExecutionPolicy Bypass -File tools\unity\run_playmode_tests.ps1 "My project"
 ```
 
 ## Expected Result
 
 - `GameManager` creates `DataRepository`, `WorldState`, `MapQueryService`, and `MapCommandService`.
 - The default player faction is `faction_qin_shi_huang`.
-- The first war turn creates contact but does not resolve battle.
-- The second war turn resolves battle and runs economy.
-- Restarting the game rebinds the map-led war systems to the new `WorldState`.
+- Headless war verification reports at least 16 passing scenarios.
+- PlayMode results XML reports passing tests and no failed cases.
+- Web strategy-map verification remains independent from Unity generated folders.
 
 ## If Something Fails
 
-- Data validation failure: fix the JSON table or reference listed by `tools/validate_data.py` before opening Unity.
+- Data validation failure: fix the JSON table or reference listed by `tools/validate_data.py`.
 - Domain validation failure: keep runtime Domain scripts Unity-free and move Unity-specific behavior behind adapters.
-- Headless war failure: inspect `tools/headless_runner/latest-war-report.json`; the failing scenario includes `failureStage`, `failureReason`, `phaseResults`, `assertions`, `keyDeltas`, and `logs`.
-- Unity compile failure: fix compiler errors first, then rerun `tools/unity/run_playmode_tests.sh`.
-- PlayMode failure: compare Unity logs with the headless report to determine whether the issue is runtime logic or Unity binding.
+- Headless war failure: inspect `tools/headless_runner/latest-war-report.json`; failing scenarios include phase results, assertions, deltas, and logs.
+- Editor compile failure: fix compiler errors first, then rerun PlayMode tests.
+- PlayMode failure: compare editor logs with the headless report to determine whether the issue is runtime logic or Unity binding.

@@ -6,8 +6,17 @@ namespace WanChaoGuiYi
     {
         public string attackerArmyId;
         public string defenderArmyId;
+        public string battleRegionId;
         public int attackerPower;
         public int defenderPower;
+        public int attackerSupplyPowerPercent = 100;
+        public int defenderSupplyPowerPercent = 100;
+        public int attackerLowestSupply = -1;
+        public int defenderLowestSupply = -1;
+        public int attackerSoldiersBefore;
+        public int attackerSoldiersAfter;
+        public int defenderSoldiersBefore;
+        public int defenderSoldiersAfter;
         public bool attackerWon;
         public List<BattleLog> battleLog;
         public int formationBonus;

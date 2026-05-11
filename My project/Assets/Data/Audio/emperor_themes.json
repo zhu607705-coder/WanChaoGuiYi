@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "description": "万朝归一 - 帝王主题音乐清单，13位帝王各有独特音乐",
+  "items": [
+    {
+      "emperorId": "qin_shi_huang",
+      "musicCueId": "emperor_qin_shi_huang",
+      "fileName": "emperor_qin_shi_huang.mp3",
+      "mood": "imperial",
+      "bpm": 100,
+      "tags": ["emperor", "qin", "unification"],
+      "historicalContext": "秦始皇一统六合，气吞山河，威严霸道"
+    },
+    {
+      "emperorId": "liu_bang",
+      "musicCueId": "emperor_liu_bang",
+      "fileName": "emperor_liu_bang.mp3",
+      "mood": "folk",
+      "bpm": 95,
+      "tags": ["emperor", "han", "grassroots"],
+      "historicalContext": "刘邦草根崛起，约法三章，天命所归"
+    },
+    {
+      "emperorId": "han_wu_di",
+      "musicCueId": "emperor_han_wu_di",
+      "fileName": "emperor_han_wu_di.mp3",
+      "mood": "expansive",
+      "bpm": 115,
+      "tags": ["emperor", "han", "expansion"],
+      "historicalContext": "汉武雄才大略，开疆拓土，远征匈奴"
+    },
+    {
+      "emperorId": "cao_cao",
+      "musicCueId": "emperor_cao_cao",
+      "fileName": "emperor_cao_cao.mp3",
+      "mood": "tragic",
+      "bpm": 90,
+      "tags": ["emperor", "wei", "tragedy"],
+      "historicalContext": "曹操乱世奸雄，慷慨悲歌，壮志未酬"
+    },
+    {
+      "emperorId": "li_shi_min",
+      "musicCueId": "emperor_li_shi_min",
+      "fileName": "emperor_li_shi_min.mp3",
+      "mood": "glorious",
+      "bpm": 120,
+      "tags": ["emperor", "tang", "glory"],
+      "historicalContext": "李世民天可汗，万国来朝，贞观之治"
+    },
+    {
+      "emperorId": "zhao_kuang_yin",
+      "musicCueId": "emperor_zhao_kuang_yin",
+      "fileName": "emperor_zhao_kuang_yin.mp3",
+      "mood": "restrained",
+      "bpm": 85,
+      "tags": ["emperor", "song", "civil"],
+      "historicalContext": "赵匡胤杯酒释兵权，文治天下，重文轻武"
+    },
+    {
+      "emperorId": "zhu_yuan_zhang",
+      "musicCueId": "emperor_zhu_yuan_zhang",
+      "fileName": "emperor_zhu_yuan_zhang.mp3",
+      "mood": "harsh",
+      "bpm": 100,
+      "tags": ["emperor", "ming", "rigorous"],
+      "historicalContext": "朱元璋驱逐胡尘，重建华夏，严刑峻法"
+    },
+    {
+      "emperorId": "kang_xi",
+      "musicCueId": "emperor_kang_xi",
+      "fileName": "emperor_kang_xi.mp3",
+      "mood": "magnificent",
+      "bpm": 110,
+      "tags": ["emperor", "qing", "prosperity"],
+      "historicalContext": "康熙盛世，多元一体，文治武功"
+    },
+    {
+      "emperorId": "yang_jian",
+      "musicCueId": "emperor_yang_jian",
+      "fileName": "emperor_yang_jian.mp3",
+      "mood": "reform",
+      "bpm": 95,
+      "tags": ["emperor", "sui", "reform"],
+      "historicalContext": "杨坚结束乱世，重归一统，开皇之治"
+    },
+    {
+      "emperorId": "chai_rong",
+      "musicCueId": "emperor_chai_rong",
+      "fileName": "emperor_chai_rong.mp3",
+      "mood": "ambitious",
+      "bpm": 105,
+      "tags": ["emperor", "zhou", "ambition"],
+      "historicalContext": "柴荣中原振兴，北伐幽燕，壮志未酬"
+    },
+    {
+      "emperorId": "yuan_hong",
+      "musicCueId": "emperor_yuan_hong",
+      "fileName": "emperor_yuan_hong.mp3",
+      "mood": "cultured",
+      "bpm": 85,
+      "tags": ["emperor", "wei", "sinicization"],
+      "historicalContext": "元宏孝文改革，汉化融合，民族融合"
+    },
+    {
+      "emperorId": "shi_le",
+      "musicCueId": "emperor_shi_le",
+      "fileName": "emperor_shi_le.mp3",
+      "mood": "epic",
+      "bpm": 100,
+      "tags": ["emperor", "zhao", "rebellion"],
+      "historicalContext": "石勒从奴隶到皇帝，逆天改命，乱世英雄"
+    },
+    {
+      "emperorId": "liu_bei",
+      "musicCueId": "emperor_liu_bei",
+      "fileName": "emperor_liu_bei.mp3",
+      "mood": "righteous",
+      "bpm": 90,
+      "tags": ["emperor", "shu", "righteous"],
+      "historicalContext": "刘备汉室正统，仁德天下，匡扶汉室"
+    }
+  ]
+}
