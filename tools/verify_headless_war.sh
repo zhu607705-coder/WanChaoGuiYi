@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DATA_DIR="${1:-"$ROOT_DIR/My project/Assets/Data"}"
+DEFAULT_DATA_DIR="$ROOT_DIR/web-strategy-map/game-data-source/data"
+DATA_DIR="${1:-"$DEFAULT_DATA_DIR"}"
 PLAYER_FACTION_ID="${2:-faction_qin_shi_huang}"
 
 PYTHON_BIN="${PYTHON_BIN:-}"
@@ -17,7 +18,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
   fi
 fi
 
-"$PYTHON_BIN" "$ROOT_DIR/tools/validate_data.py" "$DATA_DIR"
+"$PYTHON_BIN" "$ROOT_DIR/tools/validate_web_data_source.py"
 "$PYTHON_BIN" "$ROOT_DIR/tools/validate_domain_core.py"
 "$ROOT_DIR/tools/run_headless_simulation.sh" "$DATA_DIR" "$PLAYER_FACTION_ID"
 "$PYTHON_BIN" - "$ROOT_DIR/tools/headless_runner/latest-war-report.json" <<'PY'
@@ -32,8 +33,8 @@ if report.get("runName") != "headless_war_causality_scenarios":
     raise SystemExit("Unexpected runName in " + path)
 if report.get("passed") is not True:
     raise SystemExit("Headless war report did not pass")
-if report.get("scenarioCount", 0) < 14:
-    raise SystemExit("Expected at least 14 scenarios in " + path)
+if report.get("scenarioCount", 0) < 16:
+    raise SystemExit("Expected at least 16 scenarios in " + path)
 if report.get("failedCount") != 0:
     raise SystemExit("Expected all scenarios to pass in " + path)
 if report.get("passedCount") != report.get("scenarioCount"):

@@ -124,6 +124,10 @@ type DebugState = {
     saveSlotMessage: string;
     saveSlotError: string;
     saveSlotCount: number;
+    chronicleCatalogCount: number;
+    chronicleHistoryLength: number;
+    latestChronicleEventId: string;
+    latestChronicleEventSummary: string;
   };
 };
 
@@ -336,11 +340,14 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('governance-actions')).toContainText('副作用');
     await expect(page.getByTestId('emperor-dock')).toContainText('帝皇');
     await expect(page.getByTestId('emperor-dock')).toContainText('六合同轨');
+    await expect(page.locator('[data-asset-icon="metric:人口"]').first()).toHaveAttribute('src', /\/game-data\/art\/Icons\/Systems\/population\.png$/);
+    await expect(page.getByTestId('emperor-portrait')).toHaveAttribute('src', /\/game-data\/art\/Portraits\/qin_shi_huang\.png$/);
 
     await page.locator('[data-emperor-id="li_shi_min"]').click();
     await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorId)).toBe('li_shi_min');
     await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorMechanic)).toContain('贞观');
     await expect(page.getByTestId('emperor-dock')).toContainText('李世民');
+    await expect(page.getByTestId('emperor-portrait')).toHaveAttribute('src', /\/game-data\/art\/Portraits\/li_shi_min\.png$/);
     await expect(page.getByTestId('audio-hud')).toContainText('启用音频');
 
     await page.locator('.audio-summary').click();
@@ -411,6 +418,8 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-war-tab="army"]').click();
     await expect(page.getByTestId('army-micro')).toContainText('军队微操');
     await expect(page.getByTestId('army-organization')).toContainText('编组与将领');
+    await expect(page.getByTestId('general-portrait')).toHaveAttribute('src', /\/game-data\/art\/Portraits\/Generals\/wei_qing_image2\.png$/);
+    await expect(page.locator('[data-asset-icon="unit:cavalry"]').first()).toHaveAttribute('src', /\/game-data\/art\/Icons\/Units\/cavalry\.png$/);
     const beforeWar = await debug(page);
     await page.locator('[data-action="army_order_forced_march"]').click();
     await expect.poll(() => debug(page).then((state) => state.ui.armyOrder)).toBe('急行抢道');
@@ -607,6 +616,31 @@ test.describe('code-driven strategy map', () => {
     await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe('hexi');
     await expect.poll(() => debug(page).then((state) => state.ui.governanceFocus)).toBe('relief');
     await expect(page.getByTestId('governance-micro')).toContainText('安抚民生');
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('publishes chronicle events through the Unity-free web turn loop', async ({ page }) => {
+    test.setTimeout(60_000);
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await expect.poll(() => debug(page).then((state) => state.ui.chronicleCatalogCount)).toBeGreaterThan(100);
+    await expect(page.getByTestId('chronicle-panel')).toContainText('编年纪事');
+
+    const before = await debug(page);
+    await page.locator('[data-action="governance_advance_turn"]').click();
+    await expect.poll(() => debug(page).then((state) => state.ui.chronicleHistoryLength)).toBeGreaterThan(before.ui.chronicleHistoryLength);
+    const after = await debug(page);
+    expect(after.ui.latestChronicleEventId).not.toBe('');
+    expect(after.ui.latestChronicleEventSummary).toContain('内政第');
+    await expect(page.getByTestId('chronicle-panel')).toContainText('廷议');
+
+    const snapshot = await exportGameState(page);
+    await page.reload();
+    await openApp(page);
+    expect(await importGameState(page, snapshot)).toBe(true);
+    await expect.poll(() => debug(page).then((state) => state.ui.latestChronicleEventSummary)).toBe(after.ui.latestChronicleEventSummary);
+
     expect(consoleErrors).toEqual([]);
   });
 

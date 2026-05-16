@@ -11,31 +11,31 @@
     <Compile Include="Program.cs" />
     <Compile Include="NonUnityJsonDataRepository.cs" />
     <Compile Include="HeadlessBattleTypes.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Data/DataModels.cs" Link="Game/DataModels.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Core/EventBus.cs" Link="Game/EventBus.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Core/GameContext.cs" Link="Game/GameContext.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Core/GameState.cs" Link="Game/GameState.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Core/GameStateFactory.cs" Link="Game/GameStateFactory.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Core/NumericSystem.cs" Link="Game/NumericSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/DomainMath.cs" Link="Game/DomainMath.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/HeadlessSimulationRunner.cs" Link="Game/HeadlessSimulationRunner.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/IDataRepository.cs" Link="Game/IDataRepository.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/IGameSystem.cs" Link="Game/IGameSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/StrategyCausalRules.cs" Link="Game/StrategyCausalRules.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Core/StrategyMapRulebook.cs" Link="Game/StrategyMapRulebook.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Economy/DomainEconomySystem.cs" Link="Game/DomainEconomySystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Governance/DomainGovernanceImpactSystem.cs" Link="Game/DomainGovernanceImpactSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Map/IMapGraphData.cs" Link="Game/IMapGraphData.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Map/MapCommandService.cs" Link="Game/MapCommandService.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Map/MapGraphData.cs" Link="Game/MapGraphData.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Map/MapQueryService.cs" Link="Game/MapQueryService.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainArmyMovementSystem.cs" Link="Game/DomainArmyMovementSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainBattleSimulationSystem.cs" Link="Game/DomainBattleSimulationSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainEngagementCleanup.cs" Link="Game/DomainEngagementCleanup.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainEngagementDetector.cs" Link="Game/DomainEngagementDetector.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainMapWarResolutionSystem.cs" Link="Game/DomainMapWarResolutionSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/Military/DomainOccupationSystem.cs" Link="Game/DomainOccupationSystem.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/World/WorldState.cs" Link="Game/WorldState.cs" />
-    <Compile Include="../../../My project/Assets/Scripts/Domain/World/WorldStateFactory.cs" Link="Game/WorldStateFactory.cs" />
+    <Compile Include="../../../domain-core/src/Data/DataModels.cs" Link="Game/DataModels.cs" />
+    <Compile Include="../../../domain-core/src/Core/EventBus.cs" Link="Game/EventBus.cs" />
+    <Compile Include="../../../domain-core/src/Core/GameContext.cs" Link="Game/GameContext.cs" />
+    <Compile Include="../../../domain-core/src/Core/GameState.cs" Link="Game/GameState.cs" />
+    <Compile Include="../../../domain-core/src/Core/GameStateFactory.cs" Link="Game/GameStateFactory.cs" />
+    <Compile Include="../../../domain-core/src/Core/NumericSystem.cs" Link="Game/NumericSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/DomainMath.cs" Link="Game/DomainMath.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/HeadlessSimulationRunner.cs" Link="Game/HeadlessSimulationRunner.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/IDataRepository.cs" Link="Game/IDataRepository.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/IGameSystem.cs" Link="Game/IGameSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/StrategyCausalRules.cs" Link="Game/StrategyCausalRules.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Core/StrategyMapRulebook.cs" Link="Game/StrategyMapRulebook.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Economy/DomainEconomySystem.cs" Link="Game/DomainEconomySystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Governance/DomainGovernanceImpactSystem.cs" Link="Game/DomainGovernanceImpactSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Map/IMapGraphData.cs" Link="Game/IMapGraphData.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Map/MapCommandService.cs" Link="Game/MapCommandService.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Map/MapGraphData.cs" Link="Game/MapGraphData.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Map/MapQueryService.cs" Link="Game/MapQueryService.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainArmyMovementSystem.cs" Link="Game/DomainArmyMovementSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainBattleSimulationSystem.cs" Link="Game/DomainBattleSimulationSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainEngagementCleanup.cs" Link="Game/DomainEngagementCleanup.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainEngagementDetector.cs" Link="Game/DomainEngagementDetector.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainMapWarResolutionSystem.cs" Link="Game/DomainMapWarResolutionSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Military/DomainOccupationSystem.cs" Link="Game/DomainOccupationSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/World/WorldState.cs" Link="Game/WorldState.cs" />
+    <Compile Include="../../../domain-core/src/Domain/World/WorldStateFactory.cs" Link="Game/WorldStateFactory.cs" />
   </ItemGroup>
 </Project>

@@ -9,11 +9,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT / "My project" / "Assets" / "Data"
-MAP_PATH = ROOT / "My project" / "Assets" / "Art" / "Map" / "jiuzhou_generated_map.png"
+SOURCE_ROOT = ROOT / "web-strategy-map" / "game-data-source"
+DATA_DIR = SOURCE_ROOT / "data"
+MAP_PATH = SOURCE_ROOT / "map" / "jiuzhou_generated_map.png"
 METADATA_PATH = DATA_DIR / "map_render_metadata.json"
-RESOURCE_MAP_PATH = ROOT / "My project" / "Assets" / "Resources" / "Map" / "jiuzhou_generated_map.png"
-RESOURCE_METADATA_PATH = ROOT / "My project" / "Assets" / "Resources" / "Data" / "map_render_metadata.json"
 
 WIDTH = 2048
 HEIGHT = 1536
@@ -89,7 +88,6 @@ def main():
     if args.render_map:
         render_map(regions, shapes, MAP_PATH)
         write_metadata(METADATA_PATH, shapes)
-        sync_resource_mirror()
 
     print(
         "Rendered Jiuzhou map:",
@@ -140,7 +138,7 @@ def refine_shapes(region_table, shape_table):
     shape_table["precision"] = MAP_PRECISION
     shape_table[
         "designReference"
-    ] = "Map-aligned region polygons generated from stable region centers; used by both the PNG map source and Unity interaction meshes."
+    ] = "Map-aligned region polygons generated from stable region centers; used by the Web map source and headless code checks."
     shape_table["items"] = refined
 
 
@@ -281,7 +279,7 @@ def write_metadata(path, shape_table):
         "schemaVersion": 1,
         "mapScope": "china",
         "precision": shape_table["precision"],
-        "sourceImage": "Assets/Art/Map/jiuzhou_generated_map.png",
+        "sourceImage": "/game-data/map/jiuzhou_generated_map.png",
         "imageSize": {
             "width": WIDTH,
             "height": HEIGHT,
@@ -294,13 +292,6 @@ def write_metadata(path, shape_table):
         "spritePixelsPerUnit": SPRITE_PIXELS_PER_UNIT,
     }
     save_json(path, metadata)
-
-
-def sync_resource_mirror():
-    RESOURCE_MAP_PATH.parent.mkdir(parents=True, exist_ok=True)
-    RESOURCE_METADATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    RESOURCE_MAP_PATH.write_bytes(MAP_PATH.read_bytes())
-    RESOURCE_METADATA_PATH.write_text(METADATA_PATH.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
 
 
 def draw_river(draw, points):

@@ -40,15 +40,14 @@ namespace WanChaoGuiYi
             string current = Directory.GetCurrentDirectory();
             for (int i = 0; i < 8; i++)
             {
-                string candidate = Path.Combine(current, "My project", "Assets", "Data");
-                if (Directory.Exists(candidate)) return candidate;
+                string webDataCandidate = Path.Combine(current, "web-strategy-map", "game-data-source", "data");
+                if (Directory.Exists(webDataCandidate)) return webDataCandidate;
 
                 DirectoryInfo parent = Directory.GetParent(current);
                 if (parent == null) break;
                 current = parent.FullName;
             }
-
-            return Path.Combine(Directory.GetCurrentDirectory(), "My project", "Assets", "Data");
+            return Path.Combine(Directory.GetCurrentDirectory(), "web-strategy-map", "game-data-source", "data");
         }
 
         private static string FindReportPath()
@@ -67,7 +66,7 @@ namespace WanChaoGuiYi
             for (int i = 0; i < 8; i++)
             {
                 if (Directory.Exists(Path.Combine(current, "tools", "headless_runner")) &&
-                    Directory.Exists(Path.Combine(current, "My project", "Assets", "Data")))
+                    Directory.Exists(Path.Combine(current, "web-strategy-map", "game-data-source", "data")))
                 {
                     return current;
                 }

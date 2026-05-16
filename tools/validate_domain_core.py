@@ -3,8 +3,9 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "My project" / "Assets" / "Scripts"
-DOMAIN = SCRIPTS / "Domain"
+DOMAIN_CORE = ROOT / "domain-core" / "src"
+DOMAIN = DOMAIN_CORE / "Domain"
+HEADLESS_CSPROJ = ROOT / "tools" / "headless_runner" / "WanChaoGuiYiHeadless" / "WanChaoGuiYiHeadless.csproj"
 
 FORBIDDEN_DOMAIN_TOKENS = [
     "using UnityEngine",
@@ -17,27 +18,22 @@ FORBIDDEN_DOMAIN_TOKENS = [
     "MapGraph)",
 ]
 
-EXPECTED_ADAPTERS = {
-    SCRIPTS / "Military" / "ArmyMovementSystem.cs": "DomainArmyMovementSystem",
-    SCRIPTS / "Military" / "BattleSimulationSystem.cs": "DomainBattleSimulationSystem",
-    SCRIPTS / "Military" / "EngagementDetector.cs": "DomainEngagementDetector",
-    SCRIPTS / "Military" / "MapWarResolutionSystem.cs": "DomainMapWarResolutionSystem",
-    SCRIPTS / "Military" / "OccupationSystem.cs": "DomainOccupationSystem",
-    SCRIPTS / "Governance" / "GovernanceImpactSystem.cs": "DomainGovernanceImpactSystem",
-    SCRIPTS / "Economy" / "EconomySystem.cs": "DomainEconomySystem",
-}
-
-
 def fail(message: str) -> None:
     print(f"[domain-core] ERROR: {message}")
     sys.exit(1)
 
 
-def validate_domain_folder() -> None:
+def validate_domain_core_folder() -> None:
+    if not DOMAIN_CORE.exists():
+        fail(f"Domain core folder missing: {DOMAIN_CORE.relative_to(ROOT)}")
     if not DOMAIN.exists():
-        fail(f"Domain folder missing: {DOMAIN}")
+        fail(f"Domain folder missing: {DOMAIN.relative_to(ROOT)}")
 
-    for path in sorted(DOMAIN.rglob("*.cs")):
+    source_files = sorted(DOMAIN_CORE.rglob("*.cs"))
+    if len(source_files) < 20:
+        fail(f"Expected migrated C# domain/core files under domain-core/src, got {len(source_files)}")
+
+    for path in source_files:
         text = path.read_text(encoding="utf-8")
         rel = path.relative_to(ROOT)
         for token in FORBIDDEN_DOMAIN_TOKENS:
@@ -45,23 +41,21 @@ def validate_domain_folder() -> None:
                 fail(f"Forbidden token '{token}' in {rel}")
 
 
-def validate_adapters() -> None:
-    for path, domain_type in EXPECTED_ADAPTERS.items():
-        if not path.exists():
-            fail(f"Adapter file missing: {path.relative_to(ROOT)}")
+def validate_headless_project_links() -> None:
+    if not HEADLESS_CSPROJ.exists():
+        fail(f"Headless csproj missing: {HEADLESS_CSPROJ.relative_to(ROOT)}")
 
-        text = path.read_text(encoding="utf-8")
-        rel = path.relative_to(ROOT)
-        if domain_type not in text:
-            fail(f"Adapter {rel} does not reference {domain_type}")
-        if "using UnityEngine" not in text:
-            fail(f"Adapter {rel} should remain an explicit Unity boundary")
+    text = HEADLESS_CSPROJ.read_text(encoding="utf-8")
+    if "My project/Assets/Scripts" in text or "My project\\Assets\\Scripts" in text:
+        fail("Headless csproj still links C# source from My project/Assets/Scripts")
+    if "../../../domain-core/src/" not in text:
+        fail("Headless csproj does not link migrated domain-core/src files")
 
 
 def main() -> None:
-    validate_domain_folder()
-    validate_adapters()
-    print("[domain-core] OK: Domain folder is Unity-free and adapters delegate to Domain types.")
+    validate_domain_core_folder()
+    validate_headless_project_links()
+    print("[domain-core] OK: domain-core/src is Unity-free and headless links migrated C# sources.")
 
 
 if __name__ == "__main__":

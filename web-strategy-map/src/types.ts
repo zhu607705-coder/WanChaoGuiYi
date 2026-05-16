@@ -170,6 +170,7 @@ export interface RouteNetworkDefinition {
 
 export interface GeneralDefinition {
   id: string;
+  portraitAssetPath: string;
   name: string;
   title: string;
   era: string;
@@ -181,6 +182,28 @@ export interface GeneralDefinition {
   terrainBonus: Record<string, number>;
   unitBonus: Record<string, number>;
   sourceReference: string;
+}
+
+export interface PortraitDefinition {
+  id: string;
+  emperorId: string;
+  assetPath: string;
+  sourceStatus: string;
+  version: string;
+  visualIdentity?: {
+    silhouette?: string;
+    costume?: string;
+    props?: string[];
+    palette?: string[];
+    backgroundMotif?: string;
+    expression?: string;
+  };
+  prompt?: string;
+  uiCropHints?: {
+    headCenterX?: number;
+    headCenterY?: number;
+    safeScale?: number;
+  };
 }
 
 export interface EmperorDefinition {
@@ -232,6 +255,35 @@ export interface ChronicleEventMusicCue {
   bpm: number;
   tags: string[];
   historicalContext?: string;
+}
+
+export interface ChronicleTurnWindow {
+  startTurn: number;
+  endTurn: number;
+}
+
+export interface ChronicleChoiceDefinition {
+  id: string;
+  label: string;
+  effects?: Record<string, number>;
+  risks?: Record<string, number>;
+  followUpTags?: string[];
+}
+
+export interface ChronicleEventDefinition {
+  id: string;
+  name: string;
+  eventType: string;
+  eraScope?: string[];
+  turnWindow?: ChronicleTurnWindow;
+  regionScopeTags?: string[];
+  requiredTechs?: string[];
+  weatherTags?: string[];
+  astronomyTags?: string[];
+  triggerWeight: number;
+  choices?: ChronicleChoiceDefinition[];
+  cooldownTurns?: number;
+  uiSummary: string;
 }
 
 export interface NarrationSegment {

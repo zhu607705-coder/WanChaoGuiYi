@@ -3,7 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT_DIR/tools/headless_runner/WanChaoGuiYiHeadless/WanChaoGuiYiHeadless.csproj"
-DATA_DIR="${1:-$ROOT_DIR/My project/Assets/Data}"
+DEFAULT_DATA_DIR="$ROOT_DIR/web-strategy-map/game-data-source/data"
+DATA_DIR="${1:-$DEFAULT_DATA_DIR}"
 PLAYER_FACTION_ID="${2:-faction_qin_shi_huang}"
 
 DOTNET_BIN="${DOTNET_BIN:-}"

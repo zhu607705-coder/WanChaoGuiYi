@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT / "My project" / "Assets" / "Data"
+DATA_DIR = ROOT / "web-strategy-map" / "game-data-source" / "data"
 DEFAULT_OUTPUT = ROOT / ".outputs" / "visual" / "jiuzhou_isometric_preview.png"
 
 WIDTH = 1920

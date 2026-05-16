@@ -1,6 +1,7 @@
 import type {
   ArmyViewModel,
   BuildingDefinition,
+  ChronicleEventDefinition,
   ChronicleEventMusicCue,
   EmperorDefinition,
   EmperorThemeCue,
@@ -13,6 +14,7 @@ import type {
   MapRenderMetadata,
   NarrationScript,
   PolicyDefinition,
+  PortraitDefinition,
   RegionDefinition,
   RouteNetworkDefinition,
   RegionShape,
@@ -23,17 +25,21 @@ import type {
 } from './types';
 
 const dataRoot = '/game-data/data';
+const assetRoot = '/game-data';
 
 export interface StrategyDataset {
   metadata: MapRenderMetadata;
   regions: RegionViewModel[];
   regionById: Map<string, RegionViewModel>;
   emperors: EmperorDefinition[];
+  portraits: PortraitDefinition[];
+  portraitByEmperorId: Map<string, PortraitDefinition>;
   generals: GeneralDefinition[];
   units: UnitDefinition[];
   routeNetworks: RouteNetworkDefinition[];
   policies: PolicyDefinition[];
   buildings: BuildingDefinition[];
+  chronicleEvents: ChronicleEventDefinition[];
   armies: ArmyViewModel[];
   route: RouteForecast;
   audio: {
@@ -56,24 +62,28 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     shapesData,
     historyData,
     emperorsData,
+    portraitsData,
     generalsData,
     policiesData,
     buildingsData,
+    chronicleEventsData,
     unitsData,
     routeNetworksData,
     metadata,
     sceneMusic,
     emperorThemes,
-    chronicleEvents,
+    chronicleMusic,
     narration
   ] = await Promise.all([
     loadCollection<RegionDefinition>('regions.json'),
     loadCollection<RegionShape>('map_region_shapes.json'),
     loadCollection<HistoricalLayerDefinition>('historical_layers.json'),
     loadCollection<EmperorDefinition>('emperors.json'),
+    loadCollection<PortraitDefinition>('portraits.json'),
     loadCollection<GeneralDefinition>('generals.json'),
     loadCollection<PolicyDefinition>('policies.json'),
     loadCollection<BuildingDefinition>('buildings.json'),
+    loadCollection<ChronicleEventDefinition>('chronicle_events.json'),
     loadCollection<UnitDefinition>('units.json'),
     loadCollection<RouteNetworkDefinition>('route_networks.json'),
     loadJson<MapRenderMetadata>('map_render_metadata.json'),
@@ -87,6 +97,9 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
   const historyByRegion = new Map(historyData.items.map((history) => [history.regionId, history]));
   const policies = policiesData.items;
   const buildings = buildingsData.items;
+  const chronicleEvents = chronicleEventsData.items;
+  const portraits = portraitsData.items;
+  const portraitByEmperorId = new Map(portraits.map((portrait) => [portrait.emperorId, portrait]));
   const generals = generalsData.items;
 
   const playerCore = new Set(['guanzhong', 'chang_an', 'xianyang', 'yongzhou', 'longxi', 'hexi', 'liangzhou']);
@@ -200,21 +213,29 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     regions,
     regionById,
     emperors: emperorsData.items,
+    portraits,
+    portraitByEmperorId,
     generals,
     units,
     routeNetworks: routeNetworksData.items,
     policies,
     buildings,
+    chronicleEvents,
     armies,
     route,
     audio: {
       sceneMusic: sceneMusic.items,
       emperorThemes: emperorThemes.items,
-      chronicleEvents: chronicleEvents.items,
+      chronicleEvents: chronicleMusic.items,
       narration
     },
     nation
   };
+}
+
+export function gameDataAssetUrl(assetPath: string): string {
+  const normalizedPath = assetPath.replace(/^\/+/, '');
+  return `${assetRoot}/${normalizedPath.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function resolveGeographyProfile(region: RegionDefinition, history?: HistoricalLayerDefinition): GeographyProfile {

@@ -35,29 +35,27 @@
 
 ## 技术路线
 
-- 引擎：Unity。
-- 语言：C#。
-- 玩法形态：2D 节点地图策略模拟。
-- 数据：MVP 使用 JSON，后续可迁移到 SQLite。
-- UI：Unity UI Toolkit 或 UGUI，实际选择在 Week 1 定稿。
-- 存档：JSON 存档。
+- 当前主线：纯代码 Web + headless Domain Core，不再使用 Unity/Tuanjie 编辑器作为开发入口。
+- Web：`web-strategy-map`，Vite + TypeScript + Three.js。
+- 玩法核心：`domain-core/src` C#，供 headless 验证和后续纯代码逻辑演进使用。
+- 数据：`web-strategy-map/game-data-source` 为权威 JSON、地图、音频和美术源。
+- 存档：Web localStorage/export/import JSON。
 - 战斗：MVP 使用自动结算，暂不做战术战场。
 
 ## 目录规则
 
 ```text
-WanChaoGuiYi/
-  Assets/
-    Art/          # 原型美术、地图、头像、图标、UI 素材
-    Data/         # 可版本管理的 JSON 数据表
-    Scripts/      # Unity C# 代码
-docs/             # 设计文档、数据契约、路线图
+domain-core/src/                  # 纯代码 C# 玩法核心
+web-strategy-map/                 # Web 可运行游戏主线
+web-strategy-map/game-data-source # 可版本管理的 JSON、地图、音频、美术源
+tools/                            # 纯代码验证、headless、地图生成工具
+docs/                             # 设计文档、数据契约、路线图
 project-development-report.md
 ```
 
 ### 文件命名
 
-- C# 类型使用 `PascalCase.cs`，类型名与文件名一致。
+- C# 类型使用 `PascalCase.cs`，类型名与文件名一致，主源放在 `domain-core/src`。
 - JSON 表使用 `snake_case.json` 或领域名复数形式，例如 `emperors.json`。
 - 文档使用小写短横线命名，例如 `mvp-design.md`。
 - 数据 `id` 使用 `snake_case`，保持稳定，避免后续存档失效。
@@ -66,14 +64,14 @@ project-development-report.md
 
 - 帝皇数据必须包含全球扩展保留字段：`civilization`、`versionScope`、`legitimacyTypes`、`mapScope`、`globalMechanicTag`。
 - 地区数据必须包含土地结构、法统记忆、地方势力、民变风险和相邻区域。
-- 新字段要先写入 `docs/data-contract.md`，再进入 JSON 数据表。
+- 新字段要先写入 `docs/data-contract.md`，再进入 `web-strategy-map/game-data-source` 数据表。
 - 任何机制字段必须能被 UI 解释，不能只存在于策划文字。
 
 ## 验证规则
 
 - 修改 JSON 后必须做解析验证。
-- 修改 JSON 引用关系后必须运行 `python tools/validate_data.py` 或 `python3 tools/validate_data.py`。
-- 修改核心逻辑后必须运行对应测试、Unity PlayMode 测试或最小手动验收。
+- 修改 JSON 引用关系后必须运行 `python tools/validate_web_data_source.py` 或 `npm --prefix web-strategy-map run check:data-source`。
+- 修改核心逻辑后必须运行 `python tools/validate_domain_core.py`、`powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 或对应 Web/Playwright 测试。
 - 新机制只有在至少运行一次后才算完成。
 - 一次验证只能形成假说；需要重复验证或独立证据后才能沉淀为通用规则。
 

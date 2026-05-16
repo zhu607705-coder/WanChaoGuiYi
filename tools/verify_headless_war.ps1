@@ -1,7 +1,8 @@
 $ErrorActionPreference = "Stop"
 
 $RootDir = Split-Path -Parent $PSScriptRoot
-$DataDir = if ($args.Count -ge 1) { $args[0] } else { Join-Path $RootDir "My project/Assets/Data" }
+$DefaultDataDir = Join-Path $RootDir "web-strategy-map/game-data-source/data"
+$DataDir = if ($args.Count -ge 1) { $args[0] } else { $DefaultDataDir }
 $PlayerFactionId = if ($args.Count -ge 2) { $args[1] } else { "faction_qin_shi_huang" }
 
 $PythonBin = $env:PYTHON_BIN
@@ -19,7 +20,7 @@ if (-not $PythonBin) {
     }
 }
 
-& $PythonBin (Join-Path $RootDir "tools/validate_data.py") $DataDir
+& $PythonBin (Join-Path $RootDir "tools/validate_web_data_source.py")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 & $PythonBin (Join-Path $RootDir "tools/validate_domain_core.py")

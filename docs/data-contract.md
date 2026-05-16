@@ -55,7 +55,7 @@
 {
   "id": "portrait_qin_shi_huang",
   "emperorId": "qin_shi_huang",
-  "assetPath": "Assets/Art/Portraits/qin_shi_huang.png",
+  "assetPath": "art/Portraits/qin_shi_huang.png",
   "sourceStatus": "gpt_image_generation_requested",
   "version": "concept_v1",
   "visualIdentity": {
@@ -73,12 +73,12 @@
 
 ## General
 
-将领表驱动自动结算、地形/兵种加成和将领 UI 展示。`portraitAssetPath` 是将领立绘的稳定 Unity 资源路径，必须指向 `Assets/Art/Portraits/Generals/*.png` 下的实际 PNG。
+将领表驱动自动结算、地形/兵种加成和将领 UI 展示。`portraitAssetPath` 是将领立绘的稳定 Web 资产路径，必须指向 `web-strategy-map/game-data-source/art/Portraits/Generals/*.png` 下的实际 PNG。
 
 ```json
 {
   "id": "guan_yu",
-  "portraitAssetPath": "Assets/Art/Portraits/Generals/guan_yu.png",
+  "portraitAssetPath": "art/Portraits/Generals/guan_yu.png",
   "name": "关羽",
   "title": "武圣",
   "era": "classical",
@@ -164,8 +164,8 @@ These fields may be authored later, but current JSON stays backward-compatible b
 Validation gate:
 - Every region must retain `legitimacyMemory`, `landStructure`, `neighbors`, and a matching historical layer.
 - Historical layers must keep `uiSummary` plus geography/resource tags so derived specialization and supply rules remain explainable.
-- Any authored `regionSpecialization` or `supplyNode` value must pass `tools/validate_data.py`.
-- `tools/validate_data.py` must fail if this contract drops the heavy strategy source/default/forecast field names, so docs cannot drift away from the JSON/runtime gate.
+- Any authored `regionSpecialization` or `supplyNode` value must pass `tools/validate_web_data_source.py`.
+- `tools/validate_web_data_source.py` checks the heavy strategy source/default/forecast field names so docs cannot drift away from the JSON/runtime gate.
 
 ## Route Network
 

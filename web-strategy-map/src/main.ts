@@ -212,6 +212,9 @@ async function bootstrap(): Promise<void> {
       scene?.setEnemyInterdictionTargets(ui?.getEnemyInterdictionTargets() ?? []);
       labelManager?.update(true);
     },
+    onChronicleEvent(eventId) {
+      void audio.playEventCue(eventId).then(() => renderAudioHud(audio));
+    },
     onAction(action) {
       if (action === 'war_attack') {
         void audio.playWarAction().then(() => renderAudioHud(audio));

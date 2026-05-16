@@ -11,37 +11,37 @@
 ## 分层
 
 ```text
-Data JSON
+Web game-data-source JSON/assets
   ↓
-DataRepository
+TypeScript data loader + headless JSON repository
   ↓
-GameState + GameContext + EventBus
+Web runtime state / Domain Core simulation state
   ↓
-TurnManager
+Turn loop + action reducers
   ↓
-IGameSystem modules
+Gameplay systems
   ↓
-UI panels / Map interaction
+Three.js map / UI panels / audio
 ```
 
 ## 核心入口
 
-- `GameManager`：游戏启动、读数据、创建新局、组装系统。
-- `DataRepository`：读取 JSON 表，建立 id 索引，校验区域邻接。
-- `GameState`：运行态数据，存档使用这个对象。
-- `GameContext`：系统之间共享的最小上下文。
-- `TurnManager`：按顺序执行所有 `IGameSystem`。
-- `EventBus`：区域选择、政策、战斗、继承、胜利等事件通知。
+- `web-strategy-map/src/main.ts`：Web 游戏启动、加载数据、创建新局、绑定 UI。
+- `web-strategy-map/src/data.ts`：读取 `game-data-source` 同步后的 JSON、音频 manifest 和地图资源。
+- `web-strategy-map/src/state.ts` / `types.ts`：运行态数据与存档结构。
+- `web-strategy-map/src/systems.ts`：回合、治理、战争、事件、胜利等规则推进。
+- `web-strategy-map/src/scene.ts`：Three.js 九州地图、区域面片、相机和交互。
+- `domain-core/src`：C# 玩法核心，用于 headless 战争/治理因果回归。
 
 ## 系统模块
 
 | 模块 | 入口 | 职责 |
 | --- | --- | --- |
-| 地图 | `MapGraph`, `RegionController`, `MapRenderer` | 邻接、点击、归属表现 |
+| 地图 | `scene.ts`, `map_region_shapes.json` | 邻接、点击、归属表现 |
 | 帝皇 | `EmperorMechanicSystem` | 每位帝皇独特机制 |
 | 经济 | `EconomySystem`, `TaxSystem`, `PopulationSystem`, `LandSystem` | 收入、人口、土地兼并 |
 | 政治 | `LegitimacySystem`, `FactionSystem`, `ReformSystem`, `RebellionSystem` | 法统、派系、改革、民变 |
-| 军事 | `ArmyMovementSystem`, `BattleResolver`, `SiegeSystem` | 行军、战斗、围城 |
+| 军事 | `systems.ts`, `domain-core/src/Domain/Military` | 行军、战斗、围城 |
 | 继承 | `SuccessionSystem` | 继承风险和继位结算 |
 | 人才 | `TalentSystem` | 人才获得和任命入口 |
 | AI | `StrategicAI`, `PolicyAI`, `MilitaryAI` | 政策倾向和扩张目标 |
@@ -53,8 +53,8 @@ UI panels / Map interaction
 | 天文 | `CelestialEventSystem` | 天文事件触发、合法性修正 |
 | 将领 | `GeneralSystem` | 将领数据、地形加成、兵种加成 |
 | 建筑 | `BuildingSystem` | 区域建筑建造、效果应用、槽位管理 |
-| 地图布局 | `MapSetup`, `CameraController` | 自动摆放区域节点、摄像机平移缩放 |
-| UI | `MainMapUI`, panels | 地图、地区、帝皇、朝廷、事件、战报 |
+| 地图布局 | `scene.ts`, CSS layout | 区域面片、摄像机平移缩放 |
+| UI | `ui.ts`, panels | 地图、地区、帝皇、朝廷、事件、战报 |
 
 ## 新增数据层
 
@@ -69,12 +69,12 @@ UI panels / Map interaction
 
 高精度地形图只作为底图，不直接染色。势力范围使用独立区域覆盖层：
 
-1. 每个地区面片挂 `RegionController`、`MeshRenderer` 和 `MeshCollider`；旧节点 fallback 使用 `SpriteRenderer`。
-2. `MapRenderer` 根据 `RegionState.ownerFactionId` 给覆盖层上色。
+1. 每个地区面片由 `map_region_shapes.json` 生成 Three.js mesh。
+2. `scene.ts` 根据 `RegionViewModel.ownerFactionId` 给覆盖层上色。
 3. 归属变化必须通过 `GameContext.ChangeRegionOwner`，它会更新 `FactionState.regionIds`，再发布 `RegionOwnerChanged`。
-4. `MapRenderer` 订阅 `RegionOwnerChanged`，只刷新变化的地区。
+4. Web 运行态刷新只更新变化的地区视图。
 
-当前主地图使用地区面片：每个地区对象挂 `MeshRenderer`、`MeshCollider` 和 `RegionController`。旧圆形节点只作为显式开启的调试 fallback，不能在正式主地图中静默混用。
+当前主地图使用地区面片和 Web pointer interaction；旧编辑器节点不再作为主线 fallback。
 
 ## 地图实际建模
 
@@ -82,31 +82,31 @@ UI panels / Map interaction
 
 | 层级 | 资产/数据 | 作用 |
 | --- | --- | --- |
-| 地形底图 | 朝代地图原画 PNG | 山脉、河流、海岸、风格氛围 |
+| 地形底图 | `game-data-source/map/jiuzhou_generated_map.png` | 山脉、河流、海岸、风格氛围 |
 | 地区面片 | `map_region_shapes.json` | 每个地区的中心点、边界点、标签偏移、渲染顺序 |
-| 交互状态 | `RegionController` + `RegionMeshBuilder` + `MapRenderer` | 点击、碰撞、势力染色、归属刷新 |
+| 交互状态 | `scene.ts` + view model | 点击、碰撞、势力染色、归属刷新 |
 
 建模标准：
 
 1. 每个 `regions.json` 地区必须有一个 `map_region_shapes.json` 面片。
 2. 面片边界使用本地地图坐标，不写死到代码里。
-3. 面片必须生成 `MeshRenderer`、`MeshCollider` 和 `RegionController`。
+3. 面片必须生成可点击、可染色、可聚焦的 Web mesh。
 4. 地形底图不能承担点击和归属逻辑。
-5. `MapSetup` 默认要求 56 个地区全部有可用面片；缺面片时记录错误，只有开启 `allowNodeFallback` 才生成旧节点。
-6. 当前可用低精度面片先跑通交互，后续在 Unity 或矢量工具中精修边界点。
+5. 主线默认要求 56 个地区全部有可用面片；缺面片时数据校验失败。
+6. 后续精修边界点只改 JSON 和地图生成工具，不依赖编辑器工程。
 
 ## 开发规则
 
-- 新系统优先实现 `IGameSystem`，由 `TurnManager` 调度。
+- 新系统优先落在 Web runtime 或 `domain-core/src`，并保持可由命令行验证。
 - 新数据字段先写 `docs/data-contract.md`，再改 JSON 和 C# model。
-- 新事件通过 `EventBus` 通知 UI，避免系统直接操作 UI。
-- 动态游戏状态放入 `GameState`，静态配置放入 `Assets/Data/*.json`。
+- 新事件通过运行态 action/log 通知 UI，避免系统直接操作 DOM。
+- 动态游戏状态放入 Web save/runtime state，静态配置放入 `web-strategy-map/game-data-source/data/*.json`。
 - AI 先只做可解释倾向，等核心闭环稳定后再增加复杂决策。
 
 ## Week 1 最小可玩目标
 
-1. 在 Unity 场景中创建一个 `GameManager` 对象。
-2. 使用 `DataRepository` 自动读取 `Assets/Data/*.json`。
-3. 手动放置 5 到 10 个 `RegionController` 节点。
-4. 点击区域后通过 `MainMapUI` 和 `RegionPanel` 显示地区数据。
-5. 点击下一回合后 `TurnManager` 跑完整个系统链。
+1. 启动 `web-strategy-map`。
+2. 使用 `src/data.ts` 自动读取 `game-data-source/data/*.json`。
+3. 生成 56 区域 Three.js 地图面片。
+4. 点击区域后通过 Web UI 显示地区数据。
+5. 点击下一回合后 Web runtime 跑完整个系统链。

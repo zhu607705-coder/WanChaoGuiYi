@@ -1,5 +1,5 @@
-import type { StrategyDataset } from './data';
-import type { ArmyViewModel, BuildingDefinition, EmperorDefinition, GameMode, GeneralDefinition, GovernanceFocusId, GovernanceLaborId, LogisticsMapObject, PolicyDefinition, RegionViewModel, RouteForecast, RouteNetworkBlockadeDefinition, RouteNetworkDefinition, RouteRoadClass, UiAction, UnitDefinition } from './types';
+import { gameDataAssetUrl, type StrategyDataset } from './data';
+import type { ArmyViewModel, BuildingDefinition, ChronicleChoiceDefinition, ChronicleEventDefinition, EmperorDefinition, GameMode, GeneralDefinition, GovernanceFocusId, GovernanceLaborId, LogisticsMapObject, PolicyDefinition, RegionViewModel, RouteForecast, RouteNetworkBlockadeDefinition, RouteNetworkDefinition, RouteRoadClass, UiAction, UnitDefinition } from './types';
 
 export interface UiEvents {
   onModeChange: (mode: GameMode) => void;
@@ -7,6 +7,7 @@ export interface UiEvents {
   onEmperorChange: (emperor: EmperorDefinition) => void;
   onArmyChange: (armyId: string) => void;
   onSelectEnemyInterdiction?: (orderId: string) => void;
+  onChronicleEvent?: (eventId: string) => void;
   onAction: (action: UiAction, region: RegionViewModel) => void;
   onStateMutated: () => void;
   onGameStateImported?: (selectedRegionId: string) => void;
@@ -19,6 +20,23 @@ type EnemyInterdictionDoctrine = 'cut-supply' | 'bleed-army' | 'stall-pacificati
 type EnemyInterdictionStrategicPhase = 'probing' | 'supply-strangulation' | 'field-army-harassment' | 'pacification-blockade' | 'exploitation';
 type TransportConvoyStatus = 'queued' | 'moving' | 'delivered' | 'cancelled';
 type RouteBlockadeStatus = 'enemy-blockade' | 'guarded' | 'cleared';
+
+const SYSTEM_METRIC_ICON_PATHS: Record<string, string> = {
+  粮食: 'art/Icons/Systems/food.png',
+  粮: 'art/Icons/Systems/food.png',
+  金钱: 'art/Icons/Systems/money.png',
+  钱: 'art/Icons/Systems/money.png',
+  人口: 'art/Icons/Systems/population.png',
+  兵力: 'art/Icons/Systems/manpower.png',
+  军: 'art/Icons/Systems/manpower.png',
+  合法性: 'art/Icons/Systems/legitimacy.png',
+  民变: 'art/Icons/Systems/rebellion_risk.png',
+  民变风险: 'art/Icons/Systems/rebellion_risk.png',
+  兼并: 'art/Icons/Systems/land_annexation.png',
+  财政: 'art/Icons/Systems/fiscal_collapse.png',
+  继承: 'art/Icons/Systems/succession_crisis.png',
+  割据: 'art/Icons/Systems/local_separatism.png'
+};
 
 interface WarCommand {
   id: string;
@@ -135,6 +153,19 @@ interface RouteBlockade {
   guardStrength: number;
   createdTurn: number;
   lastAction: string;
+}
+
+interface ChronicleRuntimeEvent {
+  id: string;
+  name: string;
+  eventType: string;
+  source: 'governance' | 'war';
+  turn: number;
+  regionId: string;
+  regionName: string;
+  choiceLabel: string;
+  summary: string;
+  musicCueId: string;
 }
 
 // ============================================
@@ -383,6 +414,10 @@ interface GameExportState {
     formation: string;
     route: string;
     last: string;
+  };
+  chronicle?: {
+    history: ChronicleRuntimeEvent[];
+    cooldowns: Array<{ id: string; turns: number }>;
   };
   nationState: StrategyDataset['nation'];
   regions: Array<{
@@ -635,6 +670,8 @@ export class StrategyUi {
   private readonly enemyInterdictionOrders: EnemyInterdictionOrder[] = [];
   private readonly routeBlockades: RouteBlockade[] = [];
   private readonly battleReportHistory: BattleOutcome[] = [];
+  private readonly chronicleEventHistory: ChronicleRuntimeEvent[] = [];
+  private readonly chronicleCooldowns = new Map<string, number>();
 
   // ============================================
   // Logistics Dispatcher System
@@ -771,6 +808,10 @@ export class StrategyUi {
     saveSlotMessage: string;
     saveSlotError: string;
     saveSlotCount: number;
+    chronicleCatalogCount: number;
+    chronicleHistoryLength: number;
+    latestChronicleEventId: string;
+    latestChronicleEventSummary: string;
   } {
     const routePressure = this.currentRoutePressureCopy();
     const logisticsMapObjects = this.getLogisticsMapObjects();
@@ -842,7 +883,11 @@ export class StrategyUi {
       routePickMode: this.routePickMode,
       saveSlotMessage: this.saveSlotMessage,
       saveSlotError: this.saveSlotError,
-      saveSlotCount: SAVE_SLOTS.length
+      saveSlotCount: SAVE_SLOTS.length,
+      chronicleCatalogCount: this.dataset.chronicleEvents.length,
+      chronicleHistoryLength: this.chronicleEventHistory.length,
+      latestChronicleEventId: this.chronicleEventHistory[0]?.id ?? '',
+      latestChronicleEventSummary: this.chronicleEventHistory[0] ? describeChronicleRuntimeEvent(this.chronicleEventHistory[0]) : ''
     };
   }
 
@@ -973,6 +1018,10 @@ export class StrategyUi {
       routePickMode: this.routePickMode,
       warTab: this.warTab,
       armyOrder: { ...this.armyOrder },
+      chronicle: {
+        history: this.chronicleEventHistory.map((event) => ({ ...event })),
+        cooldowns: [...this.chronicleCooldowns.entries()].map(([id, turns]) => ({ id, turns }))
+      },
       nationState: { ...this.nationState },
       regions: this.dataset.regions.map((region) => ({
         id: region.definition.id,
@@ -1035,6 +1084,7 @@ export class StrategyUi {
     this.routePickMode = snapshot.routePickMode ?? 'target';
     this.warTab = restoredWarTab;
     this.armyOrder = { ...snapshot.armyOrder };
+    this.restoreChronicleState(snapshot.chronicle);
     this.syncSidebarChrome();
 
     this.restoreRegionRuntimeState(snapshot.regions);
@@ -1073,6 +1123,15 @@ export class StrategyUi {
     this.renderEmperorDock();
     this.render();
     return true;
+  }
+
+  private restoreChronicleState(chronicle: GameExportState['chronicle'] | undefined): void {
+    this.chronicleEventHistory.splice(0, this.chronicleEventHistory.length, ...(chronicle?.history ?? []).map((event) => ({ ...event })));
+    this.chronicleCooldowns.clear();
+    for (const cooldown of chronicle?.cooldowns ?? []) {
+      if (!cooldown.id) continue;
+      this.chronicleCooldowns.set(cooldown.id, Math.max(0, Math.floor(cooldown.turns)));
+    }
   }
 
   private restoreRegionRuntimeState(regions: GameExportState['regions']): void {
@@ -1648,11 +1707,18 @@ export class StrategyUi {
     const emperor = this.selectedEmperor;
     const stats = emperor.stats;
     const candidates = this.dataset.emperors.slice(0, 8);
+    const portrait = this.dataset.portraitByEmperorId.get(emperor.id);
+    const portraitMarkup = portrait
+      ? `<img class="emperor-portrait" data-testid="emperor-portrait" src="${escapeHtml(gameDataAssetUrl(portrait.assetPath))}" alt="${escapeHtml(emperor.name)}立绘" loading="eager">`
+      : `<span class="emperor-portrait fallback" data-testid="emperor-portrait">${escapeHtml(emperor.name.slice(0, 1))}</span>`;
     dock.innerHTML = `
       <div class="emperor-card">
         <div class="emperor-head">
-          <span>帝皇</span>
-          <b>${escapeHtml(emperor.name)} · ${escapeHtml(emperor.title)}</b>
+          ${portraitMarkup}
+          <div class="emperor-title-block">
+            <span>帝皇</span>
+            <b>${escapeHtml(emperor.name)} · ${escapeHtml(emperor.title)}</b>
+          </div>
         </div>
         <div class="emperor-mechanic">${escapeHtml(emperor.uniqueMechanic.name)}：${escapeHtml(emperor.uniqueMechanic.description)}</div>
         <div class="emperor-stat-row">
@@ -1750,6 +1816,7 @@ export class StrategyUi {
         ${metric('民变', `${Math.round(region.risk)}%`)}
         ${metric('法统', `${Math.round(region.legitimacy)}%`)}
       </section>
+      ${this.renderChroniclePanel()}
       <section class="decision-card" data-testid="governance-actions">
         <div class="band-title">治理操作</div>
         <div class="command-tile-grid">
@@ -1879,6 +1946,20 @@ export class StrategyUi {
     `;
   }
 
+  private renderChroniclePanel(): string {
+    const latest = this.chronicleEventHistory[0];
+    const lines = this.chronicleEventHistory.slice(0, 3);
+    return `
+      <section class="info-band" data-testid="chronicle-panel">
+        <div class="band-title">编年纪事</div>
+        <div class="preview-line">${latest ? escapeHtml(describeChronicleRuntimeEvent(latest)) : '史官尚未记事。'}</div>
+        <div class="queue-lines">
+          ${lines.length === 0 ? '<div>暂无编年记录</div>' : lines.map((event) => `<div>${escapeHtml(describeChronicleRuntimeEvent(event))}</div>`).join('')}
+        </div>
+      </section>
+    `;
+  }
+
   private renderWar(region: RegionViewModel): void {
     const panel = document.getElementById('war-panel');
     if (!panel) return;
@@ -1900,6 +1981,9 @@ export class StrategyUi {
     const army = this.activeArmy;
     const general = this.currentGeneral();
     const nextGeneral = this.nextGeneral();
+    const generalPortraitMarkup = general?.portraitAssetPath
+      ? `<img class="general-portrait" data-testid="general-portrait" src="${escapeHtml(gameDataAssetUrl(general.portraitAssetPath))}" alt="${escapeHtml(general.name)}立绘" loading="lazy">`
+      : `<span class="general-portrait fallback" data-testid="general-portrait">${escapeHtml((general?.name ?? army.general).slice(0, 1))}</span>`;
     const unitMix = unitMixText(army.unitMix, this.dataset.units);
     const tacticSummary = this.tacticalSummary(targetRoute.target);
     const commandLines = this.commandQueue.map((command) => describeWarCommand(command));
@@ -1996,11 +2080,14 @@ export class StrategyUi {
       </section>
       <section class="info-band war-tab-panel${this.warTab === 'army' ? '' : ' hidden'}" data-testid="army-organization">
         <div class="band-title">编组与将领</div>
-        <div class="army-status">
-          <div><span>主将</span><b>${escapeHtml(army.general)}</b></div>
-          <div><span>特长</span><b>${escapeHtml(general?.specialAbilityName ?? '常规统率')}</b></div>
-          <div><span>兵种</span><b>${escapeHtml(army.unit.name)}</b></div>
-          <div><span>配比</span><b>${escapeHtml(unitMix)}</b></div>
+        <div class="commander-layout">
+          ${generalPortraitMarkup}
+          <div class="army-status commander-status">
+            <div><span>主将</span><b>${escapeHtml(army.general)}</b></div>
+            <div><span>特长</span><b>${escapeHtml(general?.specialAbilityName ?? '常规统率')}</b></div>
+            <div><span>兵种</span><b>${escapeHtml(army.unit.name)}</b></div>
+            <div><span>配比</span><b>${escapeHtml(unitMix)}</b></div>
+          </div>
         </div>
         <div class="unit-mix-bars">
           ${unitMixBars(army.unitMix, this.dataset.units)}
@@ -3656,6 +3743,8 @@ export class StrategyUi {
 
   private advanceWarTurn(): void {
     this.currentWarTurn += 1;
+    this.tickChronicleCooldowns();
+    this.tryTriggerChronicleEvent('war');
     const hadEnemyInterdiction = this.enemyInterdictionOrders.length > 0;
     this.advanceEnemyInterdictionOrders();
     const resolved: string[] = this.processOccupationSupplyAutomation();
@@ -4630,6 +4719,7 @@ export class StrategyUi {
 
   private advanceGovernanceTurn(): void {
     this.currentGovernanceTurn += 1;
+    this.tickChronicleCooldowns();
     const region = this.selectedRegion;
     const plan = this.governanceLaborPlan(region.laborFocus, region);
 
@@ -4660,6 +4750,132 @@ export class StrategyUi {
       ? `；完工 ${completedProjects.map((project) => project.buildingName).join('、')}`
       : '';
     this.enqueueGovernance(`第 ${this.currentGovernanceTurn} 旬：${region.definition.name}${plan.label}推进，${formatGovernanceLaborDelta(plan.delta)}${completionText}`);
+    this.tryTriggerChronicleEvent('governance');
+  }
+
+  private tryTriggerChronicleEvent(source: ChronicleRuntimeEvent['source']): void {
+    const eligible = this.dataset.chronicleEvents.filter((event) => this.isChronicleEventEligible(event, source));
+    if (eligible.length === 0) return;
+
+    const selected = this.selectChronicleEvent(eligible, source);
+    if (!selected) return;
+
+    const choice = this.selectChronicleChoice(selected);
+    const runtimeEvent: ChronicleRuntimeEvent = {
+      id: selected.id,
+      name: selected.name,
+      eventType: selected.eventType,
+      source,
+      turn: source === 'war' ? this.currentWarTurn : this.currentGovernanceTurn,
+      regionId: this.selectedRegion.definition.id,
+      regionName: this.selectedRegion.definition.name,
+      choiceLabel: choice?.label ?? '廷议观望',
+      summary: selected.uiSummary,
+      musicCueId: `event_${selected.id}`
+    };
+
+    this.chronicleEventHistory.unshift(runtimeEvent);
+    trimTo(this.chronicleEventHistory, 8);
+    this.chronicleCooldowns.set(selected.id, Math.max(1, selected.cooldownTurns ?? 4));
+    const note = describeChronicleRuntimeEvent(runtimeEvent);
+    if (source === 'war') {
+      this.operationLog.unshift(note);
+      trimTo(this.operationLog, 5);
+    } else {
+      this.enqueueGovernance(note);
+    }
+    this.events.onChronicleEvent?.(selected.id);
+  }
+
+  private isChronicleEventEligible(event: ChronicleEventDefinition, source: ChronicleRuntimeEvent['source']): boolean {
+    if (this.chronicleCooldowns.get(event.id)) return false;
+
+    const turn = source === 'war' ? this.currentWarTurn : this.currentGovernanceTurn;
+    if (event.turnWindow) {
+      if (event.turnWindow.startTurn > 0 && turn < event.turnWindow.startTurn) return false;
+      if (event.turnWindow.endTurn > 0 && turn > event.turnWindow.endTurn) return false;
+    }
+
+    if (event.eraScope?.length && !event.eraScope.includes(this.selectedEmperor.era)) return false;
+
+    const signals = this.currentChronicleSignals(source);
+    if (event.requiredTechs?.length && !event.requiredTechs.every((tech) => signals.techs.has(tech))) return false;
+    if (event.regionScopeTags?.length && !event.regionScopeTags.some((tag) => signals.tags.has(tag))) return false;
+    if (event.weatherTags?.length && !event.weatherTags.some((tag) => signals.weather.has(tag))) return false;
+    if (event.astronomyTags?.length && !event.astronomyTags.some((tag) => signals.astronomy.has(tag))) return false;
+
+    return true;
+  }
+
+  private selectChronicleEvent(events: ChronicleEventDefinition[], source: ChronicleRuntimeEvent['source']): ChronicleEventDefinition | undefined {
+    return [...events].sort((a, b) => this.chronicleEventScore(b, source) - this.chronicleEventScore(a, source) || a.id.localeCompare(b.id))[0];
+  }
+
+  private chronicleEventScore(event: ChronicleEventDefinition, source: ChronicleRuntimeEvent['source']): number {
+    const type = event.eventType ?? '';
+    const sourceBonus =
+      source === 'war' && (type.includes('military') || type.includes('catastrophe')) ? 12 :
+        source === 'governance' && (type.includes('reform') || type.includes('economic') || type.includes('political') || type.includes('talent')) ? 10 :
+          0;
+    const riskBonus = type.includes('rebellion') || type.includes('catastrophe') ? Math.round(this.selectedRegion.risk / 12) : 0;
+    const legitimacyBonus = type.includes('succession') || type.includes('political') ? Math.round((100 - this.selectedRegion.legitimacy) / 18) : 0;
+    return Math.max(1, event.triggerWeight ?? 1) + sourceBonus + riskBonus + legitimacyBonus;
+  }
+
+  private selectChronicleChoice(event: ChronicleEventDefinition): ChronicleChoiceDefinition | undefined {
+    const choices = event.choices ?? [];
+    if (choices.length === 0) return undefined;
+    const index = Math.abs(this.currentGovernanceTurn + this.currentWarTurn + event.id.length + this.selectedRegion.definition.id.length) % choices.length;
+    return choices[index];
+  }
+
+  private currentChronicleSignals(source: ChronicleRuntimeEvent['source']): { tags: Set<string>; weather: Set<string>; astronomy: Set<string>; techs: Set<string> } {
+    const region = this.selectedRegion;
+    const history = region.history;
+    const rawTags = [
+      source,
+      region.definition.terrain,
+      region.owner,
+      region.controlStage,
+      region.governanceFocus,
+      region.laborFocus,
+      region.geography.kind,
+      region.specialization,
+      ...(region.definition.legitimacyMemory ?? []),
+      ...(history?.geographyTags ?? []),
+      ...(history?.customTags ?? []),
+      ...(history?.strategicResources ?? []),
+      ...(history?.weaponTraditions ?? [])
+    ];
+    const tags = new Set(rawTags.filter(Boolean).map((tag) => String(tag)));
+    const weather = new Set<string>();
+    const astronomy = new Set<string>();
+    const techs = new Set<string>();
+
+    const joined = [...tags].join(' ').toLowerCase();
+    if (joined.includes('river') || joined.includes('water') || joined.includes('flood')) weather.add('flood');
+    if (joined.includes('arid') || joined.includes('dry') || joined.includes('loess')) weather.add('drought');
+    if (joined.includes('mountain') || joined.includes('plateau') || joined.includes('frontier')) weather.add('cold');
+    if (region.risk >= 32) weather.add('plague');
+    if (this.currentGovernanceTurn % 7 === 0) astronomy.add('eclipse');
+    if (this.currentGovernanceTurn % 11 === 0) astronomy.add('comet');
+    if (this.currentGovernanceTurn >= 2) techs.add('agricultural_calendar');
+    if (this.currentGovernanceTurn >= 3) techs.add('bronze_casting');
+    if (joined.includes('river') || joined.includes('water') || joined.includes('canal')) techs.add('river_transport');
+    if (source === 'war' || joined.includes('horse') || joined.includes('cavalry') || joined.includes('frontier')) techs.add('mounted_warfare');
+
+    return { tags, weather, astronomy, techs };
+  }
+
+  private tickChronicleCooldowns(): void {
+    for (const [id, turns] of [...this.chronicleCooldowns.entries()]) {
+      const next = turns - 1;
+      if (next <= 0) {
+        this.chronicleCooldowns.delete(id);
+      } else {
+        this.chronicleCooldowns.set(id, next);
+      }
+    }
   }
 
   private completeGovernanceProject(project: GovernanceProject): void {
@@ -4908,7 +5124,9 @@ function setText(id: string, text: string): void {
 }
 
 function metric(label: string, value: string | number): string {
-  return `<div class="metric"><span>${escapeHtml(label)}</span><b>${escapeHtml(String(value))}</b></div>`;
+  const iconPath = metricIconPath(label);
+  const iconMarkup = iconPath ? assetIconMarkup(iconPath, label, 'metric-icon', `metric:${label}`) : '';
+  return `<div class="metric${iconPath ? ' has-icon' : ''}">${iconMarkup}<span>${escapeHtml(label)}</span><b>${escapeHtml(String(value))}</b></div>`;
 }
 
 function compactStat(label: string, value: number): string {
@@ -5064,6 +5282,12 @@ function describeWarCommand(command: WarCommand): string {
   const alert = command.alert ? `，${command.alert}` : '';
   const segment = command.kind === 'supply' ? `，分段 ${command.completedSegments}/${command.segmentCount}，已送 ${command.deliveredSupply}/${command.plannedSupplyReserve}` : '';
   return `${commandKindName(command.kind)}：${commandRouteLabel(command)}，尚余 ${command.remainingTurns}/${command.totalTurns} 回合，${commandRouteLegSummary(command)}，补给余量 ${command.supplyReserve}${segment}，截粮 ${command.interceptionRisk}%${alert}`;
+}
+
+function describeChronicleRuntimeEvent(event: ChronicleRuntimeEvent): string {
+  const source = event.source === 'war' ? '战时' : '内政';
+  const choice = event.choiceLabel ? `，廷议：${event.choiceLabel}` : '';
+  return `${source}第${event.turn}回合【${event.name}】${event.regionName}，${event.summary}${choice}`;
 }
 
 function tacticBadgeRow(modifier?: TacticalModifier): string {
@@ -5375,7 +5599,7 @@ function unitMixBars(mix: Record<string, number>, units: UnitDefinition[]): stri
     .sort((a, b) => b[1] - a[1])
     .map(([unitId, value]) => `
       <div class="unit-mix-row">
-        <span>${escapeHtml(unitName(unitId, units))}</span>
+        <span class="unit-mix-label">${unitIconMarkup(unitId, unitName(unitId, units))}<em>${escapeHtml(unitName(unitId, units))}</em></span>
         <div class="unit-mix-meter"><i style="width:${Math.round(value)}%"></i></div>
         <b>${Math.round(value)}%</b>
       </div>
@@ -5385,6 +5609,19 @@ function unitMixBars(mix: Record<string, number>, units: UnitDefinition[]): stri
 
 function unitName(unitId: string, units: UnitDefinition[]): string {
   return units.find((unit) => unit.id === unitId)?.name ?? unitId;
+}
+
+function metricIconPath(label: string): string | undefined {
+  if (SYSTEM_METRIC_ICON_PATHS[label]) return SYSTEM_METRIC_ICON_PATHS[label];
+  return Object.entries(SYSTEM_METRIC_ICON_PATHS).find(([token]) => label.includes(token))?.[1];
+}
+
+function unitIconMarkup(unitId: string, label: string): string {
+  return assetIconMarkup(`art/Icons/Units/${unitId}.png`, label, 'unit-icon', `unit:${unitId}`);
+}
+
+function assetIconMarkup(assetPath: string, label: string, className: string, assetKey: string): string {
+  return `<img class="${className}" data-asset-icon="${escapeHtml(assetKey)}" src="${escapeHtml(gameDataAssetUrl(assetPath))}" alt="${escapeHtml(label)}" loading="lazy">`;
 }
 
 function dominantUnit(mix: Record<string, number>, units: UnitDefinition[]): UnitDefinition | undefined {
