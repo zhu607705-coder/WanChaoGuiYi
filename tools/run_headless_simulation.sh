@@ -22,12 +22,10 @@ if [[ -z "$DOTNET_BIN" ]]; then
   fi
 fi
 
-if "$DOTNET_BIN" --list-runtimes | grep -q 'Microsoft.NETCore.App 10\.'; then
-  FRAMEWORK="net10.0"
-elif "$DOTNET_BIN" --list-runtimes | grep -q 'Microsoft.NETCore.App 8\.'; then
+if "$DOTNET_BIN" --list-runtimes | grep -q 'Microsoft.NETCore.App 8\.'; then
   FRAMEWORK="net8.0"
 else
-  echo "A .NET 8 or .NET 10 runtime is required to run the headless simulation harness." >&2
+  echo "A .NET 8 runtime is required to run the headless simulation harness." >&2
   exit 127
 fi
 

@@ -21,12 +21,10 @@ if (-not $DotnetBin) {
 }
 
 $runtimes = & $DotnetBin --list-runtimes
-if ($runtimes -match "Microsoft\.NETCore\.App 10\.") {
-    $Framework = "net10.0"
-} elseif ($runtimes -match "Microsoft\.NETCore\.App 8\.") {
+if ($runtimes -match "Microsoft\.NETCore\.App 8\.") {
     $Framework = "net8.0"
 } else {
-    Write-Error "A .NET 8 or .NET 10 runtime is required to run the headless simulation harness."
+    Write-Error "A .NET 8 runtime is required to run the headless simulation harness."
 }
 
 & $DotnetBin run --project $Project --framework $Framework -- $DataDir $PlayerFactionId

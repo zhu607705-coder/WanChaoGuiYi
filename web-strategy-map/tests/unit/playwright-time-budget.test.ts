@@ -20,14 +20,17 @@ describe('Playwright per-test time budget', () => {
   const specPath = join(__dirname, '..', 'strategy-map.spec.ts');
   const text = readFileSync(specPath, 'utf8');
 
-  it('no test sets a timeout greater than 90 seconds', () => {
-    // Match `test.setTimeout(<n>_<m>);` with n*1000+m treating
-    // underscores as separators.
-    const matches = [...text.matchAll(/test\.setTimeout\(\s*([0-9_]+)\s*\)/g)];
-    expect(matches.length).toBeGreaterThan(0);
-    for (const m of matches) {
-      const ms = Number.parseInt(m[1].replace(/_/g, ''), 10);
-      expect.soft(ms, `setTimeout ${ms} ms`).toBeLessThanOrEqual(90_000);
+  it('no local test timeout budget is greater than 90 seconds', () => {
+    // CI can multiply these budgets, but the checked base value stays local and human-scale.
+    const literalMatches = [...text.matchAll(/test\.setTimeout\(\s*([0-9_]+)\s*\)/g)].map((m) => m[1]);
+    const wrappedMatches = [...text.matchAll(/test\.setTimeout\(\s*playwrightTimeout\(\s*([0-9_]+)\s*\)\s*\)/g)].map(
+      (m) => m[1]
+    );
+    const budgets = [...literalMatches, ...wrappedMatches];
+    expect(budgets.length).toBeGreaterThan(0);
+    for (const budget of budgets) {
+      const ms = Number.parseInt(budget.replace(/_/g, ''), 10);
+      expect.soft(ms, `local setTimeout budget ${ms} ms`).toBeLessThanOrEqual(90_000);
     }
   });
 

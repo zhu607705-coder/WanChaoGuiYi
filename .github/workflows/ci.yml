@@ -30,7 +30,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.412'
 
       - name: Install Web dependencies
         working-directory: web-strategy-map
@@ -45,4 +45,5 @@ jobs:
         run: dotnet restore
 
       - name: Run all checks
-        run: pwsh tools/run_all_checks.ps1
+        shell: pwsh
+        run: tools/run_all_checks.ps1

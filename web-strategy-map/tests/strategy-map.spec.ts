@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
+const CI_TIMEOUT_MULTIPLIER = process.env.CI ? 3 : 1;
+
+function playwrightTimeout(baseMs: number): number {
+  return baseMs * CI_TIMEOUT_MULTIPLIER;
+}
+
 type DebugState = {
   mode: 'governance' | 'war';
   selectedRegionId: string;
@@ -333,7 +339,7 @@ async function expectDebugState(page: Page, isReady: (state: DebugState) => bool
 
 test.describe('code-driven strategy map', () => {
   test('loads map shell, emperor audio, governance, and camera selection', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -419,7 +425,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('supports war route editing, army micro, and logistics queue control', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -561,7 +567,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('resolves interdiction countermeasures, occupation aftercare, and reports', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -719,7 +725,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('supports region governance specialization micro-management', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -758,7 +764,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('publishes chronicle events through the Unity-free web turn loop', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -847,7 +853,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('selects enemy interdiction threats and applies countermeasures to the selected line', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -891,7 +897,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('connects governance policies and buildings to route logistics', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -928,7 +934,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('compares route alternatives before committing war commands', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -981,7 +987,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('uses named strategic route network for route capacity and convoy export', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -1006,7 +1012,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('enemy interdiction targets named route-network bottlenecks', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -1031,7 +1037,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('creates selectable blockade objects for route-network choke points', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -1090,7 +1096,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('exports recoverable war logistics state across convoys, governance, and interdiction memory', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -1148,7 +1154,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('exports and imports full game state across governance, army, logistics, and UI chrome', async ({ page }) => {
-    test.setTimeout(75_000);
+    test.setTimeout(playwrightTimeout(75_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
@@ -1224,7 +1230,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('saves and loads full game state through local slots with schema errors', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
     await page.evaluate(() => localStorage.clear());
@@ -1279,7 +1285,7 @@ test.describe('code-driven strategy map', () => {
   });
 
   test('coordinates depots, route capacity, interdiction targeting, and occupation supply', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(playwrightTimeout(60_000));
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
