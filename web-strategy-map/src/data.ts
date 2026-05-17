@@ -27,6 +27,20 @@ import type {
 const dataRoot = '/game-data/data';
 const assetRoot = '/game-data';
 
+export class StrategyDatasetLoadError extends Error {
+  public readonly fileName: string;
+  public readonly reason: string;
+  public readonly originalError: unknown;
+
+  constructor(fileName: string, reason: string, originalError?: unknown) {
+    super(`Failed to load strategy ${describeDatasetFile(fileName)}: ${reason}`);
+    this.name = 'StrategyDatasetLoadError';
+    this.fileName = fileName;
+    this.reason = reason;
+    this.originalError = originalError;
+  }
+}
+
 export interface StrategyDataset {
   metadata: MapRenderMetadata;
   regions: RegionViewModel[];
@@ -92,6 +106,9 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     loadJson<JsonCollection<ChronicleEventMusicCue>>('../audio/chronicle_event_music.json'),
     loadJson<NarrationScript>('../audio/narration_script.json')
   ]);
+
+  validateRegionDefinitions(regionsData.items);
+  validateRegionShapeCoverage(regionsData.items, shapesData.items);
 
   const shapeByRegion = new Map(shapesData.items.map((shape) => [shape.regionId, shape]));
   const historyByRegion = new Map(historyData.items.map((history) => [history.regionId, history]));
@@ -202,8 +219,8 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
 
   const route = buildRouteForecast(armies[0], regionById);
   const nation = {
-    food: Math.round(regions.filter((r) => r.owner === 'player').reduce((sum, r) => sum + r.definition.foodOutput * r.contribution / 100, 0)),
-    money: Math.round(regions.filter((r) => r.owner === 'player').reduce((sum, r) => sum + r.definition.taxOutput * r.contribution / 100, 0)),
+    food: aggregateNationFood(regions.map(regionToNationAggregationInput)),
+    money: aggregateNationMoney(regions.map(regionToNationAggregationInput)),
     army: armies.filter((army) => army.faction === 'player').reduce((sum, army) => sum + army.soldiers, 0),
     legitimacy: Math.round(regions.filter((r) => r.owner === 'player').reduce((sum, r) => sum + r.legitimacy, 0) / Math.max(1, regions.filter((r) => r.owner === 'player').length))
   };
@@ -233,9 +250,28 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
   };
 }
 
+export interface NationAggregationInput {
+  owner: string;
+  foodOutput: number;
+  taxOutput?: number;
+  contribution: number;
+}
+
+export function aggregateNationFood(regions: NationAggregationInput[]): number {
+  return aggregateNationMetric(regions, (region) => region.foodOutput);
+}
+
+export function aggregateNationMoney(regions: NationAggregationInput[]): number {
+  return aggregateNationMetric(regions, (region) => region.taxOutput ?? 0);
+}
+
 export function gameDataAssetUrl(assetPath: string): string {
-  const normalizedPath = assetPath.replace(/^\/+/, '');
-  return `${assetRoot}/${normalizedPath.split('/').map(encodeURIComponent).join('/')}`;
+  const normalizedPath = assetPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  const safeSegments = normalizedPath
+    .split('/')
+    .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..');
+  if (safeSegments.length === 0) return `${assetRoot}/`;
+  return `${assetRoot}/${safeSegments.map(encodeURIComponent).join('/')}`;
 }
 
 function resolveGeographyProfile(region: RegionDefinition, history?: HistoricalLayerDefinition): GeographyProfile {
@@ -295,16 +331,116 @@ function profile(
 }
 
 async function loadCollection<T>(fileName: string): Promise<JsonCollection<T>> {
-  return loadJson<JsonCollection<T>>(fileName);
+  const collection = await loadJson<unknown>(fileName);
+  if (!isJsonObject(collection) || !Array.isArray(collection.items)) {
+    throw new StrategyDatasetLoadError(fileName, 'invalid collection schema: items must be an array');
+  }
+
+  return collection as JsonCollection<T>;
+}
+
+function validateRegionDefinitions(regions: RegionDefinition[]): void {
+  const regionById = new Map<string, RegionDefinition>();
+  for (const region of regions) {
+    const id = typeof region?.id === 'string' ? region.id.trim() : '';
+    if (!id) {
+      throw new StrategyDatasetLoadError('regions.json', 'region item is missing id');
+    }
+    if (regionById.has(id)) {
+      throw new StrategyDatasetLoadError('regions.json', `duplicate region id: ${id}`);
+    }
+    regionById.set(id, region);
+  }
+
+  for (const region of regions) {
+    const neighbors = Array.isArray(region.neighbors) ? region.neighbors : [];
+    for (const neighborId of neighbors) {
+      if (!regionById.has(neighborId)) {
+        throw new StrategyDatasetLoadError('regions.json', `region ${region.id} references unknown neighbor ${neighborId}`);
+      }
+      const neighbor = regionById.get(neighborId);
+      const reverseNeighbors = Array.isArray(neighbor?.neighbors) ? neighbor.neighbors : [];
+      if (!reverseNeighbors.includes(region.id)) {
+        throw new StrategyDatasetLoadError('regions.json', `neighbor edge is not bidirectional: ${region.id} -> ${neighborId}`);
+      }
+    }
+  }
+}
+
+function validateRegionShapeCoverage(regions: RegionDefinition[], shapes: RegionShape[]): void {
+  const shapeRegionIds = new Set<string>();
+  for (const shape of shapes) {
+    const regionId = typeof shape?.regionId === 'string' ? shape.regionId.trim() : '';
+    if (!regionId) {
+      throw new StrategyDatasetLoadError('map_region_shapes.json', 'shape item is missing regionId');
+    }
+    if (shapeRegionIds.has(regionId)) {
+      throw new StrategyDatasetLoadError('map_region_shapes.json', `duplicate shape regionId: ${regionId}`);
+    }
+    shapeRegionIds.add(regionId);
+  }
+
+  for (const region of regions) {
+    if (!shapeRegionIds.has(region.id)) {
+      throw new StrategyDatasetLoadError('map_region_shapes.json', `missing shape for region id: ${region.id}`);
+    }
+  }
+}
+
+function regionToNationAggregationInput(region: RegionViewModel): NationAggregationInput {
+  return {
+    owner: region.owner,
+    foodOutput: region.definition.foodOutput,
+    taxOutput: region.definition.taxOutput,
+    contribution: region.contribution
+  };
+}
+
+function aggregateNationMetric(regions: NationAggregationInput[], selectBaseValue: (region: NationAggregationInput) => number): number {
+  const total = regions
+    .filter((region) => region.owner === 'player')
+    .reduce((sum, region) => {
+      const baseValue = sanitizeNonNegativeFinite(selectBaseValue(region));
+      const contribution = Math.min(100, sanitizeNonNegativeFinite(region.contribution));
+      return sum + (baseValue * contribution) / 100;
+    }, 0);
+
+  return Math.max(0, Math.round(total));
+}
+
+function sanitizeNonNegativeFinite(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, value);
 }
 
 async function loadJson<T>(fileName: string): Promise<T> {
-  const response = await fetch(`${dataRoot}/${fileName}`);
-  if (!response.ok) {
-    throw new Error(`Failed to load ${fileName}: ${response.status}`);
+  let response: Response;
+  try {
+    response = await fetch(`${dataRoot}/${fileName}`);
+  } catch (error) {
+    throw new StrategyDatasetLoadError(fileName, 'network request failed', error);
   }
 
-  return response.json() as Promise<T>;
+  if (!response.ok) {
+    throw new StrategyDatasetLoadError(fileName, `HTTP ${response.status}`);
+  }
+
+  try {
+    return await response.json() as T;
+  } catch (error) {
+    throw new StrategyDatasetLoadError(fileName, 'invalid JSON response', error);
+  }
+}
+
+function describeDatasetFile(fileName: string): string {
+  const category = fileName.includes('/audio/') || fileName.startsWith('../audio/')
+    ? 'audio file'
+    : 'data file';
+  return `${category} ${fileName}`;
+}
+
+function isJsonObject(value: unknown): value is { items?: unknown } {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function resolveSpecialization(region: RegionDefinition, history?: HistoricalLayerDefinition): string {

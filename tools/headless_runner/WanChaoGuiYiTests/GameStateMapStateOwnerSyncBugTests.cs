@@ -58,5 +58,44 @@ namespace WanChaoGuiYi.Tests
             Assert.Equal(newOwner, state.FindRegion(regionId).ownerFactionId);
             Assert.Equal(newOwner, runtimeRegion.ownerFactionId);
         }
+
+        [Fact]
+        public void RegionOwnerChanged_Event_Must_Observe_Synced_MapState()
+        {
+            FakeDataRepository data;
+            GameState state = TestFixtures.BuildSinglePlayerWorld(2, out data);
+
+            data.EmperorMap["enemy"] = new EmperorDefinition { id = "enemy", name = "E", stats = new EmperorStats() };
+            FactionState enemy = new FactionState
+            {
+                id = "faction_enemy",
+                name = "E",
+                emperorId = "enemy",
+                taxMultiplier = 1f, foodMultiplier = 1f,
+                armyAttackMultiplier = 1f, armyDefenseMultiplier = 1f, talentMultiplier = 1f
+            };
+            state.factions.Add(enemy);
+
+            WorldState world = WorldStateFactory.Create(state, data);
+            EventBus events = new EventBus();
+            GameContext context = new GameContext(state, data, events);
+            string regionId = "r0";
+            string observedRuntimeOwner = null;
+            RegionOwnerChangedPayload observedPayload = null;
+
+            events.Subscribe(GameEventType.RegionOwnerChanged, evt =>
+            {
+                observedPayload = evt.Payload as RegionOwnerChangedPayload;
+                observedRuntimeOwner = world.Map.RegionsById[evt.EntityId].ownerFactionId;
+            });
+
+            RegionOwnerChangedPayload payload = context.ChangeRegionOwner(regionId, enemy.id);
+
+            Assert.NotNull(payload);
+            Assert.NotNull(observedPayload);
+            Assert.Equal(regionId, observedPayload.regionId);
+            Assert.Equal(enemy.id, observedPayload.newOwnerFactionId);
+            Assert.Equal(enemy.id, observedRuntimeOwner);
+        }
     }
 }

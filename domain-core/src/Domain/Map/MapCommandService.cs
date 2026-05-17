@@ -27,7 +27,10 @@ namespace WanChaoGuiYi
             army.targetRegionId = null;
             army.route.Clear();
             army.task = ArmyTask.Idle;
-            AddLog("war", army.id + "停止行动，驻扎于" + army.locationRegionId + "。原因：玩家取消当前命令。影响：该部队不再推进路线。");
+            string strandedWarning = OwnsRegion(army.ownerFactionId, army.locationRegionId)
+                ? string.Empty
+                : " 警告：当前位置为非己方地区，部队可能搁浅在敌方或异域控制区。";
+            AddLog("war", army.id + "停止行动，驻扎于" + army.locationRegionId + "。原因：玩家取消当前命令。" + strandedWarning + "影响：该部队不再推进路线。");
             return true;
         }
 
@@ -53,6 +56,13 @@ namespace WanChaoGuiYi
 
         public bool ReinforceArmy(string armyId, string targetRegionId)
         {
+            ArmyRuntimeState army = queries != null ? queries.GetArmy(armyId) : null;
+            if (army == null || !CanReinforceTarget(army, targetRegionId))
+            {
+                AddLog("war", armyId + "增援失败。原因：目标地区没有可加入的己方接敌。影响：军队仍保持当前命令。");
+                return false;
+            }
+
             bool issued = IssueRouteCommand(armyId, targetRegionId, ArmyTask.Reinforce, "增援");
             if (issued) AddLog("war", armyId + "正在前往" + targetRegionId + "增援，抵达后会加入当地接敌。原因：目标地区已有战斗接触。影响：抵达后会改变该方参战成员和战力。");
             return issued;
@@ -60,6 +70,14 @@ namespace WanChaoGuiYi
 
         public bool SiegeRegion(string armyId, string targetRegionId)
         {
+            ArmyRuntimeState army = queries != null ? queries.GetArmy(armyId) : null;
+            if (army == null || string.IsNullOrEmpty(targetRegionId)) return false;
+            if (OwnsRegion(army.ownerFactionId, targetRegionId))
+            {
+                AddLog("war", army.id + "围攻失败。原因：目标地区属于己方。影响：不会创建自我围攻命令。");
+                return false;
+            }
+
             return IssueRouteCommand(armyId, targetRegionId, ArmyTask.Siege, "围攻");
         }
 
@@ -676,7 +694,11 @@ namespace WanChaoGuiYi
 
         private static bool HasActiveLogistics(ArmyRuntimeState army)
         {
-            return army != null && !string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId);
+            if (army == null || string.IsNullOrEmpty(army.frontlineLogisticsTargetRegionId)) return false;
+            if (army.frontlineLogisticsTurnsRemaining > 0) return true;
+
+            FinishFrontlineLogisticsIfReady(army);
+            return false;
         }
 
         private static void ClearFrontlineLogistics(ArmyRuntimeState army)
@@ -818,6 +840,30 @@ namespace WanChaoGuiYi
             if (army == null || string.IsNullOrEmpty(targetRegionId) || queries == null) return false;
             if (!queries.AreNeighbors(army.locationRegionId, targetRegionId)) return false;
             return OwnsRegion(army.ownerFactionId, targetRegionId);
+        }
+
+        private bool CanReinforceTarget(ArmyRuntimeState army, string targetRegionId)
+        {
+            if (army == null || string.IsNullOrEmpty(targetRegionId) || queries == null) return false;
+
+            EngagementRuntimeState engagement;
+            if (!queries.TryGetEngagementInRegion(targetRegionId, out engagement) || engagement == null) return false;
+
+            return EngagementHasFriendlySide(engagement.attackerArmyIds, army.ownerFactionId) ||
+                EngagementHasFriendlySide(engagement.defenderArmyIds, army.ownerFactionId);
+        }
+
+        private bool EngagementHasFriendlySide(List<string> armyIds, string ownerFactionId)
+        {
+            if (armyIds == null || string.IsNullOrEmpty(ownerFactionId) || queries == null) return false;
+
+            for (int i = 0; i < armyIds.Count; i++)
+            {
+                ArmyRuntimeState member = queries.GetArmy(armyIds[i]);
+                if (member != null && member.ownerFactionId == ownerFactionId) return true;
+            }
+
+            return false;
         }
 
         private void AddLog(string category, string message)

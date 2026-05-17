@@ -318,15 +318,30 @@ type GameExportState = {
   warLogistics: WarLogisticsExportState;
 };
 
+function expectDebug<T>(page: Page, read: (state: DebugState) => T): ReturnType<typeof expect.poll<T>> {
+  return expect.poll(() => debug(page).then(read));
+}
+
+async function expectDebugState(page: Page, isReady: (state: DebugState) => boolean, message: string): Promise<DebugState> {
+  let latest: DebugState | undefined;
+  await expect.poll(async () => {
+    latest = await debug(page);
+    return isReady(latest);
+  }, { message }).toBe(true);
+  return latest!;
+}
+
 test.describe('code-driven strategy map', () => {
-  test('loads real 56-region map and supports core decisions', async ({ page }) => {
-    test.setTimeout(90_000);
+  test('loads map shell, emperor audio, governance, and camera selection', async ({ page }) => {
+    test.setTimeout(60_000);
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
-    await expect.poll(() => debug(page).then((state) => state.regionMeshCount)).toBe(56);
-    await expect.poll(() => debug(page).then((state) => state.terrainFeatureCount)).toBe(56);
-    await expect.poll(() => debug(page).then((state) => state.buildingMarkerCount)).toBe(56);
+    await expectDebugState(
+      page,
+      (state) => state.regionMeshCount === 56 && state.terrainFeatureCount === 56 && state.buildingMarkerCount === 56,
+      'map meshes, terrain, and buildings should load'
+    );
     await expect(page.locator('#selected-name')).not.toHaveText('--');
     await expect(page.getByTestId('map-legend')).toContainText('山地');
     await expect(page.getByTestId('map-legend')).toContainText('建设');
@@ -344,32 +359,45 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('emperor-portrait')).toHaveAttribute('src', /\/game-data\/art\/Portraits\/qin_shi_huang\.png$/);
 
     await page.locator('[data-emperor-id="li_shi_min"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorId)).toBe('li_shi_min');
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorMechanic)).toContain('贞观');
+    await expectDebugState(
+      page,
+      (state) => state.ui.selectedEmperorId === 'li_shi_min' && state.ui.selectedEmperorMechanic.includes('贞观'),
+      'Li Shimin emperor selection should settle'
+    );
     await expect(page.getByTestId('emperor-dock')).toContainText('李世民');
     await expect(page.getByTestId('emperor-portrait')).toHaveAttribute('src', /\/game-data\/art\/Portraits\/li_shi_min\.png$/);
     await expect(page.getByTestId('audio-hud')).toContainText('启用音频');
 
     await page.locator('.audio-summary').click();
     await page.locator('#audio-enable').click();
-    await expect.poll(() => debug(page).then((state) => state.audio.enabled)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.audio.sceneCueCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.audio.emperorThemeCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.audio.chronicleEventCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.audio.enabled &&
+        state.audio.sceneCueCount > 0 &&
+        state.audio.emperorThemeCount > 0 &&
+        state.audio.chronicleEventCount > 0,
+      'audio catalogs should be ready after enable'
+    );
     await page.locator('[data-audio-action="emperor"]').click();
-    await expect.poll(() => debug(page).then((state) => state.audio.currentMusicCue)).toContain('emperor');
+    await expectDebugState(page, (state) => state.audio.currentMusicCue.includes('emperor'), 'emperor music cue should play');
 
     const beforeGovernance = await debug(page);
     await page.locator('[data-action="governance_build"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceQueueLength)).toBeGreaterThan(beforeGovernance.ui.governanceQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBeLessThan(beforeGovernance.ui.money);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.governanceQueueLength > beforeGovernance.ui.governanceQueueLength &&
+        state.ui.money < beforeGovernance.ui.money,
+      'governance build should spend money and queue work'
+    );
     await expect(page.getByTestId('governance-queue')).not.toContainText('暂无经营队列');
 
     const beforeZoom = await debug(page);
     await moveMouseToMap(page);
     await page.mouse.wheel(0, -560);
     await page.waitForTimeout(350);
-    await expect.poll(() => debug(page).then((state) => state.cameraDistance)).toBeLessThan(beforeZoom.cameraDistance);
+    await expectDebugState(page, (state) => state.cameraDistance < beforeZoom.cameraDistance, 'camera should zoom in');
 
     const beforePan = await debug(page);
     await dragMap(page);
@@ -378,15 +406,34 @@ test.describe('code-driven strategy map', () => {
     expect(panDelta).toBeGreaterThan(0.02);
 
     const clickedRegionId = await clickVisibleRegion(page);
-    await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe(clickedRegionId);
+    await expectDebugState(page, (state) => state.selectedRegionId === clickedRegionId, 'clicked region should be selected');
     await expect(page.locator('#selected-name')).not.toHaveText('--');
 
+    await page.locator('#sidebar-toggle').click();
+    await expectDebugState(page, (state) => state.sidebarCollapsed, 'sidebar should collapse');
+    await page.locator('#sidebar-toggle').click();
+    await expectDebugState(page, (state) => !state.sidebarCollapsed, 'sidebar should expand');
+
+    expect(await labelOverlapCount(page)).toBe(0);
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('supports war route editing, army micro, and logistics queue control', async ({ page }) => {
+    test.setTimeout(60_000);
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
     await page.locator('#war-mode').click();
-    await expect.poll(() => debug(page).then((state) => state.mode)).toBe('war');
-    await expect.poll(() => debug(page).then((state) => state.routeVisible)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.routeRaidSegmentCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.routeConvoyMarkerCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.routeDragHandleCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.mode === 'war' &&
+        state.routeVisible &&
+        state.routeRaidSegmentCount > 0 &&
+        state.routeConvoyMarkerCount > 0 &&
+        state.routeDragHandleCount > 0,
+      'war route overlay should become visible'
+    );
     await expect(page.getByTestId('war-route')).toContainText('行军线');
     await expect(page.getByTestId('war-forecast')).toContainText('补给');
     await expect(page.getByTestId('war-forecast')).toContainText('接敌');
@@ -397,23 +444,37 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('war-forecast')).toContainText('战术修正');
 
     await page.locator('[data-army-id="army_player_2"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toBe('army_player_2');
-    await expect.poll(() => debug(page).then((state) => state.activeArmyId)).toBe('army_player_2');
+    await expectDebugState(
+      page,
+      (state) => state.ui.activeArmyId === 'army_player_2' && state.activeArmyId === 'army_player_2',
+      'army_player_2 should become active'
+    );
     const retargetedRegionId = await clickVisibleRegion(page);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyTargetId)).toBe(retargetedRegionId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyTargetId)).toBe(retargetedRegionId);
+    await expectDebugState(
+      page,
+      (state) => state.activeArmyTargetId === retargetedRegionId && state.ui.activeArmyTargetId === retargetedRegionId,
+      'route retarget should update app and UI state'
+    );
     await page.locator('[data-route-mode="waypoint"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.routePickMode)).toBe('waypoint');
+    await expectDebugState(page, (state) => state.ui.routePickMode === 'waypoint', 'route picker should switch to waypoint mode');
     const waypointRegionId = await clickVisibleRegion(page);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyWaypointId)).toBe(waypointRegionId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyWaypointId)).toBe(waypointRegionId);
-    await expect.poll(() => debug(page).then((state) => state.routeDragHandleCount)).toBeGreaterThan(1);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyTargetId)).toBe(retargetedRegionId);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.activeArmyWaypointId === waypointRegionId &&
+        state.ui.activeArmyWaypointId === waypointRegionId &&
+        state.routeDragHandleCount > 1 &&
+        state.activeArmyTargetId === retargetedRegionId,
+      'waypoint route should update path handles'
+    );
     const draggedWaypointRegionId = await dragRouteWaypointToVisibleRegion(page, waypointRegionId, [retargetedRegionId]);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyWaypointId)).toBe(draggedWaypointRegionId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyWaypointId)).toBe(draggedWaypointRegionId);
+    await expectDebugState(
+      page,
+      (state) => state.activeArmyWaypointId === draggedWaypointRegionId && state.ui.activeArmyWaypointId === draggedWaypointRegionId,
+      'dragged waypoint should become active'
+    );
     await page.locator('[data-action="route_waypoint_clear"]').click();
-    await expect.poll(() => debug(page).then((state) => state.activeArmyWaypointId)).toBe('');
+    await expectDebugState(page, (state) => state.activeArmyWaypointId === '', 'waypoint should clear');
 
     await page.locator('[data-war-tab="army"]').click();
     await expect(page.getByTestId('army-micro')).toContainText('军队微操');
@@ -422,70 +483,129 @@ test.describe('code-driven strategy map', () => {
     await expect(page.locator('[data-asset-icon="unit:cavalry"]').first()).toHaveAttribute('src', /\/game-data\/art\/Icons\/Units\/cavalry\.png$/);
     const beforeWar = await debug(page);
     await page.locator('[data-action="army_order_forced_march"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.armyOrder)).toBe('急行抢道');
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmySupply)).toBeLessThan(beforeWar.ui.activeArmySupply);
+    await expectDebugState(
+      page,
+      (state) => state.ui.armyOrder === '急行抢道' && state.ui.activeArmySupply < beforeWar.ui.activeArmySupply,
+      'forced march should spend supply'
+    );
 
     const beforeOrganization = await debug(page);
     await page.locator('[data-action="army_split"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.playerArmyCount)).toBe(beforeOrganization.ui.playerArmyCount + 1);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toContain('army_player_detached');
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmySoldiers)).toBeLessThan(beforeOrganization.ui.activeArmySoldiers);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.playerArmyCount === beforeOrganization.ui.playerArmyCount + 1 &&
+        state.ui.activeArmyId.includes('army_player_detached') &&
+        state.ui.activeArmySoldiers < beforeOrganization.ui.activeArmySoldiers,
+      'split army should create a smaller detached active army'
+    );
     const beforeGeneral = await debug(page);
     await page.locator('[data-action="army_general_next"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyGeneral)).not.toBe(beforeGeneral.ui.activeArmyGeneral);
+    await expectDebugState(
+      page,
+      (state) => state.ui.activeArmyGeneral !== beforeGeneral.ui.activeArmyGeneral,
+      'general rotation should update active general'
+    );
     await page.locator('[data-action="army_mix_cavalry"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyUnitMix)).toContain('骑兵');
+    await expectDebugState(page, (state) => state.ui.activeArmyUnitMix.includes('骑兵'), 'unit mix should switch to cavalry');
     const beforeMerge = await debug(page);
     await page.locator('[data-action="army_merge"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.playerArmyCount)).toBe(beforeMerge.ui.playerArmyCount - 1);
+    await expectDebugState(
+      page,
+      (state) => state.ui.playerArmyCount === beforeMerge.ui.playerArmyCount - 1,
+      'merge should remove one player army'
+    );
 
     await page.locator('[data-war-tab="logistics"]').click();
     await expect(page.getByTestId('logistics-queue')).toBeVisible();
     await expect(page.getByTestId('war-command-queue')).toBeVisible();
     await page.locator('[data-action="war_deploy"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsQueueLength)).toBeGreaterThan(beforeWar.ui.logisticsQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBeGreaterThan(beforeWar.ui.commandQueueLength);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.logisticsQueueLength > beforeWar.ui.logisticsQueueLength &&
+        state.ui.commandQueueLength > beforeWar.ui.commandQueueLength,
+      'deploy should add logistics and command queue entries'
+    );
     await expect(page.getByTestId('logistics-queue')).not.toContainText('暂无后勤队列');
     const afterDeploy = await debug(page);
     await page.locator('[data-action="war_supply"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsQueueLength)).toBeGreaterThanOrEqual(afterDeploy.ui.logisticsQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBeGreaterThanOrEqual(afterDeploy.ui.commandQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('运输队');
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.logisticsQueueLength >= afterDeploy.ui.logisticsQueueLength &&
+        state.ui.commandQueueLength >= afterDeploy.ui.commandQueueLength &&
+        state.ui.latestOperation.includes('运输队'),
+      'supply should enqueue or preserve logistics work'
+    );
     const afterSupply = await debug(page);
     await page.locator('[data-war-tab="route"]').click();
     await page.locator('[data-action="route_queue_promote"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsQueueLength)).toBe(afterSupply.ui.logisticsQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBe(afterSupply.ui.commandQueueLength);
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('后勤队列已上移');
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.logisticsQueueLength === afterSupply.ui.logisticsQueueLength &&
+        state.ui.commandQueueLength === afterSupply.ui.commandQueueLength &&
+        state.ui.latestOperation.includes('后勤队列已上移'),
+      'route queue promote should keep queue sizes stable and report action'
+    );
     await page.locator('[data-action="route_queue_cancel"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsQueueLength)).toBe(afterSupply.ui.logisticsQueueLength - 1);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBe(afterSupply.ui.commandQueueLength - 1);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.logisticsQueueLength === afterSupply.ui.logisticsQueueLength - 1 &&
+        state.ui.commandQueueLength === afterSupply.ui.commandQueueLength - 1,
+      'route queue cancel should remove one logistics and command entry'
+    );
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('resolves interdiction countermeasures, occupation aftercare, and reports', async ({ page }) => {
+    test.setTimeout(60_000);
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await page.locator('.audio-summary').click();
+    await page.locator('#audio-enable').click();
+    await expectDebugState(page, (state) => state.audio.enabled, 'audio should be enabled before war narration assertions');
+
+    await page.locator('#war-mode').click();
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_attack"]').click();
-    await expect.poll(() => debug(page).then((state) => state.audio.currentNarration)).toContain('war');
+    await expectDebugState(page, (state) => state.audio.currentNarration.includes('war'), 'war attack narration should be recorded');
     const beforeAdvance = await debug(page);
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.warTurn)).toBe(beforeAdvance.ui.warTurn + 1);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.latestInterceptionAlert)).toContain('截粮');
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionOrderLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionSummary)).toContain('截粮命令');
-    await expect.poll(() => debug(page).then((state) => state.enemyThreatMarkerCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.enemyThreatMovingCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.warTurn === beforeAdvance.ui.warTurn + 1 &&
+        state.ui.commandQueueLength > 0 &&
+        state.ui.latestInterceptionAlert.includes('截粮') &&
+        state.ui.enemyInterdictionOrderLength > 0 &&
+        state.ui.enemyInterdictionSummary.includes('截粮命令') &&
+        state.enemyThreatMarkerCount > 0 &&
+        state.enemyThreatMovingCount > 0,
+      'first war advance should create interdiction pressure'
+    );
     await expect(page.getByTestId('enemy-interdiction-orders')).toContainText('敌方截粮命令');
     await expect(page.getByTestId('interdiction-countermeasures')).toContainText('护送车队');
     const beforeCountermeasure = await debug(page);
     await page.getByTestId('interdiction-countermeasures').scrollIntoViewIfNeeded();
     await page.locator('[data-action="war_counter_escort"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyCountermeasureSummary)).toBe('护粮队');
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionSummary)).toContain('反制 护粮队');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('护粮队');
-    await expect.poll(() => debug(page).then((state) => state.ui.food)).toBeLessThan(beforeCountermeasure.ui.food);
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureSummary)).toContain('截粮');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureSummary)).toContain('反制 护粮队');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureCompactSummary)).toContain('护粮队');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureDetail)).toContain('敌方截粮点');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureDetail)).toContain('己方护粮队');
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.enemyCountermeasureSummary === '护粮队' &&
+        state.ui.enemyInterdictionSummary.includes('反制 护粮队') &&
+        state.ui.latestOperation.includes('护粮队') &&
+        state.ui.food < beforeCountermeasure.ui.food &&
+        state.ui.routePressureSummary.includes('截粮') &&
+        state.ui.routePressureSummary.includes('反制 护粮队') &&
+        state.ui.routePressureCompactSummary.includes('护粮队') &&
+        state.ui.routePressureDetail.includes('敌方截粮点') &&
+        state.ui.routePressureDetail.includes('己方护粮队'),
+      'escort countermeasure should update pressure summaries'
+    );
     await expect(page.locator('#route-summary')).toContainText('反制 护粮队');
     await page.locator('#route-summary').hover();
     await expect(page.locator('#route-pressure-detail')).toBeVisible();
@@ -497,42 +617,67 @@ test.describe('code-driven strategy map', () => {
     await expect(page.locator('#route-pressure-detail')).toContainText('位置详情');
     await page.getByTestId('interdiction-countermeasures').scrollIntoViewIfNeeded();
     await page.locator('[data-action="war_counter_reroute"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyCountermeasureSummary)).toBe('改道');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureDetail)).toContain('己方改道');
+    await expectDebugState(
+      page,
+      (state) => state.ui.enemyCountermeasureSummary === '改道' && state.ui.routePressureDetail.includes('己方改道'),
+      'reroute countermeasure should update detail'
+    );
     await expect(page.locator('#route-pressure-detail')).toContainText('绕开高危段');
     await page.getByTestId('interdiction-countermeasures').scrollIntoViewIfNeeded();
     await page.locator('[data-action="war_counter_scout"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyCountermeasureSummary)).toBe('反斥候');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureDetail)).toContain('己方反斥候');
+    await expectDebugState(
+      page,
+      (state) => state.ui.enemyCountermeasureSummary === '反斥候' && state.ui.routePressureDetail.includes('己方反斥候'),
+      'scout countermeasure should update detail'
+    );
     await expect(page.locator('#route-pressure-detail')).toContainText('清查伏点');
     await page.getByTestId('interdiction-countermeasures').scrollIntoViewIfNeeded();
     await page.locator('[data-action="war_counter_decoy"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyCountermeasureSummary)).toBe('诱敌');
-    await expect.poll(() => debug(page).then((state) => state.ui.routePressureDetail)).toContain('己方诱敌');
+    await expectDebugState(
+      page,
+      (state) => state.ui.enemyCountermeasureSummary === '诱敌' && state.ui.routePressureDetail.includes('己方诱敌'),
+      'decoy countermeasure should update detail'
+    );
     await expect.poll(() => page.locator('#route-pressure-detail').textContent()).toContain('弃车设伏');
-    await expect.poll(() => debug(page).then((state) => state.enemyThreatMarkerCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.enemyThreatDampenedCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.friendlyCountermeasureMarkerCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.friendlyCountermeasureMovingCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('回合');
-    await expect.poll(() => debug(page).then((state) => state.routeRaidSegmentCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.routeConvoyMarkerCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.enemyThreatMarkerCount > 0 &&
+        state.enemyThreatDampenedCount > 0 &&
+        state.friendlyCountermeasureMarkerCount > 0 &&
+        state.friendlyCountermeasureMovingCount > 0 &&
+        state.ui.nextCommandSummary.includes('回合') &&
+        state.routeRaidSegmentCount > 0 &&
+        state.routeConvoyMarkerCount > 0,
+      'countermeasure map markers should be visible'
+    );
     for (let i = 0; i < 8; i += 1) {
       const state = await debug(page);
       if (state.ui.occupationQueueLength > 0) break;
       await page.locator('[data-action="war_advance_turn"]').click();
     }
-    await expect.poll(() => debug(page).then((state) => state.ui.occupationQueueLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.occupationBadgeCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) => state.ui.occupationQueueLength > 0 && state.occupationBadgeCount > 0,
+      'occupation queue and badges should appear'
+    );
     await expect(page.getByTestId('occupation-aftercare')).toContainText('军管');
     await expect(page.getByTestId('occupation-aftercare')).toContainText('地图徽标');
     await page.locator('[data-action="occupation_aftercare"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.occupationStageSummary)).toContain('尚余 1 回合');
-    await expect.poll(() => debug(page).then((state) => state.occupationBadgeCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) => state.ui.occupationStageSummary.includes('尚余 1 回合') && state.occupationBadgeCount > 0,
+      'first aftercare should advance occupation stage'
+    );
     await page.locator('[data-action="occupation_aftercare"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedControlStage)).toBe('pacify');
-    await expect.poll(() => debug(page).then((state) => state.ui.occupationStageSummary)).toContain('安抚');
-    await expect.poll(() => debug(page).then((state) => state.occupationBadgeCount)).toBeGreaterThan(0);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.selectedControlStage === 'pacify' &&
+        state.ui.occupationStageSummary.includes('安抚') &&
+        state.occupationBadgeCount > 0,
+      'second aftercare should enter pacify stage'
+    );
     await page.locator('[data-war-tab="report"]').click();
     await expect(page.getByTestId('battle-report')).toContainText('战术修正');
     await expect(page.getByTestId('battle-report')).toContainText('敌方截粮命令');
@@ -548,13 +693,6 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('tactic-badge-row').first()).toContainText('截粮');
     await expect(page.getByTestId('tactic-badge-row').first()).toContainText('占领');
     await expect(page.locator('.battle-outcome-card').first()).toBeVisible();
-
-    await page.locator('#sidebar-toggle').click();
-    await expect.poll(() => debug(page).then((state) => state.sidebarCollapsed)).toBe(true);
-    await page.locator('#sidebar-toggle').click();
-    await expect.poll(() => debug(page).then((state) => state.sidebarCollapsed)).toBe(false);
-
-    expect(await labelOverlapCount(page)).toBe(0);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -566,15 +704,15 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('分段 0/');
+    await expectDebug(page, (state) => state.ui.commandQueueLength).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain('分段 0/');
     await expect(page.getByTestId('war-command-queue')).toContainText('送达 0/');
 
     const beforeAdvance = await debug(page);
     await page.locator('[data-action="war_advance_turn"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.warTurn)).toBe(beforeAdvance.ui.warTurn + 1);
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('分段 1/');
+    await expectDebug(page, (state) => state.ui.warTurn).toBe(beforeAdvance.ui.warTurn + 1);
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain('分段 1/');
     await expect(page.getByTestId('logistics-queue')).toContainText('运输队第 1/');
     await expect(page.getByTestId('war-command-queue')).toContainText('送达');
     expect(consoleErrors).toEqual([]);
@@ -593,18 +731,18 @@ test.describe('code-driven strategy map', () => {
 
     const beforeTax = await debug(page);
     await page.locator('[data-action="governance_focus_tax"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceFocus)).toBe('tax');
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBeGreaterThan(beforeTax.ui.money);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedRisk)).toBeGreaterThan(beforeTax.ui.selectedRisk);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedContribution)).toBeGreaterThan(beforeTax.ui.selectedContribution);
+    await expectDebug(page, (state) => state.ui.governanceFocus).toBe('tax');
+    await expectDebug(page, (state) => state.ui.money).toBeGreaterThan(beforeTax.ui.money);
+    await expectDebug(page, (state) => state.ui.selectedRisk).toBeGreaterThan(beforeTax.ui.selectedRisk);
+    await expectDebug(page, (state) => state.ui.selectedContribution).toBeGreaterThan(beforeTax.ui.selectedContribution);
     await expect(page.locator('#selected-tags')).toContainText('商税漕运');
     await expect(page.getByTestId('governance-queue')).toContainText('商税漕运');
 
     const afterTax = await debug(page);
     await page.locator('[data-action="governance_focus_relief"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceFocus)).toBe('relief');
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedRisk)).toBeLessThan(afterTax.ui.selectedRisk);
-    await expect.poll(() => debug(page).then((state) => state.ui.food)).toBeLessThan(afterTax.ui.food);
+    await expectDebug(page, (state) => state.ui.governanceFocus).toBe('relief');
+    await expectDebug(page, (state) => state.ui.selectedRisk).toBeLessThan(afterTax.ui.selectedRisk);
+    await expectDebug(page, (state) => state.ui.food).toBeLessThan(afterTax.ui.food);
     await expect(page.locator('#selected-tags')).toContainText('安抚民生');
 
     const saved = await exportGameState(page);
@@ -613,8 +751,8 @@ test.describe('code-driven strategy map', () => {
     expect(savedHexi?.specialization).toBe('安抚民生');
     await openApp(page);
     expect(await importGameState(page, saved)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe('hexi');
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceFocus)).toBe('relief');
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('hexi');
+    await expectDebug(page, (state) => state.ui.governanceFocus).toBe('relief');
     await expect(page.getByTestId('governance-micro')).toContainText('安抚民生');
     expect(consoleErrors).toEqual([]);
   });
@@ -624,12 +762,12 @@ test.describe('code-driven strategy map', () => {
     const consoleErrors = captureConsoleErrors(page);
     await openApp(page);
 
-    await expect.poll(() => debug(page).then((state) => state.ui.chronicleCatalogCount)).toBeGreaterThan(100);
+    await expectDebug(page, (state) => state.ui.chronicleCatalogCount).toBeGreaterThan(100);
     await expect(page.getByTestId('chronicle-panel')).toContainText('编年纪事');
 
     const before = await debug(page);
     await page.locator('[data-action="governance_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.chronicleHistoryLength)).toBeGreaterThan(before.ui.chronicleHistoryLength);
+    await expectDebug(page, (state) => state.ui.chronicleHistoryLength).toBeGreaterThan(before.ui.chronicleHistoryLength);
     const after = await debug(page);
     expect(after.ui.latestChronicleEventId).not.toBe('');
     expect(after.ui.latestChronicleEventSummary).toContain('内政第');
@@ -639,7 +777,7 @@ test.describe('code-driven strategy map', () => {
     await page.reload();
     await openApp(page);
     expect(await importGameState(page, snapshot)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.ui.latestChronicleEventSummary)).toBe(after.ui.latestChronicleEventSummary);
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toBe(after.ui.latestChronicleEventSummary);
 
     expect(consoleErrors).toEqual([]);
   });
@@ -651,26 +789,26 @@ test.describe('code-driven strategy map', () => {
     await page.locator('#war-mode').click();
     await page.locator('[data-war-tab="route"]').click();
     await expect(page.getByTestId('prewar-route-capacity')).toContainText('路线容量');
-    await expect.poll(() => debug(page).then((state) => state.ui.routeRoadSummary)).toContain('容量');
+    await expectDebug(page, (state) => state.ui.routeRoadSummary).toContain('容量');
 
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_supply"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(2);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(2);
     await expect(page.getByTestId('transport-convoy-list')).toContainText('运输队实体');
     await expect(page.getByTestId('transport-convoy-list')).toContainText('路线');
 
     await page.locator('[data-action="transport_convoy_promote"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoySummary)).toContain('优先 2');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('已上移');
+    await expectDebug(page, (state) => state.ui.transportConvoySummary).toContain('优先 2');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('已上移');
 
     const beforeCancel = await debug(page);
     await page.locator('[data-action="transport_convoy_cancel"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(beforeCancel.ui.transportConvoyCount - 1);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBe(beforeCancel.ui.commandQueueLength - 1);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(beforeCancel.ui.transportConvoyCount - 1);
+    await expectDebug(page, (state) => state.ui.commandQueueLength).toBe(beforeCancel.ui.commandQueueLength - 1);
     await expect(page.getByTestId('transport-convoy-list')).toContainText('已取消');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('释放');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('释放');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -683,9 +821,9 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_supply"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(2);
-    await expect.poll(() => debug(page).then((state) => state.logisticsMapObjectCount)).toBeGreaterThanOrEqual(2);
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsMapObjectCount)).toBeGreaterThanOrEqual(2);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(2);
+    await expectDebug(page, (state) => state.logisticsMapObjectCount).toBeGreaterThanOrEqual(2);
+    await expectDebug(page, (state) => state.ui.logisticsMapObjectCount).toBeGreaterThanOrEqual(2);
 
     const selectedId = '运输队-2';
     const point = await getLogisticsObjectPoint(page, selectedId);
@@ -693,18 +831,18 @@ test.describe('code-driven strategy map', () => {
     if (!point) throw new Error('No logistics object point found.');
     await page.mouse.click(point.x, point.y);
 
-    await expect.poll(() => debug(page).then((state) => state.selectedLogisticsObjectId)).toBe(selectedId);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedLogisticsObjectId)).toBe(selectedId);
+    await expectDebug(page, (state) => state.selectedLogisticsObjectId).toBe(selectedId);
+    await expectDebug(page, (state) => state.ui.selectedLogisticsObjectId).toBe(selectedId);
     await expect(page.getByTestId('selected-logistics-object')).toContainText(selectedId);
 
     await page.locator('[data-action="transport_convoy_promote"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedLogisticsObjectSummary)).toContain('优先 2');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain(selectedId);
+    await expectDebug(page, (state) => state.ui.selectedLogisticsObjectSummary).toContain('优先 2');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain(selectedId);
 
     await page.locator('[data-action="transport_convoy_cancel"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain(selectedId);
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(1);
-    await expect.poll(() => debug(page).then((state) => state.logisticsMapObjectCount)).toBe(1);
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain(selectedId);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(1);
+    await expectDebug(page, (state) => state.logisticsMapObjectCount).toBe(1);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -727,8 +865,8 @@ test.describe('code-driven strategy map', () => {
       await page.locator('[data-action="war_advance_turn"]').click();
     }
 
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionOrderLength)).toBeGreaterThanOrEqual(2);
-    await expect.poll(() => debug(page).then((state) => state.enemyThreatMarkerCount)).toBeGreaterThanOrEqual(2);
+    await expectDebug(page, (state) => state.ui.enemyInterdictionOrderLength).toBeGreaterThanOrEqual(2);
+    await expectDebug(page, (state) => state.enemyThreatMarkerCount).toBeGreaterThanOrEqual(2);
 
     const targetOrderId = 'enemy_interdiction_2';
     await expect.poll(async () => (await getEnemyInterdictionPoint(page, targetOrderId))?.visible ?? false).toBe(true);
@@ -737,17 +875,17 @@ test.describe('code-driven strategy map', () => {
     if (!point) throw new Error('No enemy interdiction point found.');
     await page.mouse.click(point.x, point.y);
 
-    await expect.poll(() => debug(page).then((state) => state.selectedEnemyInterdictionId)).toBe(targetOrderId);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEnemyInterdictionId)).toBe(targetOrderId);
+    await expectDebug(page, (state) => state.selectedEnemyInterdictionId).toBe(targetOrderId);
+    await expectDebug(page, (state) => state.ui.selectedEnemyInterdictionId).toBe(targetOrderId);
     await expect(page.getByTestId('selected-enemy-interdiction')).toContainText(targetOrderId);
 
     await page.locator('[data-action="war_counter_reroute"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEnemyInterdictionId)).toBe(targetOrderId);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEnemyInterdictionSummary)).toContain('反制 改道');
+    await expectDebug(page, (state) => state.ui.selectedEnemyInterdictionId).toBe(targetOrderId);
+    await expectDebug(page, (state) => state.ui.selectedEnemyInterdictionSummary).toContain('反制 改道');
     await expect(page.getByTestId('selected-enemy-interdiction')).toContainText(targetOrderId);
     await expect(page.getByTestId('selected-enemy-interdiction')).toContainText('反制 改道');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('改道绕避');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).not.toContain(firstTarget);
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('改道绕避');
+    await expectDebug(page, (state) => state.ui.latestOperation).not.toContain(firstTarget);
     expect(secondTarget).not.toBe(firstTarget);
     expect(consoleErrors).toEqual([]);
   });
@@ -768,8 +906,8 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-action="governance_build"]').click();
     await page.locator('[data-action="governance_policy"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceLogisticsSummary)).toContain('河西');
-    await expect.poll(() => debug(page).then((state) => state.ui.governanceLogisticsSummary)).toContain('容量');
+    await expectDebug(page, (state) => state.ui.governanceLogisticsSummary).toContain('河西');
+    await expectDebug(page, (state) => state.ui.governanceLogisticsSummary).toContain('容量');
     await expect(page.getByTestId('governance-logistics-effect')).toContainText('截粮');
 
     await page.evaluate(() => (window as any).__WANCHAO_APP__.selectRegion('liangzhou'));
@@ -785,7 +923,7 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-war-tab="logistics"]').click();
     await expect(page.getByTestId('governance-logistics-list')).toContainText('河西');
     await page.locator('[data-action="war_supply"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain(`/${afterCapacity}`);
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain(`/${afterCapacity}`);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -796,12 +934,12 @@ test.describe('code-driven strategy map', () => {
 
     await page.locator('#war-mode').click();
     await page.locator('[data-army-id="army_player_2"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toBe('army_player_2');
+    await expectDebug(page, (state) => state.ui.activeArmyId).toBe('army_player_2');
     await expect(page.getByTestId('route-alternatives')).toContainText('路线方案对比');
     await expect(page.getByTestId('route-alternatives')).toContainText('容量');
     await expect(page.getByTestId('route-alternatives')).toContainText('补给');
     await expect(page.getByTestId('route-alternatives')).toContainText('截粮');
-    await expect.poll(() => debug(page).then((state) => state.ui.routeAlternativeSummary)).toContain('direct');
+    await expectDebug(page, (state) => state.ui.routeAlternativeSummary).toContain('direct');
 
     const viaOption = page.locator('[data-route-alternative-id^="via-"]').first();
     await expect(viaOption).toBeVisible();
@@ -810,14 +948,14 @@ test.describe('code-driven strategy map', () => {
     expect(chosenAlternativeId).toContain('via-');
     await viaOption.click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedRouteAlternativeId)).toBe(chosenAlternativeId);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyWaypointId)).not.toBe('');
+    await expectDebug(page, (state) => state.ui.selectedRouteAlternativeId).toBe(chosenAlternativeId);
+    await expectDebug(page, (state) => state.activeArmyWaypointId).not.toBe('');
     await expect(page.getByTestId('route-alternatives')).toContainText('已采用');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('采用路线方案');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('采用路线方案');
 
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('经');
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain('经');
     const exported = await exportWarLogistics(page);
     expect(exported.activeArmyId).toBe('army_player_2');
     expect(exported.activeArmyWaypointId).not.toBe('');
@@ -832,13 +970,13 @@ test.describe('code-driven strategy map', () => {
     }
     await openApp(page);
     expect(await importWarLogistics(page, exported)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toBe(exported.activeArmyId);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyId)).toBe(exported.activeArmyId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyTargetId)).toBe(exported.activeArmyTargetId);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyTargetId)).toBe(exported.activeArmyTargetId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyWaypointId)).toBe(exported.activeArmyWaypointId);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyWaypointId)).toBe(exported.activeArmyWaypointId);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedRouteAlternativeId)).toBe(chosenAlternativeId);
+    await expectDebug(page, (state) => state.ui.activeArmyId).toBe(exported.activeArmyId);
+    await expectDebug(page, (state) => state.activeArmyId).toBe(exported.activeArmyId);
+    await expectDebug(page, (state) => state.ui.activeArmyTargetId).toBe(exported.activeArmyTargetId);
+    await expectDebug(page, (state) => state.activeArmyTargetId).toBe(exported.activeArmyTargetId);
+    await expectDebug(page, (state) => state.ui.activeArmyWaypointId).toBe(exported.activeArmyWaypointId);
+    await expectDebug(page, (state) => state.activeArmyWaypointId).toBe(exported.activeArmyWaypointId);
+    await expectDebug(page, (state) => state.ui.selectedRouteAlternativeId).toBe(chosenAlternativeId);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -849,12 +987,12 @@ test.describe('code-driven strategy map', () => {
 
     await page.evaluate(() => (window as any).__WANCHAO_APP__.selectRegion('hanzhong'));
     await page.locator('#war-mode').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.routeRoadSummary)).toContain('秦岭栈道');
+    await expectDebug(page, (state) => state.ui.routeRoadSummary).toContain('秦岭栈道');
     await expect(page.getByTestId('route-alternatives')).toContainText('路网 秦岭栈道');
 
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('路线 1/1');
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain('路线 1/1');
 
     const exported = await exportWarLogistics(page);
     const qinlingRoute = exported.routeCapacities.find((capacity) => capacity.routeId === 'guanzhong->hanzhong');
@@ -878,8 +1016,8 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_advance_turn"]').click();
 
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionOrderLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.latestInterceptionAlert)).toContain('秦岭栈道');
+    await expectDebug(page, (state) => state.ui.enemyInterdictionOrderLength).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.latestInterceptionAlert).toContain('秦岭栈道');
     await expect(page.getByTestId('selected-enemy-interdiction')).toContainText('秦岭栈道');
     await expect(page.getByTestId('logistics-dispatcher')).toContainText('秦岭栈道');
 
@@ -902,7 +1040,7 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.latestInterceptionAlert)).toContain('秦岭栈道');
+    await expectDebug(page, (state) => state.ui.latestInterceptionAlert).toContain('秦岭栈道');
 
     const initialExport = await exportWarLogistics(page);
     const qinlingNetwork = initialExport.routeNetworks.find((candidate) => candidate.id === 'qinling_plank_roads');
@@ -920,8 +1058,8 @@ test.describe('code-driven strategy map', () => {
     expect(point?.visible).toBe(true);
     if (!point) throw new Error('No blockade logistics object screen point found.');
     await page.mouse.click(point.x, point.y);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedLogisticsObjectId)).toBe(blockade.id);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedLogisticsObjectSummary)).toContain('秦岭栈道');
+    await expectDebug(page, (state) => state.ui.selectedLogisticsObjectId).toBe(blockade.id);
+    await expectDebug(page, (state) => state.ui.selectedLogisticsObjectSummary).toContain('秦岭栈道');
 
     await page.locator('[data-action="route_blockade_guard"]').click();
     const guardedExport = await exportWarLogistics(page);
@@ -939,7 +1077,7 @@ test.describe('code-driven strategy map', () => {
     expect(restoredExport.selectedLogisticsObjectId).toBe(blockade.id);
     expect(restoredExport.enemyInterdiction.activeOrders.some((order) => order.chokeRouteId === 'guanzhong->hanzhong' && order.lastCountermeasure === '瓶颈守备')).toBe(true);
     expect(restoredExport.logisticsMapObjects.some((object) => object.id === blockade.id && object.kind === 'route-blockade')).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedLogisticsObjectId)).toBe(blockade.id);
+    await expectDebug(page, (state) => state.ui.selectedLogisticsObjectId).toBe(blockade.id);
 
     await page.locator('[data-action="route_blockade_clear"]').click();
     const clearedExport = await exportWarLogistics(page);
@@ -960,7 +1098,7 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-war-tab="logistics"]').click();
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_supply"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(2);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(2);
 
     for (let i = 0; i < 5; i += 1) {
       const state = await debug(page);
@@ -968,7 +1106,7 @@ test.describe('code-driven strategy map', () => {
       await page.locator('[data-action="war_advance_turn"]').click();
     }
 
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionOrderLength)).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.enemyInterdictionOrderLength).toBeGreaterThan(0);
     await page.locator('[data-enemy-interdiction-id]').first().click();
     const selectedThreat = (await debug(page)).ui.selectedEnemyInterdictionId;
     expect(selectedThreat).toContain('enemy_interdiction_');
@@ -1015,29 +1153,29 @@ test.describe('code-driven strategy map', () => {
     await openApp(page);
 
     await page.locator('[data-emperor-id="li_shi_min"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorId)).toBe('li_shi_min');
+    await expectDebug(page, (state) => state.ui.selectedEmperorId).toBe('li_shi_min');
 
     await page.evaluate(() => (window as any).__WANCHAO_APP__.selectRegion('hexi'));
     const beforeGovernance = await debug(page);
     await page.locator('[data-action="governance_build"]').click();
     await page.locator('[data-action="governance_policy"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBeLessThan(beforeGovernance.ui.money);
+    await expectDebug(page, (state) => state.ui.money).toBeLessThan(beforeGovernance.ui.money);
 
     await page.locator('#war-mode').click();
     await page.locator('[data-army-id="army_player_2"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toBe('army_player_2');
+    await expectDebug(page, (state) => state.ui.activeArmyId).toBe('army_player_2');
     const viaOption = page.locator('[data-route-alternative-id^="via-"]').first();
     await expect(viaOption).toBeVisible();
     const chosenAlternativeId = await viaOption.getAttribute('data-route-alternative-id');
     if (!chosenAlternativeId) throw new Error('No route alternative id found.');
     await viaOption.click();
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedRouteAlternativeId)).toBe(chosenAlternativeId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyWaypointId)).not.toBe('');
+    await expectDebug(page, (state) => state.ui.selectedRouteAlternativeId).toBe(chosenAlternativeId);
+    await expectDebug(page, (state) => state.ui.activeArmyWaypointId).not.toBe('');
 
     await page.locator('[data-war-tab="army"]').click();
     await page.locator('[data-action="army_order_forced_march"]').click();
     await page.locator('[data-action="army_split"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toContain('army_player_detached_');
+    await expectDebug(page, (state) => state.ui.activeArmyId).toContain('army_player_detached_');
     await page.locator('[data-action="army_general_next"]').click();
     await page.locator('[data-action="army_mix_cavalry"]').click();
 
@@ -1045,9 +1183,9 @@ test.describe('code-driven strategy map', () => {
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_attack"]').click();
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.commandQueueLength).toBeGreaterThan(0);
     await page.locator('#sidebar-toggle').click();
-    await expect.poll(() => debug(page).then((state) => state.sidebarCollapsed)).toBe(true);
+    await expectDebug(page, (state) => state.sidebarCollapsed).toBe(true);
 
     const savedDebug = await debug(page);
     const saved = await exportGameState(page);
@@ -1065,23 +1203,23 @@ test.describe('code-driven strategy map', () => {
 
     await openApp(page);
     expect(await importGameState(page, saved)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.mode)).toBe(saved.mode);
-    await expect.poll(() => debug(page).then((state) => state.sidebarCollapsed)).toBe(true);
-    await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe(saved.selectedRegionId);
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorId)).toBe(saved.selectedEmperorId);
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBe(saved.nationState.money);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyId)).toBe(savedDebug.ui.activeArmyId);
-    await expect.poll(() => debug(page).then((state) => state.activeArmyId)).toBe(savedDebug.ui.activeArmyId);
-    await expect.poll(() => debug(page).then((state) => state.ui.activeArmyWaypointId)).toBe(savedDebug.ui.activeArmyWaypointId);
-    await expect.poll(() => debug(page).then((state) => state.ui.commandQueueLength)).toBe(saved.queues.commands.length);
-    await expect.poll(() => debug(page).then((state) => state.ui.transportConvoyCount)).toBe(saved.warLogistics.transportConvoys.length);
+    await expectDebug(page, (state) => state.mode).toBe(saved.mode);
+    await expectDebug(page, (state) => state.sidebarCollapsed).toBe(true);
+    await expectDebug(page, (state) => state.selectedRegionId).toBe(saved.selectedRegionId);
+    await expectDebug(page, (state) => state.ui.selectedEmperorId).toBe(saved.selectedEmperorId);
+    await expectDebug(page, (state) => state.ui.money).toBe(saved.nationState.money);
+    await expectDebug(page, (state) => state.ui.activeArmyId).toBe(savedDebug.ui.activeArmyId);
+    await expectDebug(page, (state) => state.activeArmyId).toBe(savedDebug.ui.activeArmyId);
+    await expectDebug(page, (state) => state.ui.activeArmyWaypointId).toBe(savedDebug.ui.activeArmyWaypointId);
+    await expectDebug(page, (state) => state.ui.commandQueueLength).toBe(saved.queues.commands.length);
+    await expectDebug(page, (state) => state.ui.transportConvoyCount).toBe(saved.warLogistics.transportConvoys.length);
     await expect(page.getByTestId('logistics-queue')).toContainText('运输队');
 
     await page.locator('#sidebar-toggle').click();
-    await expect.poll(() => debug(page).then((state) => state.sidebarCollapsed)).toBe(false);
+    await expectDebug(page, (state) => state.sidebarCollapsed).toBe(false);
     const beforeAdvance = await debug(page);
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.warTurn)).toBe(beforeAdvance.ui.warTurn + 1);
+    await expectDebug(page, (state) => state.ui.warTurn).toBe(beforeAdvance.ui.warTurn + 1);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -1092,7 +1230,7 @@ test.describe('code-driven strategy map', () => {
     await page.evaluate(() => localStorage.clear());
     await openApp(page);
 
-    await expect.poll(() => debug(page).then((state) => state.ui.saveSlotCount)).toBe(3);
+    await expectDebug(page, (state) => state.ui.saveSlotCount).toBe(3);
     await expect(page.getByTestId('save-panel')).toContainText('空槽');
 
     await page.locator('[data-emperor-id="li_shi_min"]').click();
@@ -1100,25 +1238,25 @@ test.describe('code-driven strategy map', () => {
     const beforeGovernance = await debug(page);
     await page.locator('[data-action="governance_build"]').click();
     await page.locator('[data-action="governance_policy"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBeLessThan(beforeGovernance.ui.money);
+    await expectDebug(page, (state) => state.ui.money).toBeLessThan(beforeGovernance.ui.money);
     const savedState = await debug(page);
 
     await page.locator('[data-action="save_slot_1"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.saveSlotMessage)).toContain('一号槽 已保存');
+    await expectDebug(page, (state) => state.ui.saveSlotMessage).toContain('一号槽 已保存');
     await expect(page.getByTestId('save-panel')).toContainText('河西');
     await expect(page.getByTestId('save-panel')).toContainText('李世民');
 
     await page.evaluate(() => (window as any).__WANCHAO_APP__.selectRegion('qilu'));
     await page.locator('[data-emperor-id="qin_shi_huang"]').click();
-    await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe('qilu');
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('qilu');
 
     await openApp(page);
     await expect(page.getByTestId('save-panel')).toContainText('河西');
     await page.locator('[data-action="load_slot_1"]').click();
-    await expect.poll(() => debug(page).then((state) => state.selectedRegionId)).toBe('hexi');
-    await expect.poll(() => debug(page).then((state) => state.ui.selectedEmperorId)).toBe('li_shi_min');
-    await expect.poll(() => debug(page).then((state) => state.ui.money)).toBe(savedState.ui.money);
-    await expect.poll(() => debug(page).then((state) => state.ui.saveSlotError)).toBe('');
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('hexi');
+    await expectDebug(page, (state) => state.ui.selectedEmperorId).toBe('li_shi_min');
+    await expectDebug(page, (state) => state.ui.money).toBe(savedState.ui.money);
+    await expectDebug(page, (state) => state.ui.saveSlotError).toBe('');
 
     await page.evaluate(() => {
       localStorage.setItem('wanchao:strategy-map:save:slot_2', JSON.stringify({
@@ -1132,11 +1270,11 @@ test.describe('code-driven strategy map', () => {
     await openApp(page);
     await expect(page.getByTestId('save-panel')).toContainText('版本或结构异常');
     await page.locator('[data-action="load_slot_2"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.saveSlotError)).toContain('游戏状态版本不匹配');
+    await expectDebug(page, (state) => state.ui.saveSlotError).toContain('游戏状态版本不匹配');
     await expect(page.getByTestId('save-panel')).toContainText('需要 1');
 
     await page.locator('[data-action="delete_slot_1"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.saveSlotMessage)).toContain('一号槽 已清除');
+    await expectDebug(page, (state) => state.ui.saveSlotMessage).toContain('一号槽 已清除');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -1151,26 +1289,26 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('logistics-dispatcher')).toContainText('后勤调度中心');
 
     await page.locator('[data-action="war_fortify"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.routeCapacityCount)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.nextCommandSummary)).toContain('路线');
-    await expect.poll(() => debug(page).then((state) => state.ui.routeRoadSummary)).toContain('容量');
+    await expectDebug(page, (state) => state.ui.routeCapacityCount).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.nextCommandSummary).toContain('路线');
+    await expectDebug(page, (state) => state.ui.routeRoadSummary).toContain('容量');
     for (let i = 0; i < 3; i += 1) {
       const state = await debug(page);
       if (state.ui.logisticsStationCount > 0) break;
       await page.locator('[data-action="war_advance_turn"]').click();
     }
-    await expect.poll(() => debug(page).then((state) => state.ui.logisticsStationCount)).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.logisticsStationCount).toBeGreaterThan(0);
     await expect(page.getByTestId('logistics-dispatcher')).toContainText('兵站');
 
     await page.locator('[data-action="war_supply"]').click();
     await page.locator('[data-action="war_attack"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.routeCapacitySummary)).toContain('/');
+    await expectDebug(page, (state) => state.ui.routeCapacitySummary).toContain('/');
     await expect(page.getByTestId('war-command-queue')).toContainText('路线');
 
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionOrderLength)).toBeGreaterThan(0);
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionDoctrine)).not.toBe('');
-    await expect.poll(() => debug(page).then((state) => state.ui.enemyInterdictionMemory)).toContain('成功');
+    await expectDebug(page, (state) => state.ui.enemyInterdictionOrderLength).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.enemyInterdictionDoctrine).not.toBe('');
+    await expectDebug(page, (state) => state.ui.enemyInterdictionMemory).toContain('成功');
     await expect(page.getByTestId('logistics-dispatcher')).toContainText('截粮威胁优先级');
 
     for (let i = 0; i < 8; i += 1) {
@@ -1178,19 +1316,19 @@ test.describe('code-driven strategy map', () => {
       if (state.ui.occupationSupplyTaskCount > 0) break;
       await page.locator('[data-action="war_advance_turn"]').click();
     }
-    await expect.poll(() => debug(page).then((state) => state.ui.occupationSupplyTaskCount)).toBeGreaterThan(0);
+    await expectDebug(page, (state) => state.ui.occupationSupplyTaskCount).toBeGreaterThan(0);
     await expect(page.getByTestId('logistics-dispatcher')).toContainText('安抚运输任务');
 
     await page.locator('[data-action="war_advance_turn"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.occupationSupplySummary)).toContain('运输');
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('安抚运输');
+    await expectDebug(page, (state) => state.ui.occupationSupplySummary).toContain('运输');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('安抚运输');
     await page.locator('[data-action="occupation_aftercare"]').click();
     await page.locator('[data-action="occupation_aftercare"]').click();
     await expect(page.getByTestId('occupation-supply-controls')).toBeVisible();
     await page.locator('[data-action="occupation_supply_promote"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('已上移');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('已上移');
     await page.locator('[data-action="occupation_supply_cancel"]').click();
-    await expect.poll(() => debug(page).then((state) => state.ui.latestOperation)).toContain('已取消');
+    await expectDebug(page, (state) => state.ui.latestOperation).toContain('已取消');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -1203,8 +1341,8 @@ test.describe('code-driven strategy map', () => {
       await page.setViewportSize(viewport);
       await openApp(page);
 
-      await expect.poll(() => debug(page).then((state) => state.terrainFeatureCount)).toBe(56);
-      await expect.poll(() => debug(page).then((state) => state.buildingMarkerCount)).toBe(56);
+      await expectDebug(page, (state) => state.terrainFeatureCount).toBe(56);
+      await expectDebug(page, (state) => state.buildingMarkerCount).toBe(56);
       await expect(page.getByTestId('geography-building')).toContainText('地理与建设');
       await expect(page.getByTestId('real-geography')).toContainText('现实地貌');
       await expect(page.locator('.landform-label:not(.hidden)').first()).toBeVisible();
@@ -1225,7 +1363,7 @@ test.describe('code-driven strategy map', () => {
       await openApp(page);
 
       await page.locator('#war-mode').click();
-      await expect.poll(() => debug(page).then((state) => state.visibleLabels)).toBeGreaterThan(0);
+      await expectDebug(page, (state) => state.visibleLabels).toBeGreaterThan(0);
       expect(await labelOverlapCount(page)).toBe(0);
       await expect(page.locator('#sidebar')).toBeVisible();
       await expect(page.locator('.command-strip')).toBeVisible();

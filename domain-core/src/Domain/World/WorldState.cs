@@ -104,6 +104,9 @@ namespace WanChaoGuiYi
         private readonly Dictionary<string, EngagementRuntimeState> engagementsById = new Dictionary<string, EngagementRuntimeState>();
         private readonly Dictionary<string, string> engagementIdByRegionId = new Dictionary<string, string>();
 
+        [NonSerialized]
+        private GameState legacyState;
+
         public IReadOnlyDictionary<string, RegionRuntimeState> RegionsById { get { return regionsById; } }
         public IReadOnlyDictionary<string, ArmyRuntimeState> ArmiesById { get { return armiesById; } }
         public IReadOnlyDictionary<string, EngagementRuntimeState> EngagementsById { get { return engagementsById; } }
@@ -116,6 +119,43 @@ namespace WanChaoGuiYi
             {
                 armyIdsByRegionId.Add(region.id, new List<string>());
             }
+        }
+
+        public bool RemoveRegion(string regionId)
+        {
+            if (string.IsNullOrEmpty(regionId)) return false;
+
+            bool existed = regionsById.Remove(regionId);
+
+            List<string> engagementIdsToRemove = new List<string>();
+            foreach (KeyValuePair<string, EngagementRuntimeState> entry in engagementsById)
+            {
+                if (entry.Value != null && entry.Value.regionId == regionId)
+                {
+                    engagementIdsToRemove.Add(entry.Key);
+                }
+            }
+
+            for (int i = 0; i < engagementIdsToRemove.Count; i++)
+            {
+                RemoveEngagement(engagementIdsToRemove[i]);
+            }
+
+            RebuildArmyLocationIndex();
+            List<string> armyIdsInRegion;
+            if (armyIdsByRegionId.TryGetValue(regionId, out armyIdsInRegion))
+            {
+                List<string> armyIdsToRemove = new List<string>(armyIdsInRegion);
+                for (int i = 0; i < armyIdsToRemove.Count; i++)
+                {
+                    RemoveArmy(armyIdsToRemove[i]);
+                }
+            }
+
+            bool hadArmyIndex = armyIdsByRegionId.Remove(regionId);
+            bool hadEngagementIndex = engagementIdByRegionId.Remove(regionId);
+            RemoveLegacyRegionReferences(regionId);
+            return existed || hadArmyIndex || hadEngagementIndex || engagementIdsToRemove.Count > 0;
         }
 
         public void AddArmy(ArmyRuntimeState army)
@@ -135,8 +175,23 @@ namespace WanChaoGuiYi
             return armiesById.TryGetValue(armyId, out army);
         }
 
+        internal void AttachLegacyState(GameState state)
+        {
+            legacyState = state;
+        }
+
+        internal void AddRuntimeLog(string category, string message)
+        {
+            if (legacyState != null)
+            {
+                legacyState.AddLog(category, message);
+            }
+        }
+
         public List<ArmyRuntimeState> GetArmiesInRegion(string regionId)
         {
+            RebuildArmyLocationIndex();
+
             List<ArmyRuntimeState> result = new List<ArmyRuntimeState>();
             List<string> armyIds;
             if (!armyIdsByRegionId.TryGetValue(regionId, out armyIds)) return result;
@@ -168,14 +223,16 @@ namespace WanChaoGuiYi
             return result;
         }
 
-        public void MoveArmyToRegion(string armyId, string targetRegionId)
+        public bool MoveArmyToRegion(string armyId, string targetRegionId)
         {
             ArmyRuntimeState army;
-            if (!armiesById.TryGetValue(armyId, out army)) return;
+            if (!armiesById.TryGetValue(armyId, out army)) return false;
+            if (string.IsNullOrEmpty(targetRegionId) || !regionsById.ContainsKey(targetRegionId)) return false;
 
-            RemoveArmyLocation(armyId, army.locationRegionId);
+            RemoveArmyLocationFromAllRegions(armyId);
             army.locationRegionId = targetRegionId;
             IndexArmyLocation(armyId, targetRegionId);
+            return true;
         }
 
         public bool RemoveArmy(string armyId)
@@ -183,7 +240,8 @@ namespace WanChaoGuiYi
             ArmyRuntimeState army;
             if (!armiesById.TryGetValue(armyId, out army)) return false;
 
-            RemoveArmyLocation(armyId, army.locationRegionId);
+            RemoveArmyLocationFromAllRegions(armyId);
+            RemoveArmyFromEngagements(armyId);
             armiesById.Remove(armyId);
             return true;
         }
@@ -214,6 +272,7 @@ namespace WanChaoGuiYi
             EngagementRuntimeState engagement;
             if (!engagementsById.TryGetValue(engagementId, out engagement)) return;
 
+            ClearEngagementArmyReferences(engagementId);
             engagementsById.Remove(engagementId);
             if (!string.IsNullOrEmpty(engagement.regionId))
             {
@@ -221,6 +280,42 @@ namespace WanChaoGuiYi
                 if (engagementIdByRegionId.TryGetValue(engagement.regionId, out currentEngagementId) && currentEngagementId == engagementId)
                 {
                     engagementIdByRegionId.Remove(engagement.regionId);
+                }
+            }
+        }
+
+        private void RemoveArmyFromEngagements(string armyId)
+        {
+            if (string.IsNullOrEmpty(armyId)) return;
+            foreach (EngagementRuntimeState engagement in engagementsById.Values)
+            {
+                if (engagement == null) continue;
+                if (engagement.attackerArmyIds != null) engagement.attackerArmyIds.Remove(armyId);
+                if (engagement.defenderArmyIds != null) engagement.defenderArmyIds.Remove(armyId);
+            }
+        }
+
+        private void RemoveLegacyRegionReferences(string regionId)
+        {
+            if (legacyState == null || string.IsNullOrEmpty(regionId)) return;
+
+            if (legacyState.regions != null)
+            {
+                legacyState.regions.RemoveAll(region => region != null && region.id == regionId);
+            }
+
+            if (legacyState.armies != null)
+            {
+                legacyState.armies.RemoveAll(army => army != null && army.regionId == regionId);
+            }
+
+            if (legacyState.factions == null) return;
+            for (int i = 0; i < legacyState.factions.Count; i++)
+            {
+                FactionState faction = legacyState.factions[i];
+                if (faction != null && faction.regionIds != null)
+                {
+                    faction.regionIds.RemoveAll(id => id == regionId);
                 }
             }
         }
@@ -253,6 +348,28 @@ namespace WanChaoGuiYi
             List<string> armyIds;
             if (string.IsNullOrEmpty(regionId) || !armyIdsByRegionId.TryGetValue(regionId, out armyIds)) return;
             armyIds.Remove(armyId);
+        }
+
+        private void RemoveArmyLocationFromAllRegions(string armyId)
+        {
+            foreach (List<string> armyIds in armyIdsByRegionId.Values)
+            {
+                armyIds.RemoveAll(id => id == armyId);
+            }
+        }
+
+        private void RebuildArmyLocationIndex()
+        {
+            foreach (List<string> armyIds in armyIdsByRegionId.Values)
+            {
+                armyIds.Clear();
+            }
+
+            foreach (ArmyRuntimeState army in armiesById.Values)
+            {
+                if (army == null || string.IsNullOrEmpty(army.id)) continue;
+                IndexArmyLocation(army.id, army.locationRegionId);
+            }
         }
 
         private void ClearEngagementArmyReferences(string engagementId)
@@ -303,6 +420,8 @@ namespace WanChaoGuiYi
     [Serializable]
     public sealed class ArmyRuntimeState
     {
+        private int moraleValue;
+
         public string id;
         public string ownerFactionId;
         public string locationRegionId;
@@ -311,7 +430,11 @@ namespace WanChaoGuiYi
         public ArmyTask task;
         public string unitId;
         public int soldiers;
-        public int morale;
+        public int morale
+        {
+            get { return moraleValue; }
+            set { moraleValue = DomainMath.Clamp(value, 0, 100); }
+        }
         public int supply;
         public int movementPoints;
         public string engagementId;
@@ -355,11 +478,49 @@ namespace WanChaoGuiYi
         public string id;
         public string regionId;
         public EngagementPhase phase;
-        public List<string> attackerArmyIds = new List<string>();
-        public List<string> defenderArmyIds = new List<string>();
+        public CompactStringList attackerArmyIds = new CompactStringList();
+        public CompactStringList defenderArmyIds = new CompactStringList();
         public string initiatingArmyId;
         public string initiatingFactionId;
         public int createdTurn;
         public BattleResult result;
+    }
+
+    [Serializable]
+    public sealed class CompactStringList : List<string>
+    {
+        public new void Clear()
+        {
+            base.Clear();
+            TrimExcess();
+        }
+
+        public new bool Remove(string item)
+        {
+            bool removed = base.Remove(item);
+            TrimIfEmpty();
+            return removed;
+        }
+
+        public new void RemoveAt(int index)
+        {
+            base.RemoveAt(index);
+            TrimIfEmpty();
+        }
+
+        public new int RemoveAll(Predicate<string> match)
+        {
+            int removed = base.RemoveAll(match);
+            TrimIfEmpty();
+            return removed;
+        }
+
+        private void TrimIfEmpty()
+        {
+            if (Count == 0)
+            {
+                TrimExcess();
+            }
+        }
     }
 }

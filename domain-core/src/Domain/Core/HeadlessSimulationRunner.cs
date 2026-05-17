@@ -224,11 +224,13 @@ namespace WanChaoGuiYi
                 Fields("ownerFactionId", targetRegion.ownerFactionId, "attackerRemaining", attackerRemaining, "attackerLocation", attackerRemaining ? remainingAttacker.locationRegionId : "routed", "engagementLeft", !noEngagementLeft),
                 "防守方守住地区，进攻军撤退或溃散，接敌被清理。");
             AddAssertion(result, "outcome.attacker_retreated_or_routed", "outcome", attackerRetreatedOrRouted,
-                true, attackerRetreatedOrRouted, "Attacker should retreat or rout after defender victory.");
+                "routed or outside battle region with no engagement",
+                attackerRemaining ? remainingAttacker.locationRegionId + "/engagement=" + remainingAttacker.engagementId : "routed",
+                "Attacker should retreat or rout after defender victory.");
             AddAssertion(result, "outcome.region_owner_unchanged", "outcome", regionDefended,
                 originalOwnerFactionId, targetRegion.ownerFactionId, "Region owner should remain defender faction.");
             AddAssertion(result, "outcome.no_resolved_engagement_left", "outcome", noEngagementLeft,
-                true, noEngagementLeft, "Resolved engagement should be removed from map.");
+                false, !noEngagementLeft, "Resolved engagement should be removed from map.");
             AddPhase(result, "governance", "skip", null, null, "防守成功没有产生新占领，治理折损阶段跳过。");
             AddPhase(result, "economy", HasLogContaining(runtime.state, "收入 金钱") ? "pass" : "fail",
                 Fields("moneySnapshotAvailable", runtime.lastEconomyMoneyBeforeByFaction != null),
@@ -240,6 +242,8 @@ namespace WanChaoGuiYi
                 "玩家未取得地区控制权，防守方继续获得该地区收益。");
             AddKeyDelta(result, "army.locationRegionId", playerArmy.id, targetRegionId, attackerRemaining ? remainingAttacker.locationRegionId : "routed",
                 "进攻失败导致军队撤回己方相邻地区或溃散。");
+            AddKeyDelta(result, "army.soldiers", playerArmy.id, attackerSoldiersBefore, attackerRemaining ? remainingAttacker.soldiers : 0,
+                "防守方胜利会造成进攻军兵力损失或溃散。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -370,7 +374,7 @@ namespace WanChaoGuiYi
             AddAssertion(result, "outcome.region_owner_changed_to_attacker", "outcome", regionCaptured,
                 playerArmy.ownerFactionId, targetRegion.ownerFactionId, "Captured region owner should become attacker faction.");
             AddAssertion(result, "outcome.no_resolved_engagement_left", "outcome", noEngagementLeft,
-                true, noEngagementLeft, "Resolved engagement should be removed after occupation.");
+                false, !noEngagementLeft, "Resolved engagement should be removed after occupation.");
 
             AddPhase(result, "governance", targetRegion.integration == OccupiedIntegration && targetRegion.taxContributionPercent == OccupiedContributionPercent ? "pass" : "fail",
                 Fields("integration", 70, "taxContributionPercent", 70, "foodContributionPercent", 70),
@@ -463,7 +467,7 @@ namespace WanChaoGuiYi
             string targetRegionId = enemyArmy.locationRegionId;
             bool initialIssued = runtime.commands.MoveArmy(playerArmy.id, targetRegionId);
             AddAssertion(result, "command.attack_route_created", "command", initialIssued,
-                true, initialIssued, "Initial attack command should create the base engagement.");
+                "accepted", initialIssued ? "accepted" : "rejected", "Initial attack command should create the base engagement.");
             if (!initialIssued)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Initial move command failed for reinforcement scenario.");
@@ -706,6 +710,8 @@ namespace WanChaoGuiYi
 
             string failure = ValidateCommonWarLogs(runtime.state, HasLogContaining(runtime.state, "占领"), !HasLogContaining(runtime.state, "占领"));
             if (!string.IsNullOrEmpty(failure)) return Fail(result, runtime.state, runtime.worldState, failure);
+            AddKeyDelta(result, "engagement.defenderArmyIds.Count", targetRegionId, defenderCountBefore, engagement.defenderArmyIds.Count,
+                "防守方增援抵达后加入 defender membership，后续战斗使用新的防守成员。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -724,7 +730,7 @@ namespace WanChaoGuiYi
             string targetRegionId = enemyArmy.locationRegionId;
             bool unengagedRetreatRejected = !runtime.commands.RetreatArmy(playerArmy.id, targetRegionId);
             AddAssertion(result, "command.unengaged_retreat_rejected", "command", unengagedRetreatRejected,
-                true, unengagedRetreatRejected, "Unengaged army should not accept a retreat command.");
+                "rejected", unengagedRetreatRejected ? "rejected" : "accepted", "Unengaged army should not accept a retreat command.");
             if (!unengagedRetreatRejected)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Unengaged army accepted a retreat command.");
@@ -732,7 +738,7 @@ namespace WanChaoGuiYi
 
             bool initialIssued = runtime.commands.MoveArmy(playerArmy.id, targetRegionId);
             AddAssertion(result, "command.attack_route_created", "command", initialIssued,
-                true, initialIssued, "Initial attack command should create engagement before retreat.");
+                "accepted", initialIssued ? "accepted" : "rejected", "Initial attack command should create engagement before retreat.");
             if (!initialIssued)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Initial move command failed for retreat scenario.");
@@ -793,6 +799,7 @@ namespace WanChaoGuiYi
                 return Fail(result, runtime.state, runtime.worldState, "Retreat command did not retain retreat target region.");
             }
 
+            int retreatRouteLength = playerArmy.route != null ? playerArmy.route.Count : 0;
             RunFullTurn(runtime);
             result.turnsExecuted = 2;
 
@@ -823,12 +830,13 @@ namespace WanChaoGuiYi
                 return Fail(result, runtime.state, runtime.worldState, "Legacy army region did not mirror retreat movement.");
             }
 
-            if (runtime.worldState.Map.TryGetEngagementInRegion(targetRegionId, out engagement))
+            bool noResidualEngagement = !runtime.worldState.Map.TryGetEngagementInRegion(targetRegionId, out engagement);
+            if (!noResidualEngagement)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Engagement remained after attacker actively retreated.");
             }
             AddAssertion(result, "outcome.no_residual_engagement_after_retreat", "outcome",
-                true, true, true, "Engagement should be removed after attacker retreat leaves one side empty.");
+                noResidualEngagement, false, !noResidualEngagement, "Engagement should be removed after attacker retreat leaves one side empty.");
 
             RegionRuntimeState battleRegion;
             if (!runtime.worldState.Map.TryGetRegion(targetRegionId, out battleRegion) || battleRegion.occupationStatus != OccupationStatus.Controlled)
@@ -868,6 +876,8 @@ namespace WanChaoGuiYi
                 "主动撤退让进攻军退出争夺地区，避免继续触发战斗。");
             AddKeyDelta(result, "region.occupationStatus", targetRegionId, OccupationStatus.Contested.ToString(), battleRegion.occupationStatus.ToString(),
                 "接敌清空后地区恢复受控状态。");
+            AddKeyDelta(result, "army.route.Count", playerArmy.id, retreatRouteLength, playerArmy.route.Count,
+                "撤退完成后军队路线被清空，避免下回合继续执行撤退路径。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -920,6 +930,8 @@ namespace WanChaoGuiYi
             {
                 return Fail(result, runtime.state, runtime.worldState, "Engaged army rejected retreat command.");
             }
+            AddKeyDelta(result, "army.task", playerArmy.id, ArmyTask.Attack.ToString(), playerArmy.task.ToString(),
+                "已接敌部队拒绝普通移动、增援、围攻和停止，只接受撤退命令。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -968,6 +980,8 @@ namespace WanChaoGuiYi
             {
                 return Fail(result, runtime.state, runtime.worldState, "Same-faction detection changed region occupation status.");
             }
+            AddKeyDelta(result, "turnLog.Count", playerArmy.locationRegionId, 0, runtime.state.turnLog.Count,
+                "同势力同区会合不会创建接敌，但会留下可观察日志供 UI 和报告识别。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -1088,7 +1102,7 @@ namespace WanChaoGuiYi
             int supplyBefore = playerArmy.supply;
             bool issued = runtime.commands.MoveArmy(playerArmy.id, enemyArmy.locationRegionId);
             AddAssertion(result, "command.attack_route_created", "command", issued,
-                true, issued, "War supply scenario requires a normal attack route.");
+                "accepted", issued ? "accepted" : "rejected", "War supply scenario requires a normal attack route.");
             if (!issued)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Move command failed for war supply scenario.");
@@ -1169,7 +1183,7 @@ namespace WanChaoGuiYi
 
             bool issued = runtime.commands.MoveArmy(playerArmy.id, enemyArmy.locationRegionId);
             AddAssertion(result, "command.attack_route_created", "command", issued,
-                true, issued, "Low-supply scenario still needs a valid attack route.");
+                "accepted", issued ? "accepted" : "rejected", "Low-supply scenario still needs a valid attack route.");
             if (!issued)
             {
                 return Fail(result, runtime.state, runtime.worldState, "Move command failed for low-supply battle scenario.");
@@ -1333,7 +1347,11 @@ namespace WanChaoGuiYi
                 "Building execution should keep a readable source note and match its cost.");
             AddAssertion(result, "forecast.building_cost_and_source_match_execution", "outcome",
                 buildingMatched,
-                true, buildingMatched, "Building cost and source should survive execution.");
+                "cost paid, building added, source present",
+                "moneyDelta=" + (faction.money - buildingMoneyBefore) + " buildingCount=" + regionForForecast.buildings.Count + " source=" + forecastBuilding.sourceReference,
+                "Building cost and source should survive execution.");
+            AddKeyDelta(result, "region.specializationKinds", "all_regions", 0, seen.Count,
+                "真实地图地区解析出多种战略专精，说明 forecast 场景不是空跑。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -1431,7 +1449,13 @@ namespace WanChaoGuiYi
                 Fields("control", region.controlStage.ToString(), "contribution", region.taxContributionPercent, "rebellion", region.rebellionRisk, "acceptance", region.localAcceptance),
                 "New occupation should progress through military rule, pacification, and household registration before normal contribution.");
             AddAssertion(result, "control_chain.progresses_with_costs", "governance", chainAdvanced,
-                true, chainAdvanced, "Occupation chain should improve control without granting immediate full yield.");
+                "chain advanced with restored contribution and lower unrest",
+                region.controlStage + " contribution=" + region.taxContributionPercent + " rebellion=" + region.rebellionRisk + " acceptance=" + region.localAcceptance,
+                "Occupation chain should improve control without granting immediate full yield.");
+            AddKeyDelta(result, "region.controlStage", region.id, ControlStage.NewlyAttached.ToString(), region.controlStage.ToString(),
+                "占后治理链从新附推进到登记或受控阶段。");
+            AddKeyDelta(result, "region.taxContributionPercent", region.id, contributionBefore, region.taxContributionPercent,
+                "户籍登记链逐步恢复地区税收贡献，而不是占领当回合直接满额。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -1523,7 +1547,17 @@ namespace WanChaoGuiYi
                 Fields("rejectedWithoutSupplyNode", rejected, "projectedWithSupplyNode", projected, "hiddenUnknown", hiddenForecast != null && hiddenForecast.hasUnknownRisk, "scoutedUnknown", scoutedForecast != null && scoutedForecast.hasUnknownRisk, "interceptionRisk", scoutedForecast != null ? scoutedForecast.interceptionRisk : -1),
                 "Distant dispatch should require a supply node, and scouting should turn unknown route risk into known risk.");
             AddAssertion(result, "campaign.supply_visibility_interception", "command", routeRules,
-                true, routeRules, "Connected campaign route rules should reject unsupported routes and expose visibility/interception forecasts.");
+                "reject unsupported, allow supplied, reveal scouted risk, intercept route",
+                Fields("rejected", rejected, "projected", projected, "hiddenUnknown", hiddenForecast != null && hiddenForecast.hasUnknownRisk, "scoutedKnown", scoutedForecast != null && !scoutedForecast.hasUnknownRisk, "intercepted", intercepted),
+                "Connected campaign route rules should reject unsupported routes and expose visibility/interception forecasts.");
+            AddKeyDelta(result, "campaign.forecast", targetRegionId,
+                hiddenForecast != null ? hiddenForecast.FormatCompact() : "missing hidden forecast",
+                scoutedForecast != null ? scoutedForecast.FormatCompact() : "missing scouted forecast",
+                "侦察把未知远征风险转为可读拦截风险，兵站投送才允许长线出征。");
+            AddKeyDelta(result, "campaign.interceptionRisk", targetRegionId,
+                hiddenForecast != null ? hiddenForecast.interceptionRisk : -1,
+                scoutedForecast != null ? scoutedForecast.interceptionRisk : -1,
+                "侦察后的远征 forecast 必须给出可核对的数值化拦截风险。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -1668,6 +1702,10 @@ namespace WanChaoGuiYi
                 Fields("queueTurns", 3, "reserve", StrategyMapRulebook.OccupationAdministrationFoodCost),
                 Fields("queueTurns", queueRegion.occupationPacificationQueueTurnsRemaining, "reserve", queueRegion.occupationReservedFood, "control", queueRegion.controlStage.ToString()),
                 "Post-occupation pacification should consume reserve grain over turns instead of using an instant region pool.");
+            AddKeyDelta(result, "army.frontlineReservedFood", army.id, 0, army.frontlineReservedFood,
+                "长线后勤完成后，军队获得占后治理预留粮和补给。");
+            AddKeyDelta(result, "region.occupationPacificationQueueTurnsRemaining", queueRegion.id, 3, queueRegion.occupationPacificationQueueTurnsRemaining,
+                "占后安抚队列逐回合消耗预留粮并完成控制链推进。");
 
             return queueCompleted ? Pass(result, runtime.state, runtime.worldState) : Fail(result, runtime.state, runtime.worldState, "Occupation queue did not complete with reserved food.");
         }
@@ -1787,6 +1825,10 @@ namespace WanChaoGuiYi
                 Fields("paused", true, "enemyRaid", enemyArmy.ownerFactionId),
                 Fields("paused", playerArmy.frontlineLogisticsPaused, "raidLoss", playerArmy.frontlineLogisticsLostFood),
                 "Player queue controls and hostile raid pressure should both be visible in the logistics lane.");
+            AddKeyDelta(result, "army.frontlineLogisticsLostFood", playerArmy.id, 0, playerArmy.frontlineLogisticsLostFood,
+                "敌方截粮会增加运输损耗，取消队列后损耗记录仍保留用于报告。");
+            AddKeyDelta(result, "army.frontlineLogisticsTargetRegionId", playerArmy.id, targetRegionId, playerArmy.frontlineLogisticsTargetRegionId,
+                "玩家取消后勤队列后，活跃目标被清空。");
 
             return HasAssertionPassed(result, "queue.schedule_created") &&
                    HasAssertionPassed(result, "queue.reprioritize_changes_turn_pressure") &&
@@ -1827,7 +1869,8 @@ namespace WanChaoGuiYi
                 region.localAcceptance - acceptanceBeforeRelief == reliefForecast.localAcceptanceDelta;
             AddAssertion(result, "food_causality.relief_forecast_matches_applied_delta", "economy",
                 reliefForecastMatched,
-                true, reliefForecastMatched,
+                "forecast deltas equal applied deltas",
+                "foodDelta=" + (faction.food - foodBeforeRelief) + " rebellionDelta=" + (region.rebellionRisk - rebellionBeforeRelief) + " acceptanceDelta=" + (region.localAcceptance - acceptanceBeforeRelief),
                 "Relief forecast should match food, unrest, and acceptance deltas.");
 
             int moneyBeforeTax = faction.money;
@@ -1850,7 +1893,11 @@ namespace WanChaoGuiYi
                 Fields("foodAfter", faction.food, "moneyAfterTax", faction.money, "rebellionAfterTax", region.rebellionRisk, "acceptanceAfterTax", region.localAcceptance),
                 "Food relief must spend grain to improve order; extra taxation must not increase acceptance for free.");
             AddAssertion(result, "food_causality.relief_and_tax_pressure", "economy", causality,
-                true, causality, "Relief and tax pressure should preserve historical causality gates.");
+                "relief improves order; tax pressure raises money but hurts order",
+                "food=" + faction.food + " money=" + faction.money + " rebellion=" + region.rebellionRisk + " acceptance=" + region.localAcceptance,
+                "Relief and tax pressure should preserve historical causality gates.");
+            AddKeyDelta(result, "region.rebellionRisk", region.id, rebellionBeforeRelief, region.rebellionRisk,
+                "救济先降低民变，随后急征税压重新推高风险，报告保留最终变化。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -1952,6 +1999,8 @@ namespace WanChaoGuiYi
                 "food cost, target food gain, opinion gain, source log",
                 "fromFood=" + faction.food + " targetFood=" + targetFaction.food + " opinion=" + relation.opinion,
                 "Food aid should cost grain, improve diplomacy, and keep a source note.");
+            AddKeyDelta(result, "relation.opinion", targetFaction.id, opinionBefore, relation.opinion,
+                "粮食援助消耗本方粮食并提高目标势力关系。");
 
             return Pass(result, runtime.state, runtime.worldState);
         }
@@ -2068,7 +2117,9 @@ namespace WanChaoGuiYi
                 Fields("moneyDelta", faction != null ? faction.money - moneyBefore : 0, "foodDelta", faction != null ? faction.food - foodBefore : 0, "integrationDelta", region.integration - integrationBefore, "rebellionDelta", region.rebellionRisk - rebellionBefore, "acceptanceDelta", region.localAcceptance - acceptanceBefore, "control", region.controlStage.ToString()),
                 action + " forecast should use the same deltas as action application.");
             AddAssertion(result, assertionId, "outcome", matched,
-                true, matched, action + " forecast should match actual state deltas.");
+                "forecast deltas match applied state deltas",
+                Fields("canApply", applied != null && applied.canApply, "moneyDelta", faction != null ? faction.money - moneyBefore : 0, "foodDelta", faction != null ? faction.food - foodBefore : 0, "integrationDelta", region.integration - integrationBefore, "rebellionDelta", region.rebellionRisk - rebellionBefore, "acceptanceDelta", region.localAcceptance - acceptanceBefore),
+                action + " forecast should match actual state deltas.");
             return matched;
         }
 

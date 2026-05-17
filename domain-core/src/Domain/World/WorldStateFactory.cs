@@ -55,6 +55,7 @@ namespace WanChaoGuiYi
                 });
             }
 
+            mapState.AttachLegacyState(gameState);
             gameState.AttachRuntimeMap(mapState);
             return new WorldState(gameState, mapState);
         }

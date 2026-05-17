@@ -7,6 +7,8 @@ namespace WanChaoGuiYi
     {
         public static GameState CreateDefault(IDataRepository data, string playerFactionId)
         {
+            ValidateRepository(data);
+
             GameState state = new GameState
             {
                 turn = 1,
@@ -22,6 +24,29 @@ namespace WanChaoGuiYi
             CreateInitialArmies(state, data, playerFactionId);
             state.AddLog("system", "新局初始化完成。");
             return state;
+        }
+
+        private static void ValidateRepository(IDataRepository data)
+        {
+            if (data == null)
+            {
+                throw new InvalidOperationException("Game data repository is required.");
+            }
+
+            if (data.Emperors == null)
+            {
+                throw new InvalidOperationException("Game data table is missing: emperors.");
+            }
+
+            if (data.Regions == null)
+            {
+                throw new InvalidOperationException("Game data table is missing: regions.");
+            }
+
+            if (data.Units == null)
+            {
+                throw new InvalidOperationException("Game data table is missing: units.");
+            }
         }
 
         private static void CreateFactions(GameState state, IDataRepository data)

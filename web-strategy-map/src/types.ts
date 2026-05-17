@@ -92,6 +92,9 @@ export interface RegionDefinition {
   manpower: number;
   landStructure: Record<string, number>;
   legitimacyMemory: string[];
+  regionSpecialization?: string;
+  supplyNode?: boolean;
+  gameplaySourceReference?: string;
   localPower: number;
   rebellionRisk: number;
   neighbors: string[];
@@ -210,19 +213,46 @@ export interface EmperorDefinition {
   id: string;
   name: string;
   title: string;
+  versionScope: string[];
   civilization: string;
   mapScope: string;
   era: string;
   legitimacyTypes: string[];
   globalMechanicTag: string;
   stats: Record<string, number>;
+  score: {
+    virtue: number;
+    wisdom: number;
+    physique: number;
+    aesthetics: number;
+    diligence: number;
+    ambition: number;
+    dignity: number;
+    tolerance: number;
+    selfControl: number;
+    personnelManagement: number;
+    nationalPower: number;
+    popularSupport: number;
+  };
   uniqueMechanic: {
     id: string;
     name: string;
     description: string;
   };
+  diplomacySkills: Array<{
+    id: string;
+    name: string;
+    moneyCost: number;
+    talentCost: number;
+    cooldownTurns: number;
+  }>;
   historicalBurdens: string[];
   preferredPolicies: string[];
+  aiPersonality: {
+    expansion: number;
+    governance: number;
+    riskTolerance: number;
+  };
   sourceReference: string;
 }
 

@@ -828,7 +828,7 @@ export class StrategyUi {
       enemyInterdictionOrderLength: this.enemyInterdictionOrders.length,
       occupationStageSummary: this.occupationQueue.length > 0 ? describeOccupationTask(this.occupationQueue[0]) : '',
       enemyInterdictionSummary: activeEnemyInterdiction ? describeEnemyInterdictionOrder(activeEnemyInterdiction) : '',
-      enemyCountermeasureSummary: activeEnemyInterdiction?.lastCountermeasure ?? this.lastCountermeasureSummary,
+      enemyCountermeasureSummary: activeEnemyInterdiction?.lastCountermeasure || this.lastCountermeasureSummary,
       selectedEnemyInterdictionId: selectedEnemyInterdiction?.id ?? '',
       selectedEnemyInterdictionSummary: selectedEnemyInterdiction ? describeEnemyInterdictionOrder(selectedEnemyInterdiction) : '',
       enemyInterdictionExport: this.exportEnemyInterdictionState(),
@@ -3318,12 +3318,13 @@ export class StrategyUi {
         ])
       };
     }
-    const counter = order.lastCountermeasure ? ` / 反制 ${order.lastCountermeasure}` : ' / 反制 未下达';
-    const compactCounter = order.lastCountermeasure ? order.lastCountermeasure : '未反制';
+    const displayCountermeasure = order.lastCountermeasure || this.lastCountermeasureSummary;
+    const counter = displayCountermeasure ? ` / 反制 ${displayCountermeasure}` : ' / 反制 未下达';
+    const compactCounter = displayCountermeasure ? displayCountermeasure : '未反制';
     return {
       full: `${base} / 截粮 ${enemyInterdictionStageName(order.stage)} 风险${order.risk}% 损${order.supplyDamage}${counter}`,
       compact: `${compactBase} | 截粮${enemyInterdictionStageShortName(order.stage)}${order.risk}% 损${order.supplyDamage} | ${compactCounter}`,
-      ...this.createRoutePressureDetail(routeShort, order, supply, contact, occupation)
+      ...this.createRoutePressureDetail(routeShort, order, supply, contact, occupation, displayCountermeasure)
     };
   }
 
@@ -3332,13 +3333,13 @@ export class StrategyUi {
     return `${route.army.name} ${route.from.definition.name}${middle}→${route.target.definition.name}`;
   }
 
-  private createRoutePressureDetail(routeShort: string, order: EnemyInterdictionOrder, supply: number, contact: number, occupation: number): { detail: string; detailHtml: string } {
+  private createRoutePressureDetail(routeShort: string, order: EnemyInterdictionOrder, supply: number, contact: number, occupation: number, displayCountermeasure?: string): { detail: string; detailHtml: string } {
     const enemyPosition = enemyInterdictionPositionName(order.stage);
-    const friendlyPosition = friendlyCountermeasurePositionName(order.lastCountermeasure, order.stage);
+    const friendlyPosition = friendlyCountermeasurePositionName(displayCountermeasure, order.stage);
     const enemyLine = `敌方截粮点：${enemyPosition.label}，约在路线 ${enemyPosition.progress}% 处，${enemyInterdictionStageName(order.stage)}，尚余 ${order.remainingTurns}/${order.totalTurns} 回合。`;
-    const counterEffect = friendlyCountermeasureEffect(order.lastCountermeasure);
-    const friendlyLine = order.lastCountermeasure
-      ? `己方${order.lastCountermeasure}：${friendlyPosition.label}，约在路线 ${friendlyPosition.progress}% 处，${counterEffect}。`
+    const counterEffect = friendlyCountermeasureEffect(displayCountermeasure);
+    const friendlyLine = displayCountermeasure
+      ? `己方${displayCountermeasure}：${friendlyPosition.label}，约在路线 ${friendlyPosition.progress}% 处，${counterEffect}。`
       : '己方反制：尚未下达，后勤页可选择护粮、改道、反斥候或诱敌。';
     const detail = `位置详情：${routeShort}；${enemyLine} ${friendlyLine} 当前风险 ${order.risk}%，预计损耗 ${order.supplyDamage}。`;
     const detailHtml = routePressureDetailHtml(routeShort, [
@@ -3350,9 +3351,9 @@ export class StrategyUi {
       },
       {
         tone: 'friendly',
-        label: '己方反制',
-        title: order.lastCountermeasure ? `${order.lastCountermeasure} ${friendlyPosition.progress}%` : '未反制',
-        body: order.lastCountermeasure
+        label: displayCountermeasure ? `己方${displayCountermeasure}` : '己方反制',
+        title: displayCountermeasure ? `${displayCountermeasure} ${friendlyPosition.progress}%` : '未反制',
+        body: displayCountermeasure
           ? `${friendlyPosition.label}；${counterEffect}。`
           : '后勤页可选择护粮、改道、反斥候或诱敌。'
       },

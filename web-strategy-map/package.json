@@ -10,7 +10,9 @@
     "build": "npm run sync:data && npm run check:data-source && tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
-    "test:ui": "npm run sync:data && npm run check:data-source && playwright test"
+    "test:ui": "npm run sync:data && npm run check:data-source && playwright test",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "dependencies": {
     "@vitejs/plugin-basic-ssl": "latest",
@@ -21,6 +23,9 @@
     "@playwright/test": "latest",
     "@types/node": "^25.6.2",
     "@types/three": "^0.184.1",
-    "typescript": "latest"
+    "@vitest/ui": "^4.1.6",
+    "fast-check": "^4.8.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
   }
 }

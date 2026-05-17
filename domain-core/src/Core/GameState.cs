@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 
 namespace WanChaoGuiYi
@@ -12,6 +13,9 @@ namespace WanChaoGuiYi
     [Serializable]
     public sealed class GameState
     {
+        public const int MaxTurnLogEntries = 2000;
+        public const int MaxCurrentTurnLogEntries = MaxTurnLogEntries * 2;
+
         public int turn;
         public int year;
         public Season season;
@@ -29,7 +33,7 @@ namespace WanChaoGuiYi
         public string currentCelestialEventId;
 
         // 外交系统
-        public List<DiplomaticRelation> diplomaticRelations = new List<DiplomaticRelation>();
+        public DiplomaticRelationList diplomaticRelations = new DiplomaticRelationList();
 
         // 谍报系统
         public List<EspionageOperation> activeOperations = new List<EspionageOperation>();
@@ -64,18 +68,19 @@ namespace WanChaoGuiYi
             FactionState previousOwner = FindFaction(previousOwnerFactionId);
             FactionState newOwner = FindFaction(newOwnerFactionId);
             if (newOwner == null) return null;
+            if (newOwner.regionIds == null) return null;
+            if (previousOwner != null && previousOwner.regionIds == null) return null;
 
             if (previousOwner != null)
             {
-                previousOwner.regionIds.Remove(regionId);
+                previousOwner.regionIds.RemoveAll(id => id == regionId);
             }
 
-            if (!newOwner.regionIds.Contains(regionId))
-            {
-                newOwner.regionIds.Add(regionId);
-            }
+            newOwner.regionIds.RemoveAll(id => id == regionId);
+            newOwner.regionIds.Add(regionId);
 
             region.ownerFactionId = newOwnerFactionId;
+            SyncRuntimeRegionOwner(regionId, newOwnerFactionId);
 
             return new RegionOwnerChangedPayload
             {
@@ -118,9 +123,67 @@ namespace WanChaoGuiYi
             turnLog.Add(new TurnLogEntry
             {
                 turn = turn,
-                category = category,
-                message = message
+                category = category ?? string.Empty,
+                message = message ?? string.Empty
             });
+
+            PruneTurnLog();
+        }
+
+        private void PruneTurnLog()
+        {
+            if (turnLog.Count <= MaxTurnLogEntries) return;
+
+            PruneWholePastTurnLogGroups(false);
+
+            if (turnLog.Count > MaxCurrentTurnLogEntries)
+            {
+                PruneWholePastTurnLogGroups(true);
+            }
+
+            while (turnLog.Count > MaxCurrentTurnLogEntries)
+            {
+                turnLog.RemoveAt(0);
+            }
+        }
+
+        private void PruneWholePastTurnLogGroups(bool forceWhenOversized)
+        {
+            while (turnLog.Count > MaxTurnLogEntries)
+            {
+                int oldestPastTurn;
+                int oldestPastTurnCount;
+                if (!TryFindOldestPastTurnLogGroup(out oldestPastTurn, out oldestPastTurnCount)) return;
+
+                if (!forceWhenOversized && turnLog.Count - oldestPastTurnCount < MaxTurnLogEntries) return;
+
+                turnLog.RemoveAll(entry => entry.turn == oldestPastTurn);
+            }
+        }
+
+        private bool TryFindOldestPastTurnLogGroup(out int oldestPastTurn, out int oldestPastTurnCount)
+        {
+            oldestPastTurn = 0;
+            oldestPastTurnCount = 0;
+            bool found = false;
+
+            for (int i = 0; i < turnLog.Count; i++)
+            {
+                if (turnLog[i].turn == turn) continue;
+
+                if (!found)
+                {
+                    oldestPastTurn = turnLog[i].turn;
+                    found = true;
+                }
+
+                if (turnLog[i].turn == oldestPastTurn)
+                {
+                    oldestPastTurnCount++;
+                }
+            }
+
+            return found;
         }
     }
 
@@ -164,6 +227,11 @@ namespace WanChaoGuiYi
     [Serializable]
     public sealed class RegionState
     {
+        private int integrationValue;
+        private OccupationStatus occupationStatusValue;
+        private int taxContributionPercentValue;
+        private int foodContributionPercentValue;
+
         public string id;
         public string ownerFactionId;
         public int population;
@@ -172,10 +240,38 @@ namespace WanChaoGuiYi
         public int manpower;
         public int localPower;
         public int rebellionRisk;
-        public int integration;
-        public OccupationStatus occupationStatus;
-        public int taxContributionPercent;
-        public int foodContributionPercent;
+        public int integration
+        {
+            get { return integrationValue; }
+            set
+            {
+                integrationValue = value;
+                NormalizeContributionCaps();
+            }
+        }
+
+        public OccupationStatus occupationStatus
+        {
+            get { return occupationStatusValue; }
+            set
+            {
+                occupationStatusValue = value;
+                NormalizeContributionCaps();
+            }
+        }
+
+        public int taxContributionPercent
+        {
+            get { return taxContributionPercentValue; }
+            set { taxContributionPercentValue = NormalizeContributionPercent(value); }
+        }
+
+        public int foodContributionPercent
+        {
+            get { return foodContributionPercentValue; }
+            set { foodContributionPercentValue = NormalizeContributionPercent(value); }
+        }
+
         public int annexationPressure;
         public LandStructure landStructure;
         public RegionSpecialization regionSpecialization;
@@ -193,6 +289,25 @@ namespace WanChaoGuiYi
 
         // 建筑系统
         public List<string> buildings;
+
+        private void NormalizeContributionCaps()
+        {
+            taxContributionPercentValue = NormalizeContributionPercent(taxContributionPercentValue);
+            foodContributionPercentValue = NormalizeContributionPercent(foodContributionPercentValue);
+        }
+
+        private int NormalizeContributionPercent(int value)
+        {
+            int clamped = DomainMath.Clamp(value, 0, 100);
+            if ((occupationStatusValue == OccupationStatus.Occupied ||
+                    integrationValue <= StrategyCausalRules.OccupiedIntegration) &&
+                clamped > StrategyCausalRules.OccupiedContributionPercent)
+            {
+                return StrategyCausalRules.OccupiedContributionPercent;
+            }
+
+            return clamped;
+        }
     }
 
     [Serializable]
@@ -207,12 +322,18 @@ namespace WanChaoGuiYi
     [Serializable]
     public sealed class ArmyState
     {
+        private int moraleValue;
+
         public string id;
         public string ownerFactionId;
         public string regionId;
         public string unitId;
         public int soldiers;
-        public int morale;
+        public int morale
+        {
+            get { return moraleValue; }
+            set { moraleValue = DomainMath.Clamp(value, 0, 100); }
+        }
         public int movementProgress;
 
         // 装备系统
@@ -255,6 +376,63 @@ namespace WanChaoGuiYi
         public string GetOtherFaction(string selfId)
         {
             return selfId == factionA ? factionB : factionA;
+        }
+    }
+
+    [Serializable]
+    public sealed class DiplomaticRelationList : Collection<DiplomaticRelation>
+    {
+        protected override void InsertItem(int index, DiplomaticRelation item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.factionA) || string.IsNullOrEmpty(item.factionB))
+            {
+                return;
+            }
+
+            int existingIndex = FindPairIndex(item.factionA, item.factionB);
+            if (existingIndex >= 0)
+            {
+                base.SetItem(existingIndex, item);
+                return;
+            }
+
+            base.InsertItem(index, item);
+        }
+
+        protected override void SetItem(int index, DiplomaticRelation item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.factionA) || string.IsNullOrEmpty(item.factionB))
+            {
+                return;
+            }
+
+            int existingIndex = FindPairIndex(item.factionA, item.factionB);
+            if (existingIndex >= 0 && existingIndex != index)
+            {
+                base.RemoveItem(existingIndex);
+                if (existingIndex < index)
+                {
+                    index--;
+                }
+            }
+
+            base.SetItem(index, item);
+        }
+
+        private int FindPairIndex(string factionA, string factionB)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                DiplomaticRelation relation = this[i];
+                if (relation == null) continue;
+                if ((relation.factionA == factionA && relation.factionB == factionB) ||
+                    (relation.factionA == factionB && relation.factionB == factionA))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace WanChaoGuiYi
@@ -94,6 +95,9 @@ namespace WanChaoGuiYi
         public float additive;
         public float multiplier;
         public bool hasOverride;
+        public int overrideCount;
+        public string[] overrideSources;
+        public bool hasOverrideConflict;
         public float overrideValue;
         public float finalValue;
     }
@@ -101,63 +105,162 @@ namespace WanChaoGuiYi
     public sealed class NumericContext
     {
         private readonly List<NumericModifier> modifiers = new List<NumericModifier>();
+        private readonly Dictionary<NumericModifierKey, int> modifierIndexByKey = new Dictionary<NumericModifierKey, int>();
 
         internal void Add(NumericModifier modifier)
         {
-            modifiers.Add(modifier);
+            AddOrReplace(modifier);
         }
 
         public void Add(NumericDomain domain, NumericStat stat, NumericModifierType type, float value, string source)
         {
-            modifiers.Add(new NumericModifier(domain, stat, type, value, source));
+            AddOrReplace(new NumericModifier(domain, stat, type, value, source));
         }
 
         public NumericResult Evaluate(NumericDomain domain, NumericStat stat, float baseValue)
         {
             return NumericEngine.Evaluate(domain, stat, baseValue, modifiers);
         }
+
+        private void AddOrReplace(NumericModifier modifier)
+        {
+            NumericModifierKey key = new NumericModifierKey(modifier);
+            int index;
+            if (modifierIndexByKey.TryGetValue(key, out index) && index >= 0 && index < modifiers.Count)
+            {
+                modifiers[index] = modifier;
+                return;
+            }
+
+            modifierIndexByKey[key] = modifiers.Count;
+            modifiers.Add(modifier);
+        }
+
+        private struct NumericModifierKey : IEquatable<NumericModifierKey>
+        {
+            private readonly NumericDomain domain;
+            private readonly NumericStat stat;
+            private readonly NumericModifierType type;
+            private readonly string source;
+
+            public NumericModifierKey(NumericModifier modifier)
+            {
+                domain = modifier.domain;
+                stat = modifier.stat;
+                type = modifier.type;
+                source = modifier.source ?? string.Empty;
+            }
+
+            public bool Equals(NumericModifierKey other)
+            {
+                return domain == other.domain &&
+                    stat == other.stat &&
+                    type == other.type &&
+                    string.Equals(source, other.source, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is NumericModifierKey && Equals((NumericModifierKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 31 + domain.GetHashCode();
+                    hash = hash * 31 + stat.GetHashCode();
+                    hash = hash * 31 + type.GetHashCode();
+                    hash = hash * 31 + StringComparer.Ordinal.GetHashCode(source);
+                    return hash;
+                }
+            }
+        }
     }
 
     public static class NumericEngine
     {
+        public const int MaxOverrideSourceDiagnostics = 64;
+        private const float MaxModifierMagnitude = 1000f;
+        private const float MaxFinalMagnitude = 1000000000f;
+
         public static NumericResult Evaluate(NumericDomain domain, NumericStat stat, float baseValue, IEnumerable<NumericModifier> modifiers)
         {
+            float safeBaseValue = SanitizeFiniteValue(baseValue, 0f);
             NumericResult result = new NumericResult
             {
                 domain = domain,
                 stat = stat,
-                baseValue = baseValue,
+                baseValue = safeBaseValue,
                 additive = 0f,
                 multiplier = 1f,
                 hasOverride = false,
+                overrideCount = 0,
+                overrideSources = new string[0],
+                hasOverrideConflict = false,
                 overrideValue = 0f,
-                finalValue = baseValue
+                finalValue = safeBaseValue
             };
 
+            List<string> overrideSources = new List<string>();
+            float firstOverrideValue = 0f;
             foreach (NumericModifier modifier in modifiers)
             {
                 if (modifier.domain != domain || modifier.stat != stat) continue;
+                float modifierValue = SanitizeModifierValue(modifier.value);
 
                 switch (modifier.type)
                 {
                     case NumericModifierType.Additive:
-                        result.additive += modifier.value;
+                        result.additive += modifierValue;
                         break;
                     case NumericModifierType.Multiplicative:
-                        result.multiplier += modifier.value;
+                        result.multiplier += modifierValue;
                         break;
                     case NumericModifierType.Override:
+                        if (result.overrideCount == 0)
+                        {
+                            firstOverrideValue = modifierValue;
+                        }
                         result.hasOverride = true;
-                        result.overrideValue = modifier.value;
+                        result.overrideCount++;
+                        result.hasOverrideConflict = result.overrideCount > 1 && modifierValue != firstOverrideValue;
+                        result.overrideValue = modifierValue;
+                        AddBoundedOverrideSource(overrideSources, string.IsNullOrEmpty(modifier.source) ? "(anonymous)" : modifier.source);
                         break;
                 }
             }
 
+            result.overrideSources = overrideSources.ToArray();
             result.finalValue = result.hasOverride
                 ? result.overrideValue
                 : (result.baseValue + result.additive) * DomainMath.Max(0f, result.multiplier);
+            result.finalValue = SanitizeFiniteValue(result.finalValue, result.baseValue);
 
             return result;
+        }
+
+        private static float SanitizeModifierValue(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return 0f;
+            return DomainMath.Clamp(value, -MaxModifierMagnitude, MaxModifierMagnitude);
+        }
+
+        private static float SanitizeFiniteValue(float value, float fallback)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return fallback;
+            return DomainMath.Clamp(value, -MaxFinalMagnitude, MaxFinalMagnitude);
+        }
+
+        private static void AddBoundedOverrideSource(List<string> overrideSources, string source)
+        {
+            if (overrideSources.Count == MaxOverrideSourceDiagnostics)
+            {
+                overrideSources.RemoveAt(0);
+            }
+
+            overrideSources.Add(source);
         }
     }
 

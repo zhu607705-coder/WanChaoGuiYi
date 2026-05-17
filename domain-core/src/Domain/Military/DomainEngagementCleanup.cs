@@ -23,6 +23,7 @@ namespace WanChaoGuiYi
             if (!mapState.EngagementsById.TryGetValue(engagementId, out engagement) || engagement == null) return;
             if (engagement.attackerArmyIds.Count > 0 && engagement.defenderArmyIds.Count > 0) return;
 
+            mapState.AddRuntimeLog("war", engagement.regionId + "接敌清理：" + engagement.id + " 因一方无参战部队而解散。原因：撤退、溃散或成员移除后接敌不再成立。影响：地区恢复非接敌状态。");
             ClearArmyEngagements(mapState, engagement.attackerArmyIds, false);
             ClearArmyEngagements(mapState, engagement.defenderArmyIds, false);
             mapState.RemoveEngagement(engagementId);

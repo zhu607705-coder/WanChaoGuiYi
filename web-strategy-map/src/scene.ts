@@ -1,4 +1,33 @@
-import * as THREE from 'three';
+import { PCFShadowMap, MOUSE, SRGBColorSpace } from 'three/src/constants.js';
+import { PerspectiveCamera } from 'three/src/cameras/PerspectiveCamera.js';
+import { BufferGeometry } from 'three/src/core/BufferGeometry.js';
+import { Raycaster } from 'three/src/core/Raycaster.js';
+import { Timer } from 'three/src/core/Timer.js';
+import { Shape } from 'three/src/extras/core/Shape.js';
+import { CatmullRomCurve3 } from 'three/src/extras/curves/CatmullRomCurve3.js';
+import { BoxGeometry } from 'three/src/geometries/BoxGeometry.js';
+import { ConeGeometry } from 'three/src/geometries/ConeGeometry.js';
+import { CylinderGeometry } from 'three/src/geometries/CylinderGeometry.js';
+import { ExtrudeGeometry } from 'three/src/geometries/ExtrudeGeometry.js';
+import { PlaneGeometry } from 'three/src/geometries/PlaneGeometry.js';
+import { SphereGeometry } from 'three/src/geometries/SphereGeometry.js';
+import { TorusGeometry } from 'three/src/geometries/TorusGeometry.js';
+import { TubeGeometry } from 'three/src/geometries/TubeGeometry.js';
+import { TextureLoader } from 'three/src/loaders/TextureLoader.js';
+import { DirectionalLight } from 'three/src/lights/DirectionalLight.js';
+import { HemisphereLight } from 'three/src/lights/HemisphereLight.js';
+import { Color } from 'three/src/math/Color.js';
+import { Vector2 } from 'three/src/math/Vector2.js';
+import { Vector3 } from 'three/src/math/Vector3.js';
+import { LineBasicMaterial } from 'three/src/materials/LineBasicMaterial.js';
+import { MeshBasicMaterial } from 'three/src/materials/MeshBasicMaterial.js';
+import { MeshStandardMaterial } from 'three/src/materials/MeshStandardMaterial.js';
+import { Group } from 'three/src/objects/Group.js';
+import { Line } from 'three/src/objects/Line.js';
+import { Mesh } from 'three/src/objects/Mesh.js';
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js';
+import { Fog } from 'three/src/scenes/Fog.js';
+import { Scene } from 'three/src/scenes/Scene.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { StrategyDataset } from './data';
 import type { ArmyViewModel, GameMode, LogisticsMapObject, RegionViewModel, RouteForecast } from './types';
@@ -18,7 +47,7 @@ export interface LabelAnchor {
   kind: 'region' | 'army' | 'building' | 'landform';
   text: string;
   priority: number;
-  position: THREE.Vector3;
+  position: Vector3;
 }
 
 interface EnemyInterdictionTarget {
@@ -32,23 +61,23 @@ interface EnemyInterdictionTarget {
 }
 
 export class StrategyScene {
-  private readonly renderer: THREE.WebGLRenderer;
-  private readonly scene = new THREE.Scene();
-  private readonly camera: THREE.PerspectiveCamera;
+  private readonly renderer: WebGLRenderer;
+  private readonly scene = new Scene();
+  private readonly camera: PerspectiveCamera;
   private readonly controls: OrbitControls;
-  private readonly raycaster = new THREE.Raycaster();
-  private readonly pointer = new THREE.Vector2();
-  private readonly regionMeshes = new Map<string, THREE.Mesh>();
-  private readonly armyMarkers = new Map<string, THREE.Group>();
-  private readonly terrainFeatureGroup = new THREE.Group();
-  private readonly buildingFeatureGroup = new THREE.Group();
-  private readonly occupationBadgeGroup = new THREE.Group();
-  private readonly enemyThreatGroup = new THREE.Group();
-  private readonly friendlyCountermeasureGroup = new THREE.Group();
-  private readonly logisticsObjectGroup = new THREE.Group();
-  private readonly routeGroup = new THREE.Group();
-  private readonly hoverRing = new THREE.Mesh();
-  private readonly selectedRing = new THREE.Mesh();
+  private readonly raycaster = new Raycaster();
+  private readonly pointer = new Vector2();
+  private readonly regionMeshes = new Map<string, Mesh>();
+  private readonly armyMarkers = new Map<string, Group>();
+  private readonly terrainFeatureGroup = new Group();
+  private readonly buildingFeatureGroup = new Group();
+  private readonly occupationBadgeGroup = new Group();
+  private readonly enemyThreatGroup = new Group();
+  private readonly friendlyCountermeasureGroup = new Group();
+  private readonly logisticsObjectGroup = new Group();
+  private readonly routeGroup = new Group();
+  private readonly hoverRing = new Mesh();
+  private readonly selectedRing = new Mesh();
   private routeRaidSegmentCount = 0;
   private routeConvoyMarkerCount = 0;
   private routeDragHandleCount = 0;
@@ -69,7 +98,7 @@ export class StrategyScene {
   private suppressNextClick = false;
   private mode: GameMode = 'governance';
   private animationFrame = 0;
-  private readonly timer = new THREE.Timer();
+  private readonly timer = new Timer();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -78,14 +107,14 @@ export class StrategyScene {
   ) {
     this.selectedRegion = dataset.regions[0];
     this.activeArmy = dataset.route.army;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.shadowMap.type = PCFShadowMap;
+    this.renderer.outputColorSpace = SRGBColorSpace;
     this.timer.connect(document);
 
-    this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+    this.camera = new PerspectiveCamera(38, 1, 0.1, 200);
     this.camera.position.set(-3.5, 19, 16);
     this.camera.lookAt(-3.8, 0, -0.2);
 
@@ -97,14 +126,14 @@ export class StrategyScene {
     this.controls.minDistance = 7;
     this.controls.maxDistance = 28;
     this.controls.mouseButtons = {
-      LEFT: THREE.MOUSE.PAN,
-      MIDDLE: THREE.MOUSE.DOLLY,
-      RIGHT: THREE.MOUSE.PAN
+      LEFT: MOUSE.PAN,
+      MIDDLE: MOUSE.DOLLY,
+      RIGHT: MOUSE.PAN
     };
     this.controls.target.set(-3.8, 0, -0.2);
 
-    this.scene.background = new THREE.Color(0x10171a);
-    this.scene.fog = new THREE.Fog(0x10171a, 24, 56);
+    this.scene.background = new Color(0x10171a);
+    this.scene.fog = new Fog(0x10171a, 24, 56);
     this.terrainFeatureGroup.name = 'TerrainFeatureLayer';
     this.buildingFeatureGroup.name = 'BuildingMarkerLayer';
     this.occupationBadgeGroup.name = 'OccupationStageBadgeLayer';
@@ -162,7 +191,7 @@ export class StrategyScene {
     this.mode = mode;
     for (const region of this.dataset.regions) {
       const mesh = this.regionMeshes.get(region.definition.id);
-      const material = mesh?.material as THREE.MeshStandardMaterial | undefined;
+      const material = mesh?.material as MeshStandardMaterial | undefined;
       if (!material) continue;
       material.color.setHex(this.resolveRegionColor(region));
       material.emissive.setHex(region.definition.id === this.selectedRegion.definition.id ? 0x2c2410 : 0x000000);
@@ -171,8 +200,8 @@ export class StrategyScene {
 
     this.terrainFeatureGroup.visible = true;
     this.buildingFeatureGroup.traverse((object) => {
-      const mesh = object as THREE.Mesh;
-      const material = mesh.material as THREE.MeshStandardMaterial | undefined;
+      const mesh = object as Mesh;
+      const material = mesh.material as MeshStandardMaterial | undefined;
       if (material?.opacity !== undefined) {
         material.opacity = mode === 'war' ? 0.46 : 0.96;
       }
@@ -395,7 +424,7 @@ export class StrategyScene {
         kind: 'region',
         text: region.definition.name,
         priority: this.regionLabelPriority(region),
-        position: new THREE.Vector3(region.shape.center.x + offset.x, this.regionHeight(region) + 0.24, -region.shape.center.y - offset.y)
+        position: new Vector3(region.shape.center.x + offset.x, this.regionHeight(region) + 0.24, -region.shape.center.y - offset.y)
       });
     }
 
@@ -404,7 +433,7 @@ export class StrategyScene {
       kind: 'landform',
       text: this.selectedRegion.geography.label,
       priority: 320,
-      position: this.featureBasePosition(this.selectedRegion, -2.0, 0.44).add(new THREE.Vector3(0, 1.02, 0))
+      position: this.featureBasePosition(this.selectedRegion, -2.0, 0.44).add(new Vector3(0, 1.02, 0))
     });
 
     if (this.mode === 'war') {
@@ -416,7 +445,7 @@ export class StrategyScene {
           kind: 'army',
           text: `${army.name} ${Math.round(army.supply)}%`,
           priority: 200,
-          position: new THREE.Vector3(region.shape.center.x, 1.3, -region.shape.center.y)
+          position: new Vector3(region.shape.center.x, 1.3, -region.shape.center.y)
         });
       }
     } else {
@@ -427,7 +456,7 @@ export class StrategyScene {
           kind: 'building',
           text: region.recommendedBuilding?.name ?? '建设',
           priority: region.definition.id === this.selectedRegion.definition.id ? 260 : 112,
-          position: this.featureBasePosition(region, 0.54, -0.4).add(new THREE.Vector3(0, 0.72, 0))
+          position: this.featureBasePosition(region, 0.54, -0.4).add(new Vector3(0, 0.72, 0))
         });
       }
     }
@@ -435,7 +464,7 @@ export class StrategyScene {
     return anchors;
   }
 
-  projectToScreen(position: THREE.Vector3): { x: number; y: number; visible: boolean } {
+  projectToScreen(position: Vector3): { x: number; y: number; visible: boolean } {
     const projected = position.clone().project(this.camera);
     const rect = this.renderer.domElement.getBoundingClientRect();
     return {
@@ -449,27 +478,27 @@ export class StrategyScene {
     const region = this.dataset.regionById.get(regionId);
     if (!region) return null;
     return this.projectToScreen(
-      new THREE.Vector3(region.shape.center.x, this.regionHeight(region) + 0.1, -region.shape.center.y)
+      new Vector3(region.shape.center.x, this.regionHeight(region) + 0.1, -region.shape.center.y)
     );
   }
 
   getLogisticsObjectScreenPoint(objectId: string): { x: number; y: number; visible: boolean } | null {
     const marker = this.logisticsObjectGroup.children.find((child) => child.userData.logisticsObjectId === objectId);
     if (!marker) return null;
-    return this.projectToScreen(marker.getWorldPosition(new THREE.Vector3()));
+    return this.projectToScreen(marker.getWorldPosition(new Vector3()));
   }
 
   getEnemyInterdictionScreenPoint(orderId: string): { x: number; y: number; visible: boolean } | null {
     const marker = this.enemyThreatGroup.children.find((child) => child.userData.enemyInterdictionId === orderId);
     if (!marker) return null;
-    return this.projectToScreen(marker.getWorldPosition(new THREE.Vector3()));
+    return this.projectToScreen(marker.getWorldPosition(new Vector3()));
   }
 
   private buildLights(): void {
-    const hemisphere = new THREE.HemisphereLight(0xd8f3ff, 0x1b2017, 1.8);
+    const hemisphere = new HemisphereLight(0xd8f3ff, 0x1b2017, 1.8);
     this.scene.add(hemisphere);
 
-    const sun = new THREE.DirectionalLight(0xffe0a1, 3.1);
+    const sun = new DirectionalLight(0xffe0a1, 3.1);
     sun.position.set(-8, 18, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -480,13 +509,13 @@ export class StrategyScene {
     const { imageSize, pixelsPerShapeUnit, shapeCenter } = this.dataset.metadata;
     const width = imageSize.width / pixelsPerShapeUnit;
     const height = imageSize.height / pixelsPerShapeUnit;
-    const texture = new THREE.TextureLoader().load('/game-data/map/jiuzhou_generated_map.png');
-    texture.colorSpace = THREE.SRGBColorSpace;
+    const texture = new TextureLoader().load('/game-data/map/jiuzhou_generated_map.png');
+    texture.colorSpace = SRGBColorSpace;
     texture.anisotropy = 8;
 
-    const geometry = new THREE.PlaneGeometry(width, height);
+    const geometry = new PlaneGeometry(width, height);
     geometry.rotateX(-Math.PI / 2);
-    const material = new THREE.MeshStandardMaterial({
+    const material = new MeshStandardMaterial({
       map: texture,
       color: 0xffffff,
       roughness: 0.88,
@@ -494,7 +523,7 @@ export class StrategyScene {
       transparent: true,
       opacity: 0.88
     });
-    const plane = new THREE.Mesh(geometry, material);
+    const plane = new Mesh(geometry, material);
     plane.name = 'Generated_Jiuzhou_Map_Texture';
     plane.position.set(shapeCenter.x, -0.08, -shapeCenter.y);
     plane.receiveShadow = true;
@@ -503,15 +532,15 @@ export class StrategyScene {
 
   private buildRegions(): void {
     for (const region of this.dataset.regions) {
-      const shape = new THREE.Shape(region.shape.boundary.map((point) => new THREE.Vector2(point.x, point.y)));
-      const geometry = new THREE.ExtrudeGeometry(shape, {
+      const shape = new Shape(region.shape.boundary.map((point) => new Vector2(point.x, point.y)));
+      const geometry = new ExtrudeGeometry(shape, {
         depth: this.regionHeight(region),
         bevelEnabled: false
       });
       geometry.rotateX(-Math.PI / 2);
       geometry.computeVertexNormals();
 
-      const material = new THREE.MeshStandardMaterial({
+      const material = new MeshStandardMaterial({
         color: this.resolveRegionColor(region),
         roughness: 0.74,
         metalness: 0.03,
@@ -519,7 +548,7 @@ export class StrategyScene {
         opacity: 0.78
       });
 
-      const mesh = new THREE.Mesh(geometry, material);
+      const mesh = new Mesh(geometry, material);
       mesh.name = `RegionMesh_${region.definition.id}`;
       mesh.userData.regionId = region.definition.id;
       mesh.castShadow = true;
@@ -527,12 +556,12 @@ export class StrategyScene {
       this.regionMeshes.set(region.definition.id, mesh);
       this.scene.add(mesh);
 
-      const lineGeometry = new THREE.BufferGeometry().setFromPoints(
-        [...region.shape.boundary, region.shape.boundary[0]].map((point) => new THREE.Vector3(point.x, this.regionHeight(region) + 0.018, -point.y))
+      const lineGeometry = new BufferGeometry().setFromPoints(
+        [...region.shape.boundary, region.shape.boundary[0]].map((point) => new Vector3(point.x, this.regionHeight(region) + 0.018, -point.y))
       );
-      const line = new THREE.Line(
+      const line = new Line(
         lineGeometry,
-        new THREE.LineBasicMaterial({ color: region.owner === 'player' ? 0xe5bd63 : 0x5e6f74, transparent: true, opacity: 0.68 })
+        new LineBasicMaterial({ color: region.owner === 'player' ? 0xe5bd63 : 0x5e6f74, transparent: true, opacity: 0.68 })
       );
       line.name = `RegionBorder_${region.definition.id}`;
       this.scene.add(line);
@@ -550,24 +579,24 @@ export class StrategyScene {
     const region = this.dataset.regionById.get(army.fromRegionId);
     if (!region) return;
 
-    const group = new THREE.Group();
+    const group = new Group();
     group.name = `ArmyMarker_${army.id}`;
     group.userData.armyId = army.id;
     group.position.set(region.shape.center.x, 1.05, -region.shape.center.y);
 
     const color = army.faction === 'player' ? 0xe7c25c : 0xd55243;
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.24, 0.34, 0.16, 6),
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.18, roughness: 0.55 })
+    const base = new Mesh(
+      new CylinderGeometry(0.24, 0.34, 0.16, 6),
+      new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.18, roughness: 0.55 })
     );
-    const banner = new THREE.Mesh(
-      new THREE.BoxGeometry(0.12, 0.72, 0.04),
-      new THREE.MeshStandardMaterial({ color: 0x1b2224, roughness: 0.65 })
+    const banner = new Mesh(
+      new BoxGeometry(0.12, 0.72, 0.04),
+      new MeshStandardMaterial({ color: 0x1b2224, roughness: 0.65 })
     );
     banner.position.set(0, 0.42, 0);
-    const flag = new THREE.Mesh(
-      new THREE.BoxGeometry(0.44, 0.2, 0.035),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
+    const flag = new Mesh(
+      new BoxGeometry(0.44, 0.2, 0.035),
+      new MeshStandardMaterial({ color, roughness: 0.5 })
     );
     flag.position.set(0.22, 0.74, 0);
     group.add(base, banner, flag);
@@ -581,8 +610,8 @@ export class StrategyScene {
       const active = armyId === this.activeArmy.id;
       marker.scale.setScalar(active ? 1.26 : 1);
       marker.traverse((object) => {
-        const mesh = object as THREE.Mesh;
-        const material = mesh.material as THREE.MeshStandardMaterial | undefined;
+        const mesh = object as Mesh;
+        const material = mesh.material as MeshStandardMaterial | undefined;
         if (!material || material.emissiveIntensity === undefined) return;
         material.emissiveIntensity = active ? 0.38 : 0.16;
       });
@@ -591,7 +620,7 @@ export class StrategyScene {
 
   private buildTerrainFeatures(): void {
     for (const region of this.dataset.regions) {
-      const group = new THREE.Group();
+      const group = new Group();
       group.name = `TerrainFeature_${region.definition.id}`;
       const base = this.featureBasePosition(region, -0.28, 0.14);
       const height = this.regionHeight(region) + 0.08;
@@ -601,30 +630,30 @@ export class StrategyScene {
 
       if (kind === 'arid_corridor') {
         this.addCorridorFeature(group, base, height, 0xb9934d);
-        this.addResourcePip(group, base.clone().add(new THREE.Vector3(0.2, 0.02, -0.12)), 0x8fb86b);
+        this.addResourcePip(group, base.clone().add(new Vector3(0.2, 0.02, -0.12)), 0x8fb86b);
       } else if (kind === 'water_network') {
         this.addDeltaFeature(group, base, height);
       } else if (kind === 'mountain_pass') {
         this.addMountainCluster(group, region, base, height);
-        this.addPassGate(group, base.clone().add(new THREE.Vector3(0.28, 0.02, -0.14)), height);
+        this.addPassGate(group, base.clone().add(new Vector3(0.28, 0.02, -0.14)), height);
       } else if (kind === 'basin_granary') {
-        this.addMountainCluster(group, region, base.clone().add(new THREE.Vector3(-0.14, 0, 0.08)), height);
-        this.addFieldStrips(group, region, base.clone().add(new THREE.Vector3(0.28, 0, -0.2)), height);
+        this.addMountainCluster(group, region, base.clone().add(new Vector3(-0.14, 0, 0.08)), height);
+        this.addFieldStrips(group, region, base.clone().add(new Vector3(0.28, 0, -0.2)), height);
       } else if (kind === 'loess_irrigation') {
         this.addFieldStrips(group, region, base, height);
-        this.addWaterFeature(group, region, base.clone().add(new THREE.Vector3(0.16, 0, -0.2)), height);
+        this.addWaterFeature(group, region, base.clone().add(new Vector3(0.16, 0, -0.2)), height);
       } else if (kind === 'frontier_horse_route') {
         this.addCorridorFeature(group, base, height, 0x9f8052);
-        this.addResourcePip(group, base.clone().add(new THREE.Vector3(0.28, 0.02, -0.16)), 0x9f8052);
+        this.addResourcePip(group, base.clone().add(new Vector3(0.28, 0.02, -0.16)), 0x9f8052);
       } else if (kind === 'mountain_coast_harbor') {
         this.addWaterFeature(group, region, base, height);
-        this.addHarborPier(group, base.clone().add(new THREE.Vector3(0.24, 0.02, -0.16)), height);
+        this.addHarborPier(group, base.clone().add(new Vector3(0.24, 0.02, -0.16)), height);
       } else if (kind === 'plateau_frontier' || kind === 'mineral_mountain') {
         this.addMountainCluster(group, region, base, height);
-        this.addResourcePip(group, base.clone().add(new THREE.Vector3(-0.22, 0.02, 0.18)), 0xb5b9a4);
+        this.addResourcePip(group, base.clone().add(new Vector3(-0.22, 0.02, 0.18)), 0xb5b9a4);
       } else if (kind === 'river_grain_corridor') {
         this.addWaterFeature(group, region, base, height);
-        this.addFieldStrips(group, region, base.clone().add(new THREE.Vector3(0.24, 0, -0.18)), height);
+        this.addFieldStrips(group, region, base.clone().add(new Vector3(0.24, 0, -0.18)), height);
       } else if (kind === 'forest_frontier') {
         this.addForestFeature(group, base, height);
       } else if (kind === 'central_plain') {
@@ -634,10 +663,10 @@ export class StrategyScene {
       }
 
       if (region.geography.resources.some((resource) => matches(resource, ['horse', 'pasture']))) {
-        this.addResourcePip(group, base.clone().add(new THREE.Vector3(0.26, 0.02, -0.16)), 0x9f8052);
+        this.addResourcePip(group, base.clone().add(new Vector3(0.26, 0.02, -0.16)), 0x9f8052);
       }
       if (region.geography.resources.some((resource) => matches(resource, ['iron', 'bronze', 'salt', 'minerals']))) {
-        this.addResourcePip(group, base.clone().add(new THREE.Vector3(-0.22, 0.02, 0.18)), 0xb5b9a4);
+        this.addResourcePip(group, base.clone().add(new Vector3(-0.22, 0.02, 0.18)), 0xb5b9a4);
       }
 
       this.terrainFeatureGroup.add(group);
@@ -647,7 +676,7 @@ export class StrategyScene {
   private buildBuildingMarkers(): void {
     for (const region of this.dataset.regions) {
       const building = region.recommendedBuilding;
-      const group = new THREE.Group();
+      const group = new Group();
       group.name = `BuildingMarker_${region.definition.id}_${building?.id ?? 'planned'}`;
       group.position.copy(this.featureBasePosition(region, 0.28, -0.22));
       group.userData.regionId = region.definition.id;
@@ -673,31 +702,31 @@ export class StrategyScene {
     }
   }
 
-  private addMountainCluster(group: THREE.Group, region: RegionViewModel, base: THREE.Vector3, height: number): void {
-    const peakMaterial = new THREE.MeshStandardMaterial({ color: 0x8d8a75, roughness: 0.86, metalness: 0.02 });
-    const capMaterial = new THREE.MeshStandardMaterial({ color: 0xd9d2b4, roughness: 0.82, metalness: 0.02 });
+  private addMountainCluster(group: Group, region: RegionViewModel, base: Vector3, height: number): void {
+    const peakMaterial = new MeshStandardMaterial({ color: 0x8d8a75, roughness: 0.86, metalness: 0.02 });
+    const capMaterial = new MeshStandardMaterial({ color: 0xd9d2b4, roughness: 0.82, metalness: 0.02 });
     const radius = region.definition.terrain.includes('mountain') ? 0.18 : 0.13;
     const offsets = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.18, -0.01, 0.1),
-      new THREE.Vector3(-0.17, -0.01, 0.08)
+      new Vector3(0, 0, 0),
+      new Vector3(0.18, -0.01, 0.1),
+      new Vector3(-0.17, -0.01, 0.08)
     ];
     for (const [index, offset] of offsets.entries()) {
-      const peak = new THREE.Mesh(
-        new THREE.ConeGeometry(radius * (index === 0 ? 1.25 : 0.9), 0.58 - index * 0.08, 5),
+      const peak = new Mesh(
+        new ConeGeometry(radius * (index === 0 ? 1.25 : 0.9), 0.58 - index * 0.08, 5),
         peakMaterial
       );
       peak.position.copy(base).add(offset).setY(height + 0.22 - index * 0.02);
       peak.castShadow = true;
-      const cap = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.42, 0.14, 5), capMaterial);
-      cap.position.copy(peak.position).add(new THREE.Vector3(0, 0.3 - index * 0.04, 0));
+      const cap = new Mesh(new ConeGeometry(radius * 0.42, 0.14, 5), capMaterial);
+      cap.position.copy(peak.position).add(new Vector3(0, 0.3 - index * 0.04, 0));
       cap.castShadow = true;
       group.add(peak, cap);
     }
   }
 
-  private addWaterFeature(group: THREE.Group, region: RegionViewModel, base: THREE.Vector3, height: number): void {
-    const waterMaterial = new THREE.MeshStandardMaterial({
+  private addWaterFeature(group: Group, region: RegionViewModel, base: Vector3, height: number): void {
+    const waterMaterial = new MeshStandardMaterial({
       color: region.definition.terrain.includes('river_delta') ? 0x61aeb0 : 0x4c8c9d,
       emissive: 0x12383a,
       emissiveIntensity: 0.18,
@@ -707,15 +736,15 @@ export class StrategyScene {
       opacity: 0.78
     });
     for (let i = 0; i < 3; i += 1) {
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.026, 0.055), waterMaterial);
-      strip.position.copy(base).add(new THREE.Vector3((i - 1) * 0.16, height + 0.02, (i - 1) * 0.11));
+      const strip = new Mesh(new BoxGeometry(0.46, 0.026, 0.055), waterMaterial);
+      strip.position.copy(base).add(new Vector3((i - 1) * 0.16, height + 0.02, (i - 1) * 0.11));
       strip.rotation.y = -0.62 + i * 0.08;
       group.add(strip);
     }
   }
 
-  private addDeltaFeature(group: THREE.Group, base: THREE.Vector3, height: number): void {
-    const waterMaterial = new THREE.MeshStandardMaterial({
+  private addDeltaFeature(group: Group, base: Vector3, height: number): void {
+    const waterMaterial = new MeshStandardMaterial({
       color: 0x62b6b4,
       emissive: 0x12383a,
       emissiveIntensity: 0.18,
@@ -724,15 +753,15 @@ export class StrategyScene {
       opacity: 0.82
     });
     for (let i = 0; i < 5; i += 1) {
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(0.42 - i * 0.025, 0.025, 0.045), waterMaterial);
-      strip.position.copy(base).add(new THREE.Vector3((i - 2) * 0.12, height + 0.02, Math.abs(i - 2) * 0.07));
+      const strip = new Mesh(new BoxGeometry(0.42 - i * 0.025, 0.025, 0.045), waterMaterial);
+      strip.position.copy(base).add(new Vector3((i - 2) * 0.12, height + 0.02, Math.abs(i - 2) * 0.07));
       strip.rotation.y = -0.82 + i * 0.38;
       group.add(strip);
     }
   }
 
-  private addCorridorFeature(group: THREE.Group, base: THREE.Vector3, height: number, color: number): void {
-    const roadMaterial = new THREE.MeshStandardMaterial({
+  private addCorridorFeature(group: Group, base: Vector3, height: number, color: number): void {
+    const roadMaterial = new MeshStandardMaterial({
       color,
       roughness: 0.78,
       metalness: 0,
@@ -740,49 +769,49 @@ export class StrategyScene {
       opacity: 0.86
     });
     for (let i = 0; i < 4; i += 1) {
-      const segment = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.024, 0.052), roadMaterial);
-      segment.position.copy(base).add(new THREE.Vector3(-0.32 + i * 0.22, height + 0.025, -0.04 + i * 0.035));
+      const segment = new Mesh(new BoxGeometry(0.22, 0.024, 0.052), roadMaterial);
+      segment.position.copy(base).add(new Vector3(-0.32 + i * 0.22, height + 0.025, -0.04 + i * 0.035));
       segment.rotation.y = 0.22;
       group.add(segment);
     }
   }
 
-  private addPassGate(group: THREE.Group, base: THREE.Vector3, height: number): void {
+  private addPassGate(group: Group, base: Vector3, height: number): void {
     const material = markerMaterial(0x8e7a56);
-    const gate = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.09), material);
+    const gate = new Mesh(new BoxGeometry(0.28, 0.16, 0.09), material);
     gate.position.copy(base).setY(height + 0.11);
-    const postA = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.24, 0.08), material);
-    postA.position.copy(base).add(new THREE.Vector3(-0.15, 0, 0)).setY(height + 0.15);
+    const postA = new Mesh(new BoxGeometry(0.07, 0.24, 0.08), material);
+    postA.position.copy(base).add(new Vector3(-0.15, 0, 0)).setY(height + 0.15);
     const postB = postA.clone();
     postB.position.x = base.x + 0.15;
     group.add(gate, postA, postB);
   }
 
-  private addHarborPier(group: THREE.Group, base: THREE.Vector3, height: number): void {
-    const dock = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.035, 0.08), markerMaterial(0x9d7548));
+  private addHarborPier(group: Group, base: Vector3, height: number): void {
+    const dock = new Mesh(new BoxGeometry(0.32, 0.035, 0.08), markerMaterial(0x9d7548));
     dock.position.copy(base).setY(height + 0.05);
     dock.rotation.y = -0.28;
-    const boat = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.045, 0.07), markerMaterial(0x5f7f83));
-    boat.position.copy(base).add(new THREE.Vector3(0.12, 0.03, -0.12)).setY(height + 0.07);
+    const boat = new Mesh(new BoxGeometry(0.18, 0.045, 0.07), markerMaterial(0x5f7f83));
+    boat.position.copy(base).add(new Vector3(0.12, 0.03, -0.12)).setY(height + 0.07);
     boat.rotation.y = -0.28;
     group.add(dock, boat);
   }
 
-  private addForestFeature(group: THREE.Group, base: THREE.Vector3, height: number): void {
+  private addForestFeature(group: Group, base: Vector3, height: number): void {
     const trunkMaterial = markerMaterial(0x5f4d31);
     const leafMaterial = markerMaterial(0x5f8a55);
     for (let i = 0; i < 3; i += 1) {
       const x = (i - 1) * 0.16;
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.14, 6), trunkMaterial);
-      trunk.position.copy(base).add(new THREE.Vector3(x, 0, i % 2 === 0 ? 0.04 : -0.05)).setY(height + 0.1);
-      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.22, 7), leafMaterial);
-      crown.position.copy(trunk.position).add(new THREE.Vector3(0, 0.17, 0));
+      const trunk = new Mesh(new CylinderGeometry(0.025, 0.035, 0.14, 6), trunkMaterial);
+      trunk.position.copy(base).add(new Vector3(x, 0, i % 2 === 0 ? 0.04 : -0.05)).setY(height + 0.1);
+      const crown = new Mesh(new ConeGeometry(0.11, 0.22, 7), leafMaterial);
+      crown.position.copy(trunk.position).add(new Vector3(0, 0.17, 0));
       group.add(trunk, crown);
     }
   }
 
-  private addFieldStrips(group: THREE.Group, region: RegionViewModel, base: THREE.Vector3, height: number): void {
-    const fieldMaterial = new THREE.MeshStandardMaterial({
+  private addFieldStrips(group: Group, region: RegionViewModel, base: Vector3, height: number): void {
+    const fieldMaterial = new MeshStandardMaterial({
       color: region.definition.foodOutput >= 90 ? 0x9eaa56 : 0x7d8e4d,
       roughness: 0.9,
       metalness: 0,
@@ -790,87 +819,87 @@ export class StrategyScene {
       opacity: 0.84
     });
     for (let i = 0; i < 4; i += 1) {
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.028, 0.052), fieldMaterial);
-      strip.position.copy(base).add(new THREE.Vector3(-0.21 + i * 0.14, height + 0.015, 0.04 * (i % 2)));
+      const strip = new Mesh(new BoxGeometry(0.38, 0.028, 0.052), fieldMaterial);
+      strip.position.copy(base).add(new Vector3(-0.21 + i * 0.14, height + 0.015, 0.04 * (i % 2)));
       strip.rotation.y = 0.18;
       group.add(strip);
     }
   }
 
-  private addLowlandMarker(group: THREE.Group, base: THREE.Vector3, height: number): void {
-    const marker = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.14, 0.18, 0.05, 8),
-      new THREE.MeshStandardMaterial({ color: 0x7b8d69, roughness: 0.82, metalness: 0.02 })
+  private addLowlandMarker(group: Group, base: Vector3, height: number): void {
+    const marker = new Mesh(
+      new CylinderGeometry(0.14, 0.18, 0.05, 8),
+      new MeshStandardMaterial({ color: 0x7b8d69, roughness: 0.82, metalness: 0.02 })
     );
     marker.position.copy(base).setY(height + 0.04);
     group.add(marker);
   }
 
-  private addResourcePip(group: THREE.Group, position: THREE.Vector3, color: number): void {
-    const pip = new THREE.Mesh(
-      new THREE.SphereGeometry(0.065, 8, 6),
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.12, roughness: 0.5 })
+  private addResourcePip(group: Group, position: Vector3, color: number): void {
+    const pip = new Mesh(
+      new SphereGeometry(0.065, 8, 6),
+      new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.12, roughness: 0.5 })
     );
     pip.position.copy(position);
     group.add(pip);
   }
 
-  private addGranary(group: THREE.Group): void {
-    const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.13, 0.16, 0.26, 8),
+  private addGranary(group: Group): void {
+    const body = new Mesh(
+      new CylinderGeometry(0.13, 0.16, 0.26, 8),
       markerMaterial(0xb08b4f)
     );
     body.position.y = 0.17;
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.16, 8), markerMaterial(0x6c5435));
+    const roof = new Mesh(new ConeGeometry(0.18, 0.16, 8), markerMaterial(0x6c5435));
     roof.position.y = 0.39;
     group.add(body, roof);
   }
 
-  private addFortification(group: THREE.Group): void {
+  private addFortification(group: Group): void {
     const material = markerMaterial(0x8f8370);
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.13), material);
+    const wall = new Mesh(new BoxGeometry(0.42, 0.18, 0.13), material);
     wall.position.y = 0.14;
-    const towerA = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.15), material);
+    const towerA = new Mesh(new BoxGeometry(0.12, 0.3, 0.15), material);
     towerA.position.set(-0.18, 0.2, 0);
     const towerB = towerA.clone();
     towerB.position.x = 0.18;
     group.add(wall, towerA, towerB);
   }
 
-  private addMilitaryYard(group: THREE.Group): void {
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.08, 6), markerMaterial(0x735b3c));
+  private addMilitaryYard(group: Group): void {
+    const base = new Mesh(new CylinderGeometry(0.16, 0.2, 0.08, 6), markerMaterial(0x735b3c));
     base.position.y = 0.08;
-    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.045), markerMaterial(0x2e3635));
+    const banner = new Mesh(new BoxGeometry(0.08, 0.42, 0.045), markerMaterial(0x2e3635));
     banner.position.y = 0.31;
-    const flag = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.11, 0.04), markerMaterial(0xc46c43));
+    const flag = new Mesh(new BoxGeometry(0.28, 0.11, 0.04), markerMaterial(0xc46c43));
     flag.position.set(0.13, 0.48, 0);
     group.add(base, banner, flag);
   }
 
-  private addMarket(group: THREE.Group): void {
-    const stall = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.22), markerMaterial(0x9d6e4c));
+  private addMarket(group: Group): void {
+    const stall = new Mesh(new BoxGeometry(0.34, 0.14, 0.22), markerMaterial(0x9d6e4c));
     stall.position.y = 0.11;
-    const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.14, 4), markerMaterial(0x4f8b8f));
+    const canopy = new Mesh(new ConeGeometry(0.25, 0.14, 4), markerMaterial(0x4f8b8f));
     canopy.position.y = 0.28;
     canopy.rotation.y = Math.PI / 4;
     group.add(stall, canopy);
   }
 
-  private addCivicHall(group: THREE.Group): void {
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.09, 0.25), markerMaterial(0x7c6fa5));
+  private addCivicHall(group: Group): void {
+    const plinth = new Mesh(new BoxGeometry(0.38, 0.09, 0.25), markerMaterial(0x7c6fa5));
     plinth.position.y = 0.08;
-    const hall = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), markerMaterial(0xb9a76d));
+    const hall = new Mesh(new BoxGeometry(0.28, 0.18, 0.18), markerMaterial(0xb9a76d));
     hall.position.y = 0.2;
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.23, 0.11, 4), markerMaterial(0x5b4d72));
+    const roof = new Mesh(new ConeGeometry(0.23, 0.11, 4), markerMaterial(0x5b4d72));
     roof.position.y = 0.36;
     roof.rotation.y = Math.PI / 4;
     group.add(plinth, hall, roof);
   }
 
-  private addCourierPost(group: THREE.Group): void {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.09), markerMaterial(0xa78554));
+  private addCourierPost(group: Group): void {
+    const post = new Mesh(new BoxGeometry(0.11, 0.36, 0.09), markerMaterial(0xa78554));
     post.position.y = 0.24;
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.16), markerMaterial(0x6b7654));
+    const cap = new Mesh(new BoxGeometry(0.3, 0.07, 0.16), markerMaterial(0x6b7654));
     cap.position.y = 0.45;
     group.add(post, cap);
   }
@@ -886,36 +915,36 @@ export class StrategyScene {
     }
   }
 
-  private createOccupationBadge(region: RegionViewModel): THREE.Group {
-    const group = new THREE.Group();
+  private createOccupationBadge(region: RegionViewModel): Group {
+    const group = new Group();
     group.name = `OccupationStageBadge_${region.definition.id}_${region.controlStage}`;
     group.userData.regionId = region.definition.id;
     group.userData.controlStage = region.controlStage;
     group.position.set(region.shape.center.x + 0.48, this.regionHeight(region) + 0.68, -region.shape.center.y + 0.28);
 
     const config = occupationBadgeConfig(region.controlStage);
-    const plateMaterial = new THREE.MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.86 });
-    const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x161c1d, transparent: true, opacity: 0.92 });
+    const plateMaterial = new MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.86 });
+    const darkMaterial = new MeshBasicMaterial({ color: 0x161c1d, transparent: true, opacity: 0.92 });
 
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 8), plateMaterial);
+    const stem = new Mesh(new CylinderGeometry(0.025, 0.025, 0.5, 8), plateMaterial);
     stem.position.y = -0.22;
-    const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.055, 6), plateMaterial);
+    const plate = new Mesh(new CylinderGeometry(0.23, 0.23, 0.055, 6), plateMaterial);
     plate.rotation.y = Math.PI / 6;
-    const center = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.065, 6), darkMaterial);
+    const center = new Mesh(new CylinderGeometry(0.12, 0.12, 0.065, 6), darkMaterial);
     center.position.y = 0.012;
     center.rotation.y = Math.PI / 6;
 
     group.add(stem, plate, center);
     for (let index = 0; index < config.pips; index += 1) {
-      const pip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.11, 0.045), plateMaterial);
+      const pip = new Mesh(new BoxGeometry(0.045, 0.11, 0.045), plateMaterial);
       pip.position.set(-0.07 + index * 0.07, 0.09, 0.16);
       group.add(pip);
     }
     return group;
   }
 
-  private createEnemyThreatMarker(region: RegionViewModel, target: EnemyInterdictionTarget): THREE.Group {
-    const group = new THREE.Group();
+  private createEnemyThreatMarker(region: RegionViewModel, target: EnemyInterdictionTarget): Group {
+    const group = new Group();
     group.name = `EnemyInterdictionThreat_${target.id}_${target.stage}`;
     group.userData.enemyInterdictionId = target.id;
     group.userData.regionId = region.definition.id;
@@ -925,14 +954,14 @@ export class StrategyScene {
     const color = enemyThreatColor(target.stage);
     const counterDampen = target.lastCountermeasure ? 0.22 : 0;
     const opacity = clamp(0.66 + target.risk / 220 - counterDampen, 0.48, 0.98);
-    const threatMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity });
-    const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x111416, transparent: true, opacity: target.lastCountermeasure ? 0.68 : 0.92 });
+    const threatMaterial = new MeshBasicMaterial({ color, transparent: true, opacity });
+    const darkMaterial = new MeshBasicMaterial({ color: 0x111416, transparent: true, opacity: target.lastCountermeasure ? 0.68 : 0.92 });
 
     const routeCurve = this.createEnemyThreatRouteCurve(target);
     const baseProgress = enemyThreatRouteProgress(target.stage, target.remainingTurns, Boolean(target.lastCountermeasure));
     if (routeCurve) {
       const routePoint = routeCurve.getPoint(baseProgress);
-      group.position.copy(routePoint).add(new THREE.Vector3(0, 0.3, 0));
+      group.position.copy(routePoint).add(new Vector3(0, 0.3, 0));
       group.userData.routeCurve = routeCurve;
       group.userData.baseProgress = baseProgress;
       group.userData.speed = target.lastCountermeasure ? 0.018 : 0.036;
@@ -941,27 +970,27 @@ export class StrategyScene {
       group.position.set(region.shape.center.x - 0.52, this.regionHeight(region) + 0.82, -region.shape.center.y - 0.34);
     }
 
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.028, 8, 32), threatMaterial);
+    const halo = new Mesh(new TorusGeometry(0.28, 0.028, 8, 32), threatMaterial);
     halo.rotation.x = -Math.PI / 2;
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.54, 8), darkMaterial);
+    const stem = new Mesh(new CylinderGeometry(0.025, 0.025, 0.54, 8), darkMaterial);
     stem.position.y = -0.12;
-    const blade = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.42, 3), threatMaterial);
+    const blade = new Mesh(new ConeGeometry(0.2, 0.42, 3), threatMaterial);
     blade.rotation.x = Math.PI / 2;
     blade.rotation.z = target.stage === 'striking' ? Math.PI / 6 : 0;
     blade.position.y = 0.22;
-    const pulse = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.045, 12), threatMaterial);
+    const pulse = new Mesh(new CylinderGeometry(0.11, 0.11, 0.045, 12), threatMaterial);
     pulse.position.y = 0.02;
     pulse.scale.setScalar((target.stage === 'striking' ? 1.18 : target.stage === 'moving' ? 1.05 : 0.94) * (target.lastCountermeasure ? 0.82 : 1));
 
-    const routeNeedle = new THREE.Mesh(
-      new THREE.BoxGeometry(target.lastCountermeasure ? 0.34 : 0.46, 0.045, 0.075),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: clamp(opacity + 0.08, 0.5, 0.98) })
+    const routeNeedle = new Mesh(
+      new BoxGeometry(target.lastCountermeasure ? 0.34 : 0.46, 0.045, 0.075),
+      new MeshBasicMaterial({ color, transparent: true, opacity: clamp(opacity + 0.08, 0.5, 0.98) })
     );
     routeNeedle.position.set(0, 0.06, -0.28);
 
-    const selectedRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.034, 8, 36),
-      new THREE.MeshBasicMaterial({
+    const selectedRing = new Mesh(
+      new TorusGeometry(0.42, 0.034, 8, 36),
+      new MeshBasicMaterial({
         color: 0xffd36b,
         transparent: true,
         opacity: target.id === this.selectedEnemyInterdictionId ? 0.92 : 0
@@ -983,27 +1012,27 @@ export class StrategyScene {
     for (const marker of this.enemyThreatGroup.children) {
       const selected = marker.userData.enemyInterdictionId === this.selectedEnemyInterdictionId;
       marker.scale.setScalar(selected ? 1.22 : 1);
-      const ring = marker.getObjectByName('EnemyThreatSelectionRing') as THREE.Mesh | undefined;
-      if (ring?.material instanceof THREE.MeshBasicMaterial) {
+      const ring = marker.getObjectByName('EnemyThreatSelectionRing') as Mesh | undefined;
+      if (ring?.material instanceof MeshBasicMaterial) {
         ring.material.opacity = selected ? 0.92 : 0;
       }
     }
   }
 
-  private createFriendlyCountermeasureMarker(region: RegionViewModel, target: EnemyInterdictionTarget): THREE.Group {
-    const group = new THREE.Group();
+  private createFriendlyCountermeasureMarker(region: RegionViewModel, target: EnemyInterdictionTarget): Group {
+    const group = new Group();
     group.name = `FriendlyCountermeasure_${target.id}`;
     group.userData.regionId = region.definition.id;
     group.userData.kind = target.lastCountermeasure ?? '';
 
     const color = countermeasureColor(target.lastCountermeasure);
-    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.92 });
-    const muted = new THREE.MeshBasicMaterial({ color: 0x132323, transparent: true, opacity: 0.82 });
+    const material = new MeshBasicMaterial({ color, transparent: true, opacity: 0.92 });
+    const muted = new MeshBasicMaterial({ color: 0x132323, transparent: true, opacity: 0.82 });
     const routeCurve = this.createEnemyThreatRouteCurve(target);
     const baseProgress = friendlyCountermeasureProgress(target.stage, target.remainingTurns, target.lastCountermeasure);
     if (routeCurve) {
       const routePoint = routeCurve.getPoint(baseProgress);
-      group.position.copy(routePoint).add(new THREE.Vector3(0, 0.52, 0));
+      group.position.copy(routePoint).add(new Vector3(0, 0.52, 0));
       group.userData.routeCurve = routeCurve;
       group.userData.baseProgress = baseProgress;
       group.userData.speed = target.lastCountermeasure === '改道' ? 0.014 : 0.026;
@@ -1012,27 +1041,27 @@ export class StrategyScene {
       group.position.set(region.shape.center.x - 0.86, this.regionHeight(region) + 0.88, -region.shape.center.y + 0.18);
     }
 
-    const escortRing = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.028, 8, 32), material);
+    const escortRing = new Mesh(new TorusGeometry(0.26, 0.028, 8, 32), material);
     escortRing.rotation.x = -Math.PI / 2;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.22), material);
+    const body = new Mesh(new BoxGeometry(0.34, 0.12, 0.22), material);
     body.position.y = 0.09;
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.16), muted);
+    const cap = new Mesh(new BoxGeometry(0.2, 0.1, 0.16), muted);
     cap.position.y = 0.21;
-    const pennant = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 3), material);
+    const pennant = new Mesh(new ConeGeometry(0.13, 0.28, 3), material);
     pennant.rotation.x = Math.PI / 2;
     pennant.position.set(0.27, 0.26, 0);
 
     if (target.lastCountermeasure === '反斥候') {
-      const scoutLens = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.022, 8, 24), material);
+      const scoutLens = new Mesh(new TorusGeometry(0.14, 0.022, 8, 24), material);
       scoutLens.position.set(-0.24, 0.18, 0);
       scoutLens.rotation.y = Math.PI / 2;
       group.add(scoutLens);
     } else if (target.lastCountermeasure === '诱敌') {
-      const bait = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.14, 8), material);
+      const bait = new Mesh(new CylinderGeometry(0.1, 0.12, 0.14, 8), material);
       bait.position.set(-0.24, 0.12, 0);
       group.add(bait);
     } else if (target.lastCountermeasure === '改道') {
-      const turn = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 8, 22, Math.PI * 1.45), material);
+      const turn = new Mesh(new TorusGeometry(0.16, 0.02, 8, 22, Math.PI * 1.45), material);
       turn.position.set(-0.24, 0.16, 0);
       turn.rotation.x = -Math.PI / 2;
       group.add(turn);
@@ -1042,37 +1071,37 @@ export class StrategyScene {
     return group;
   }
 
-  private createEnemyThreatRouteCurve(target: EnemyInterdictionTarget): THREE.CatmullRomCurve3 | null {
+  private createEnemyThreatRouteCurve(target: EnemyInterdictionTarget): CatmullRomCurve3 | null {
     const army = this.dataset.armies.find((candidate) => candidate.id === target.armyId) ?? this.activeArmy;
     const from = this.dataset.regionById.get(army.fromRegionId);
     const to = this.dataset.regionById.get(target.regionId);
     if (!from || !to) return null;
-    const fromPoint = new THREE.Vector3(from.shape.center.x, this.regionHeight(from) + 0.92, -from.shape.center.y);
-    const toPoint = new THREE.Vector3(to.shape.center.x, this.regionHeight(to) + 0.92, -to.shape.center.y);
+    const fromPoint = new Vector3(from.shape.center.x, this.regionHeight(from) + 0.92, -from.shape.center.y);
+    const toPoint = new Vector3(to.shape.center.x, this.regionHeight(to) + 0.92, -to.shape.center.y);
     const waypointRegion = army.waypointRegionId ? this.dataset.regionById.get(army.waypointRegionId) : undefined;
     if (waypointRegion && waypointRegion.definition.id !== from.definition.id && waypointRegion.definition.id !== to.definition.id) {
-      const waypoint = new THREE.Vector3(waypointRegion.shape.center.x, this.regionHeight(waypointRegion) + 1.02, -waypointRegion.shape.center.y);
-      return new THREE.CatmullRomCurve3([
+      const waypoint = new Vector3(waypointRegion.shape.center.x, this.regionHeight(waypointRegion) + 1.02, -waypointRegion.shape.center.y);
+      return new CatmullRomCurve3([
         fromPoint,
-        fromPoint.clone().lerp(waypoint, 0.52).add(new THREE.Vector3(0, 0.52, 0)),
+        fromPoint.clone().lerp(waypoint, 0.52).add(new Vector3(0, 0.52, 0)),
         waypoint,
-        waypoint.clone().lerp(toPoint, 0.54).add(new THREE.Vector3(0, 0.5, 0)),
+        waypoint.clone().lerp(toPoint, 0.54).add(new Vector3(0, 0.5, 0)),
         toPoint
       ]);
     }
 
-    return new THREE.CatmullRomCurve3([
+    return new CatmullRomCurve3([
       fromPoint,
-      fromPoint.clone().lerp(toPoint, 0.5).add(new THREE.Vector3(0, 0.72, 0)),
+      fromPoint.clone().lerp(toPoint, 0.5).add(new Vector3(0, 0.72, 0)),
       toPoint
     ]);
   }
 
-  private createLogisticsMapObjectMarker(object: LogisticsMapObject): THREE.Group | null {
+  private createLogisticsMapObjectMarker(object: LogisticsMapObject): Group | null {
     const region = this.dataset.regionById.get(object.regionId);
     if (!region) return null;
 
-    const group = new THREE.Group();
+    const group = new Group();
     group.name = `LogisticsMapObject_${object.id}`;
     group.userData.logisticsObjectId = object.id;
     group.userData.kind = object.kind;
@@ -1081,7 +1110,7 @@ export class StrategyScene {
 
     const selected = object.id === this.selectedLogisticsObjectId;
     const color = logisticsObjectColor(object.kind);
-    const material = new THREE.MeshStandardMaterial({
+    const material = new MeshStandardMaterial({
       color,
       emissive: color,
       emissiveIntensity: selected ? 0.44 : 0.18,
@@ -1092,47 +1121,47 @@ export class StrategyScene {
     });
 
     if (object.kind === 'logistics-station') {
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.16, 8), material);
-      const tower = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.38, 0.18), material);
+      const base = new Mesh(new CylinderGeometry(0.22, 0.28, 0.16, 8), material);
+      const tower = new Mesh(new BoxGeometry(0.18, 0.38, 0.18), material);
       tower.position.y = 0.26;
-      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.2, 6), material);
+      const cap = new Mesh(new ConeGeometry(0.22, 0.2, 6), material);
       cap.position.y = 0.58;
       group.add(base, tower, cap);
     } else if (object.kind === 'route-blockade') {
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.08, 8), material);
-      const postA = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.34, 0.09), material);
+      const base = new Mesh(new CylinderGeometry(0.3, 0.34, 0.08, 8), material);
+      const postA = new Mesh(new BoxGeometry(0.09, 0.34, 0.09), material);
       postA.position.set(-0.18, 0.2, 0);
       const postB = postA.clone();
       postB.position.x = 0.18;
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.08, 0.12), material);
+      const bar = new Mesh(new BoxGeometry(0.48, 0.08, 0.12), material);
       bar.position.y = 0.34;
       bar.rotation.z = -0.24;
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.36, 0.03, 8, 30),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: selected ? 0.96 : 0.68 })
+      const ring = new Mesh(
+        new TorusGeometry(0.36, 0.03, 8, 30),
+        new MeshBasicMaterial({ color, transparent: true, opacity: selected ? 0.96 : 0.68 })
       );
       ring.rotation.x = -Math.PI / 2;
       group.add(base, postA, postB, bar, ring);
     } else {
-      const cart = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.24), material);
-      const load = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.18), material);
+      const cart = new Mesh(new BoxGeometry(0.42, 0.14, 0.24), material);
+      const load = new Mesh(new BoxGeometry(0.22, 0.14, 0.18), material);
       load.position.y = 0.15;
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(object.kind === 'transport-convoy' ? 0.28 : 0.32, 0.025, 8, 30),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: selected ? 0.94 : 0.62 })
+      const ring = new Mesh(
+        new TorusGeometry(object.kind === 'transport-convoy' ? 0.28 : 0.32, 0.025, 8, 30),
+        new MeshBasicMaterial({ color, transparent: true, opacity: selected ? 0.94 : 0.62 })
       );
       ring.rotation.x = -Math.PI / 2;
-      const progress = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.035, 0.5 * clamp(object.progress, 0.08, 1), 8),
-        new THREE.MeshBasicMaterial({ color: 0xfff0b0, transparent: true, opacity: 0.82 })
+      const progress = new Mesh(
+        new CylinderGeometry(0.035, 0.035, 0.5 * clamp(object.progress, 0.08, 1), 8),
+        new MeshBasicMaterial({ color: 0xfff0b0, transparent: true, opacity: 0.82 })
       );
       progress.position.set(0.34, 0.22, 0);
       group.add(ring, cart, load, progress);
     }
 
-    const selectionRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.032, 8, 36),
-      new THREE.MeshBasicMaterial({ color: 0xfff0a8, transparent: true, opacity: selected ? 0.88 : 0.0 })
+    const selectionRing = new Mesh(
+      new TorusGeometry(0.42, 0.032, 8, 36),
+      new MeshBasicMaterial({ color: 0xfff0a8, transparent: true, opacity: selected ? 0.88 : 0.0 })
     );
     selectionRing.name = 'LogisticsSelectionRing';
     selectionRing.rotation.x = -Math.PI / 2;
@@ -1146,28 +1175,28 @@ export class StrategyScene {
     return group;
   }
 
-  private logisticsObjectPosition(object: LogisticsMapObject, region: RegionViewModel): THREE.Vector3 {
+  private logisticsObjectPosition(object: LogisticsMapObject, region: RegionViewModel): Vector3 {
     if (object.kind !== 'logistics-station' && object.fromRegionId && object.targetRegionId) {
       const curve = this.createLogisticsRouteCurve(object.fromRegionId, object.targetRegionId);
       if (curve) {
         const point = curve.getPoint(clamp(object.progress, 0.12, 0.92));
-        return point.add(new THREE.Vector3(0, object.kind === 'transport-convoy' ? 0.32 : object.kind === 'route-blockade' ? 0.52 : 0.42, 0));
+        return point.add(new Vector3(0, object.kind === 'transport-convoy' ? 0.32 : object.kind === 'route-blockade' ? 0.52 : 0.42, 0));
       }
     }
 
-    const offset = object.kind === 'occupation-supply' ? new THREE.Vector3(-0.42, 0.78, 0.34) : new THREE.Vector3(0.42, 0.68, -0.34);
-    return new THREE.Vector3(region.shape.center.x, this.regionHeight(region), -region.shape.center.y).add(offset);
+    const offset = object.kind === 'occupation-supply' ? new Vector3(-0.42, 0.78, 0.34) : new Vector3(0.42, 0.68, -0.34);
+    return new Vector3(region.shape.center.x, this.regionHeight(region), -region.shape.center.y).add(offset);
   }
 
-  private createLogisticsRouteCurve(fromRegionId: string, targetRegionId: string): THREE.CatmullRomCurve3 | null {
+  private createLogisticsRouteCurve(fromRegionId: string, targetRegionId: string): CatmullRomCurve3 | null {
     const from = this.dataset.regionById.get(fromRegionId);
     const to = this.dataset.regionById.get(targetRegionId);
     if (!from || !to) return null;
-    const fromPoint = new THREE.Vector3(from.shape.center.x, this.regionHeight(from) + 0.88, -from.shape.center.y);
-    const toPoint = new THREE.Vector3(to.shape.center.x, this.regionHeight(to) + 0.88, -to.shape.center.y);
-    return new THREE.CatmullRomCurve3([
+    const fromPoint = new Vector3(from.shape.center.x, this.regionHeight(from) + 0.88, -from.shape.center.y);
+    const toPoint = new Vector3(to.shape.center.x, this.regionHeight(to) + 0.88, -to.shape.center.y);
+    return new CatmullRomCurve3([
       fromPoint,
-      fromPoint.clone().lerp(toPoint, 0.5).add(new THREE.Vector3(0, 0.58, 0)),
+      fromPoint.clone().lerp(toPoint, 0.5).add(new Vector3(0, 0.58, 0)),
       toPoint
     ]);
   }
@@ -1177,20 +1206,20 @@ export class StrategyScene {
       const selected = marker.userData.logisticsObjectId === this.selectedLogisticsObjectId;
       const baseScale = Number(marker.userData.baseScale ?? 1);
       marker.scale.setScalar(selected ? 1.24 : baseScale);
-      const ring = marker.getObjectByName('LogisticsSelectionRing') as THREE.Mesh | undefined;
-      if (ring?.material instanceof THREE.MeshBasicMaterial) {
+      const ring = marker.getObjectByName('LogisticsSelectionRing') as Mesh | undefined;
+      if (ring?.material instanceof MeshBasicMaterial) {
         ring.material.opacity = selected ? 0.88 : 0;
       }
       marker.traverse((child) => {
-        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+        if (child instanceof Mesh && child.material instanceof MeshStandardMaterial) {
           child.material.emissiveIntensity = selected ? 0.44 : 0.18;
         }
       });
     }
   }
 
-  private featureBasePosition(region: RegionViewModel, offsetX: number, offsetZ: number): THREE.Vector3 {
-    return new THREE.Vector3(
+  private featureBasePosition(region: RegionViewModel, offsetX: number, offsetZ: number): Vector3 {
+    return new Vector3(
       region.shape.center.x + offsetX,
       this.regionHeight(region) + 0.04,
       -region.shape.center.y + offsetZ
@@ -1202,44 +1231,44 @@ export class StrategyScene {
     this.routeRaidSegmentCount = 0;
     this.routeConvoyMarkerCount = 0;
     this.routeDragHandleCount = 0;
-    const from = new THREE.Vector3(route.from.shape.center.x, 0.72, -route.from.shape.center.y);
-    const to = new THREE.Vector3(route.target.shape.center.x, 0.72, -route.target.shape.center.y);
+    const from = new Vector3(route.from.shape.center.x, 0.72, -route.from.shape.center.y);
+    const to = new Vector3(route.target.shape.center.x, 0.72, -route.target.shape.center.y);
     const waypointRegion = route.army.waypointRegionId ? this.dataset.regionById.get(route.army.waypointRegionId) : undefined;
-    const waypoint = waypointRegion ? new THREE.Vector3(waypointRegion.shape.center.x, 0.88, -waypointRegion.shape.center.y) : undefined;
-    const mid = from.clone().lerp(to, 0.5).add(new THREE.Vector3(0, 0.85, 0));
+    const waypoint = waypointRegion ? new Vector3(waypointRegion.shape.center.x, 0.88, -waypointRegion.shape.center.y) : undefined;
+    const mid = from.clone().lerp(to, 0.5).add(new Vector3(0, 0.85, 0));
     const points = waypoint
-      ? [from, from.clone().lerp(waypoint, 0.5).add(new THREE.Vector3(0, 0.7, 0)), waypoint, waypoint.clone().lerp(to, 0.5).add(new THREE.Vector3(0, 0.7, 0)), to]
+      ? [from, from.clone().lerp(waypoint, 0.5).add(new Vector3(0, 0.7, 0)), waypoint, waypoint.clone().lerp(to, 0.5).add(new Vector3(0, 0.7, 0)), to]
       : [from, mid, to];
-    const curve = new THREE.CatmullRomCurve3(points);
+    const curve = new CatmullRomCurve3(points);
     const pressure = route.supplyCost > 34 ? 0.13 : 0.09;
-    const underlay = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 40, pressure + 0.07, 10, false),
-      new THREE.MeshBasicMaterial({ color: 0x551f1c, transparent: true, opacity: 0.42 })
+    const underlay = new Mesh(
+      new TubeGeometry(curve, 40, pressure + 0.07, 10, false),
+      new MeshBasicMaterial({ color: 0x551f1c, transparent: true, opacity: 0.42 })
     );
     underlay.name = 'WarRouteUnderlay';
-    const line = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 40, pressure, 10, false),
-      new THREE.MeshBasicMaterial({ color: 0xd96b46, transparent: true, opacity: 0.94 })
+    const line = new Mesh(
+      new TubeGeometry(curve, 40, pressure, 10, false),
+      new MeshBasicMaterial({ color: 0xd96b46, transparent: true, opacity: 0.94 })
     );
     line.name = 'WarRouteLine';
-    const contact = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.045, 10, 42),
-      new THREE.MeshBasicMaterial({ color: 0xf1c15f, transparent: true, opacity: 0.94 })
+    const contact = new Mesh(
+      new TorusGeometry(0.42, 0.045, 10, 42),
+      new MeshBasicMaterial({ color: 0xf1c15f, transparent: true, opacity: 0.94 })
     );
     contact.name = 'WarRouteContactNode';
-    contact.position.copy(to).add(new THREE.Vector3(0, 0.12, 0));
+    contact.position.copy(to).add(new Vector3(0, 0.12, 0));
     contact.rotation.x = -Math.PI / 2;
 
     this.routeGroup.add(underlay, line, contact);
     this.addRoutePressureLayer(curve, route);
     this.addRouteDragHandle(to, 'target');
     if (waypoint) {
-      const waypointNode = new THREE.Mesh(
-        new THREE.TorusGeometry(0.32, 0.035, 10, 36),
-        new THREE.MeshBasicMaterial({ color: 0x7ad7c9, transparent: true, opacity: 0.92 })
+      const waypointNode = new Mesh(
+        new TorusGeometry(0.32, 0.035, 10, 36),
+        new MeshBasicMaterial({ color: 0x7ad7c9, transparent: true, opacity: 0.92 })
       );
       waypointNode.name = 'WarRouteWaypointNode';
-      waypointNode.position.copy(waypoint).add(new THREE.Vector3(0, 0.08, 0));
+      waypointNode.position.copy(waypoint).add(new Vector3(0, 0.08, 0));
       waypointNode.rotation.x = -Math.PI / 2;
       this.routeGroup.add(waypointNode);
       this.addRouteDragHandle(waypoint, 'waypoint');
@@ -1247,7 +1276,7 @@ export class StrategyScene {
     this.routeGroup.visible = false;
   }
 
-  private addRoutePressureLayer(curve: THREE.CatmullRomCurve3, route: RouteForecast): void {
+  private addRoutePressureLayer(curve: CatmullRomCurve3, route: RouteForecast): void {
     const convoyCount = route.supplyCost >= 34 || route.interceptionRisk >= 40 ? 3 : 2;
     for (let index = 0; index < convoyCount; index += 1) {
       const t = (index + 1) / (convoyCount + 1);
@@ -1256,10 +1285,10 @@ export class StrategyScene {
 
     const start = route.interceptionRisk >= 42 ? 0.56 : 0.68;
     const raidPoints = [start, start + 0.1, start + 0.2, 0.96].map((t) => curve.getPoint(Math.min(0.98, t)));
-    const raidCurve = new THREE.CatmullRomCurve3(raidPoints);
-    const raid = new THREE.Mesh(
-      new THREE.TubeGeometry(raidCurve, 18, 0.08 + route.interceptionRisk / 900, 8, false),
-      new THREE.MeshBasicMaterial({
+    const raidCurve = new CatmullRomCurve3(raidPoints);
+    const raid = new Mesh(
+      new TubeGeometry(raidCurve, 18, 0.08 + route.interceptionRisk / 900, 8, false),
+      new MeshBasicMaterial({
         color: 0xff4e3f,
         transparent: true,
         opacity: clamp(0.52 + route.interceptionRisk / 130, 0.58, 0.96)
@@ -1274,29 +1303,29 @@ export class StrategyScene {
     }
   }
 
-  private addConvoyMarker(position: THREE.Vector3, tangent: THREE.Vector3, index: number): void {
-    const group = new THREE.Group();
+  private addConvoyMarker(position: Vector3, tangent: Vector3, index: number): void {
+    const group = new Group();
     group.name = `WarRouteConvoyMarker_${index}`;
-    group.position.copy(position).add(new THREE.Vector3(0, 0.2, 0));
+    group.position.copy(position).add(new Vector3(0, 0.2, 0));
     group.rotation.y = Math.atan2(tangent.x, tangent.z);
 
-    const cart = new THREE.Mesh(
-      new THREE.BoxGeometry(0.44, 0.12, 0.24),
-      new THREE.MeshBasicMaterial({ color: 0xf2c96a, transparent: true, opacity: 0.92 })
+    const cart = new Mesh(
+      new BoxGeometry(0.44, 0.12, 0.24),
+      new MeshBasicMaterial({ color: 0xf2c96a, transparent: true, opacity: 0.92 })
     );
-    const load = new THREE.Mesh(
-      new THREE.BoxGeometry(0.26, 0.12, 0.18),
-      new THREE.MeshBasicMaterial({ color: 0xb89145, transparent: true, opacity: 0.96 })
+    const load = new Mesh(
+      new BoxGeometry(0.26, 0.12, 0.18),
+      new MeshBasicMaterial({ color: 0xb89145, transparent: true, opacity: 0.96 })
     );
     load.position.y = 0.12;
-    const halo = new THREE.Mesh(
-      new THREE.TorusGeometry(0.24, 0.022, 8, 28),
-      new THREE.MeshBasicMaterial({ color: 0xffdf7a, transparent: true, opacity: 0.88 })
+    const halo = new Mesh(
+      new TorusGeometry(0.24, 0.022, 8, 28),
+      new MeshBasicMaterial({ color: 0xffdf7a, transparent: true, opacity: 0.88 })
     );
     halo.rotation.x = -Math.PI / 2;
 
-    const wheelMaterial = new THREE.MeshBasicMaterial({ color: 0x2b2520, transparent: true, opacity: 0.88 });
-    const wheelA = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.045, 8), wheelMaterial);
+    const wheelMaterial = new MeshBasicMaterial({ color: 0x2b2520, transparent: true, opacity: 0.88 });
+    const wheelA = new Mesh(new CylinderGeometry(0.06, 0.06, 0.045, 8), wheelMaterial);
     wheelA.rotation.z = Math.PI / 2;
     wheelA.position.set(-0.14, -0.065, 0.13);
     const wheelB = wheelA.clone();
@@ -1306,39 +1335,39 @@ export class StrategyScene {
     this.routeConvoyMarkerCount += 1;
   }
 
-  private addRaidWarningMarker(position: THREE.Vector3, tangent: THREE.Vector3): void {
-    const group = new THREE.Group();
+  private addRaidWarningMarker(position: Vector3, tangent: Vector3): void {
+    const group = new Group();
     group.name = 'WarRouteRaidWarning';
-    group.position.copy(position).add(new THREE.Vector3(0, 0.28, 0));
+    group.position.copy(position).add(new Vector3(0, 0.28, 0));
     group.rotation.y = Math.atan2(tangent.x, tangent.z);
 
-    const warning = new THREE.Mesh(
-      new THREE.ConeGeometry(0.18, 0.34, 3),
-      new THREE.MeshBasicMaterial({ color: 0xff5b49, transparent: true, opacity: 0.95 })
+    const warning = new Mesh(
+      new ConeGeometry(0.18, 0.34, 3),
+      new MeshBasicMaterial({ color: 0xff5b49, transparent: true, opacity: 0.95 })
     );
     warning.rotation.x = Math.PI / 2;
-    const base = new THREE.Mesh(
-      new THREE.TorusGeometry(0.22, 0.026, 8, 24),
-      new THREE.MeshBasicMaterial({ color: 0xff8a5e, transparent: true, opacity: 0.84 })
+    const base = new Mesh(
+      new TorusGeometry(0.22, 0.026, 8, 24),
+      new MeshBasicMaterial({ color: 0xff8a5e, transparent: true, opacity: 0.84 })
     );
     base.rotation.x = -Math.PI / 2;
     group.add(base, warning);
     this.routeGroup.add(group);
   }
 
-  private addRouteDragHandle(position: THREE.Vector3, kind: 'target' | 'waypoint'): void {
+  private addRouteDragHandle(position: Vector3, kind: 'target' | 'waypoint'): void {
     const color = kind === 'target' ? 0xffd36b : 0x7ad7c9;
-    const handle = new THREE.Group();
+    const handle = new Group();
     handle.name = `WarRouteDragHandle_${kind}`;
-    handle.position.copy(position).add(new THREE.Vector3(0, 0.42, 0));
+    handle.position.copy(position).add(new Vector3(0, 0.42, 0));
 
-    const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.035, 0.34, 8),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
+    const stem = new Mesh(
+      new CylinderGeometry(0.035, 0.035, 0.34, 8),
+      new MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
     );
-    const cap = new THREE.Mesh(
-      new THREE.SphereGeometry(0.115, 12, 8),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.96 })
+    const cap = new Mesh(
+      new SphereGeometry(0.115, 12, 8),
+      new MeshBasicMaterial({ color, transparent: true, opacity: 0.96 })
     );
     cap.position.y = 0.24;
     handle.add(stem, cap);
@@ -1382,21 +1411,21 @@ export class StrategyScene {
   }
 
   private buildSelectionRings(): void {
-    this.selectedRing.geometry = new THREE.TorusGeometry(0.86, 0.035, 8, 64);
-    this.selectedRing.material = new THREE.MeshBasicMaterial({ color: 0xf0cc68, transparent: true, opacity: 0.95 });
+    this.selectedRing.geometry = new TorusGeometry(0.86, 0.035, 8, 64);
+    this.selectedRing.material = new MeshBasicMaterial({ color: 0xf0cc68, transparent: true, opacity: 0.95 });
     this.selectedRing.rotation.x = -Math.PI / 2;
     this.selectedRing.name = 'SelectedRegionRing';
     this.scene.add(this.selectedRing);
 
-    this.hoverRing.geometry = new THREE.TorusGeometry(0.72, 0.025, 8, 48);
-    this.hoverRing.material = new THREE.MeshBasicMaterial({ color: 0x9bd5d6, transparent: true, opacity: 0.7 });
+    this.hoverRing.geometry = new TorusGeometry(0.72, 0.025, 8, 48);
+    this.hoverRing.material = new MeshBasicMaterial({ color: 0x9bd5d6, transparent: true, opacity: 0.7 });
     this.hoverRing.rotation.x = -Math.PI / 2;
     this.hoverRing.visible = false;
     this.hoverRing.name = 'HoverRegionRing';
     this.scene.add(this.hoverRing);
   }
 
-  private placeRing(ring: THREE.Mesh, region: RegionViewModel, yOffset: number): void {
+  private placeRing(ring: Mesh, region: RegionViewModel, yOffset: number): void {
     ring.position.set(region.shape.center.x, this.regionHeight(region) + yOffset, -region.shape.center.y);
     const maxSpan = Math.max(...region.shape.boundary.map((point) => Math.hypot(point.x - region.shape.center.x, point.y - region.shape.center.y)));
     ring.scale.setScalar(Math.max(0.72, maxSpan * 0.88));
@@ -1549,7 +1578,7 @@ export class StrategyScene {
     for (const marker of this.logisticsObjectGroup.children) {
       const objectId = marker.userData.logisticsObjectId as string | undefined;
       if (!objectId) continue;
-      const point = this.projectToScreen(marker.getWorldPosition(new THREE.Vector3()));
+      const point = this.projectToScreen(marker.getWorldPosition(new Vector3()));
       if (!point.visible) continue;
       const distance = Math.hypot(point.x - clientX, point.y - clientY);
       if (distance <= 24 && (!best || distance < best.distance)) {
@@ -1582,7 +1611,7 @@ export class StrategyScene {
     for (const marker of this.enemyThreatGroup.children) {
       const orderId = marker.userData.enemyInterdictionId as string | undefined;
       if (!orderId) continue;
-      const point = this.projectToScreen(marker.getWorldPosition(new THREE.Vector3()));
+      const point = this.projectToScreen(marker.getWorldPosition(new Vector3()));
       if (!point.visible) continue;
       const distance = Math.hypot(point.x - clientX, point.y - clientY);
       if (distance <= 28 && (!best || distance < best.distance)) {
@@ -1640,7 +1669,7 @@ export class StrategyScene {
     }
 
     for (const threat of this.enemyThreatGroup.children) {
-      const routeCurve = threat.userData.routeCurve as THREE.CatmullRomCurve3 | undefined;
+      const routeCurve = threat.userData.routeCurve as CatmullRomCurve3 | undefined;
       const baseProgress = Number(threat.userData.baseProgress ?? 0);
       const speed = Number(threat.userData.speed ?? 0);
       const sway = Number(threat.userData.sway ?? 0);
@@ -1652,13 +1681,13 @@ export class StrategyScene {
       const progress = clamp(baseProgress + Math.sin(elapsed * 1.9 + baseProgress * 7) * sway + (elapsed * speed) % 0.028, 0.08, 0.96);
       const point = routeCurve.getPoint(progress);
       const tangent = routeCurve.getTangent(progress);
-      threat.position.copy(point).add(new THREE.Vector3(0, 0.3 + Math.sin(elapsed * 4.2 + baseProgress) * 0.04, 0));
+      threat.position.copy(point).add(new Vector3(0, 0.3 + Math.sin(elapsed * 4.2 + baseProgress) * 0.04, 0));
       threat.rotation.y = Math.atan2(tangent.x, tangent.z);
       threat.scale.setScalar(1 + Math.sin(elapsed * 4.6 + baseProgress * 5) * 0.05);
     }
 
     for (const countermeasure of this.friendlyCountermeasureGroup.children) {
-      const routeCurve = countermeasure.userData.routeCurve as THREE.CatmullRomCurve3 | undefined;
+      const routeCurve = countermeasure.userData.routeCurve as CatmullRomCurve3 | undefined;
       const baseProgress = Number(countermeasure.userData.baseProgress ?? 0);
       const speed = Number(countermeasure.userData.speed ?? 0);
       const sway = Number(countermeasure.userData.sway ?? 0);
@@ -1670,7 +1699,7 @@ export class StrategyScene {
       const progress = clamp(baseProgress + Math.sin(elapsed * 2.2 + baseProgress * 5) * sway + (elapsed * speed) % 0.024, 0.06, 0.88);
       const point = routeCurve.getPoint(progress);
       const tangent = routeCurve.getTangent(progress);
-      countermeasure.position.copy(point).add(new THREE.Vector3(0, 0.52 + Math.sin(elapsed * 4.0 + baseProgress) * 0.035, 0));
+      countermeasure.position.copy(point).add(new Vector3(0, 0.52 + Math.sin(elapsed * 4.0 + baseProgress) * 0.035, 0));
       countermeasure.rotation.y = Math.atan2(tangent.x, tangent.z);
       countermeasure.scale.setScalar(1 + Math.sin(elapsed * 4.2 + baseProgress * 4) * 0.045);
     }
@@ -1699,7 +1728,7 @@ export class StrategyScene {
 
       // Pulse opacity for hovered/dragging
       for (const child of handle.children) {
-        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+        if (child instanceof Mesh && child.material instanceof MeshBasicMaterial) {
           const baseOpacity = kind === 'target' ? 0.9 : 0.85;
           const pulse = isDragging ? Math.sin(elapsed * 8) * 0.15 : isHovered ? Math.sin(elapsed * 5) * 0.1 : 0;
           child.material.opacity = clamp(baseOpacity + pulse, 0.5, 1);
@@ -1741,8 +1770,8 @@ export class StrategyScene {
   }
 }
 
-function markerMaterial(color: number): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({
+function markerMaterial(color: number): MeshStandardMaterial {
+  return new MeshStandardMaterial({
     color,
     roughness: 0.72,
     metalness: 0.04,

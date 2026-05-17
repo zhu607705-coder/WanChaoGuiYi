@@ -30,7 +30,7 @@ namespace WanChaoGuiYi
             runtimeRegion.rebellionRisk = DomainMath.Min(100, runtimeRegion.rebellionRisk + StrategyCausalRules.OccupationRebellionRiskIncrease);
             runtimeRegion.localPower = DomainMath.Min(100, runtimeRegion.localPower + StrategyCausalRules.OccupationLocalPowerIncrease);
             runtimeRegion.annexationPressure = DomainMath.Min(100, runtimeRegion.annexationPressure + StrategyCausalRules.OccupationAnnexationPressureIncrease);
-            runtimeRegion.localAcceptance = DomainMath.Max(0, runtimeRegion.localAcceptance - 18);
+            runtimeRegion.localAcceptance = StrategyCausalRules.ApplyOccupationAcceptanceShock(runtimeRegion.localAcceptance);
 
             legacyRegion.integration = runtimeRegion.integration;
             legacyRegion.occupationStatus = runtimeRegion.occupationStatus;

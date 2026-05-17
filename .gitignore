@@ -25,6 +25,8 @@ tools/headless_runner/latest-war-report.json
 
 # Codex outputs
 .outputs/
+test-results/
+playwright-report/
 
 # Web strategy map generated artifacts
 web-strategy-map/node_modules/

@@ -205,44 +205,48 @@ namespace WanChaoGuiYi
 
     public sealed class EventBus
     {
-        private readonly Dictionary<GameEventType, Action<GameEvent>> listeners = new Dictionary<GameEventType, Action<GameEvent>>();
+        private readonly Dictionary<GameEventType, List<Action<GameEvent>>> listeners = new Dictionary<GameEventType, List<Action<GameEvent>>>();
 
         public void Subscribe(GameEventType type, Action<GameEvent> listener)
         {
             if (listener == null) return;
 
-            Action<GameEvent> existing;
-            listeners.TryGetValue(type, out existing);
-            listeners[type] = existing + listener;
+            List<Action<GameEvent>> existing;
+            if (!listeners.TryGetValue(type, out existing))
+            {
+                existing = new List<Action<GameEvent>>();
+                listeners[type] = existing;
+            }
+
+            if (!existing.Contains(listener))
+            {
+                existing.Add(listener);
+            }
         }
 
         public void Unsubscribe(GameEventType type, Action<GameEvent> listener)
         {
             if (listener == null) return;
 
-            Action<GameEvent> existing;
+            List<Action<GameEvent>> existing;
             if (!listeners.TryGetValue(type, out existing)) return;
 
-            existing -= listener;
-            if (existing == null)
+            existing.Remove(listener);
+            if (existing.Count == 0)
             {
                 listeners.Remove(type);
-            }
-            else
-            {
-                listeners[type] = existing;
             }
         }
 
         public void Publish(GameEvent gameEvent)
         {
-            Action<GameEvent> listener;
-            if (listeners.TryGetValue(gameEvent.Type, out listener))
+            List<Action<GameEvent>> listenerList;
+            if (listeners.TryGetValue(gameEvent.Type, out listenerList))
             {
-                Delegate[] invocationList = listener.GetInvocationList();
-                for (int i = 0; i < invocationList.Length; i++)
+                Action<GameEvent>[] snapshot = listenerList.ToArray();
+                for (int i = 0; i < snapshot.Length; i++)
                 {
-                    Action<GameEvent> handler = invocationList[i] as Action<GameEvent>;
+                    Action<GameEvent> handler = snapshot[i];
                     if (handler == null) continue;
 
                     try

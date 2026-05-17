@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace WanChaoGuiYi.Tests
@@ -9,7 +10,7 @@ namespace WanChaoGuiYi.Tests
     internal sealed class FakeDataRepository : IDataRepository
     {
         public Dictionary<string, EmperorDefinition> EmperorMap { get; } = new Dictionary<string, EmperorDefinition>();
-        public Dictionary<string, RegionDefinition> RegionMap { get; } = new Dictionary<string, RegionDefinition>();
+        public RegionDefinitionMap RegionMap { get; } = new RegionDefinitionMap();
         public Dictionary<string, HistoricalLayerDefinition> HistoricalLayerMap { get; } = new Dictionary<string, HistoricalLayerDefinition>();
         public Dictionary<string, PolicyDefinition> PolicyMap { get; } = new Dictionary<string, PolicyDefinition>();
         public Dictionary<string, EventDefinition> EventMap { get; } = new Dictionary<string, EventDefinition>();
@@ -58,6 +59,48 @@ namespace WanChaoGuiYi.Tests
             UnitDefinition value;
             UnitMap.TryGetValue(id, out value);
             return value;
+        }
+    }
+
+    internal sealed class RegionDefinitionMap : Dictionary<string, RegionDefinition>
+    {
+        public new RegionDefinition this[string key]
+        {
+            get { return base[key]; }
+            set
+            {
+                Validate(key, value);
+                base.Add(key, value);
+            }
+        }
+
+        public new void Add(string key, RegionDefinition value)
+        {
+            Validate(key, value);
+            base.Add(key, value);
+        }
+
+        private void Validate(string key, RegionDefinition value)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new InvalidOperationException("Region id is required.");
+            }
+
+            if (value == null || string.IsNullOrEmpty(value.id))
+            {
+                throw new InvalidOperationException("Region item is missing id.");
+            }
+
+            if (value.id != key)
+            {
+                throw new InvalidOperationException("Region map key does not match region id: " + key + " != " + value.id);
+            }
+
+            if (ContainsKey(key))
+            {
+                throw new InvalidOperationException("Duplicate region id: " + key);
+            }
         }
     }
 

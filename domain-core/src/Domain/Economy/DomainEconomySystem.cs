@@ -118,8 +118,8 @@ namespace WanChaoGuiYi
             {
                 ArmyState army = context.State.armies[i];
                 if (army.ownerFactionId != faction.id) continue;
-                UnitDefinition unit = context.Data.GetUnit(army.unitId);
-                upkeep += CalculateRawArmyUpkeep(army, unit, false);
+                UnitDefinition unit = context.Data != null ? context.Data.GetUnit(army.unitId) : null;
+                upkeep += CalculateRawArmyUpkeep(context, army, unit, false);
             }
             return upkeep;
         }
@@ -131,15 +131,25 @@ namespace WanChaoGuiYi
             {
                 ArmyState army = context.State.armies[i];
                 if (army.ownerFactionId != faction.id) continue;
-                UnitDefinition unit = context.Data.GetUnit(army.unitId);
-                upkeep += CalculateRawArmyUpkeep(army, unit, true);
+                UnitDefinition unit = context.Data != null ? context.Data.GetUnit(army.unitId) : null;
+                upkeep += CalculateRawArmyUpkeep(context, army, unit, true);
             }
             return upkeep;
         }
 
-        private static int CalculateRawArmyUpkeep(ArmyState army, UnitDefinition unit, bool food)
+        private static int CalculateRawArmyUpkeep(GameContext context, ArmyState army, UnitDefinition unit, bool food)
         {
-            if (army == null || unit == null || unit.upkeep == null) return 0;
+            if (army == null) return 0;
+            if (unit == null || unit.upkeep == null)
+            {
+                if (!food && context != null && context.State != null)
+                {
+                    context.State.AddLog("economy", "missing unit upkeep fallback: army " + army.id + " references unitId " + army.unitId + "。原因：单位定义缺失。影响：系统按最低军费计入并提示修复数据。");
+                }
+
+                return DomainMath.Max(1, DomainMath.CeilToInt(army.soldiers / 1000f));
+            }
+
             int unitUpkeep = food ? unit.upkeep.food : unit.upkeep.money;
             return DomainMath.Max(0, DomainMath.CeilToInt(army.soldiers / 1000f) * unitUpkeep);
         }

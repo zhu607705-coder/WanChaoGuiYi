@@ -44,8 +44,8 @@ namespace WanChaoGuiYi
                 attackerWon = attackerWon
             };
 
-            ApplySideLosses(context, mapState, engagement.attackerArmyIds, attackerWon);
-            ApplySideLosses(context, mapState, engagement.defenderArmyIds, !attackerWon);
+            ApplySideLosses(context, mapState, engagement.attackerArmyIds, attackerWon, attackerPower, defenderPower, attackerSoldiersBefore, defenderSoldiersBefore);
+            ApplySideLosses(context, mapState, engagement.defenderArmyIds, !attackerWon, defenderPower, attackerPower, defenderSoldiersBefore, attackerSoldiersBefore);
             result.attackerSoldiersAfter = CalculateSideSoldiers(mapState, engagement.attackerArmyIds);
             result.defenderSoldiersAfter = CalculateSideSoldiers(mapState, engagement.defenderArmyIds);
 
@@ -158,8 +158,21 @@ namespace WanChaoGuiYi
             return totalSoldiers;
         }
 
-        private static void ApplySideLosses(GameContext context, MapState mapState, List<string> armyIds, bool won)
+        private static void ApplySideLosses(
+            GameContext context,
+            MapState mapState,
+            List<string> armyIds,
+            bool won,
+            int sidePower,
+            int opposingPower,
+            int sideSoldiers,
+            int opposingSoldiers)
         {
+            float casualtyFraction = won
+                ? CalculateWinnerCasualtyFraction(sidePower, opposingPower, sideSoldiers, opposingSoldiers)
+                : CalculateLoserCasualtyFraction(opposingPower, sidePower, opposingSoldiers, sideSoldiers);
+            float survivorMultiplier = DomainMath.Clamp(1f - casualtyFraction, 0f, 1f);
+
             for (int i = 0; i < armyIds.Count; i++)
             {
                 ArmyRuntimeState runtimeArmy;
@@ -167,12 +180,12 @@ namespace WanChaoGuiYi
 
                 if (won)
                 {
-                    runtimeArmy.soldiers = DomainMath.RoundToInt(runtimeArmy.soldiers * 0.85f);
+                    runtimeArmy.soldiers = DomainMath.RoundToInt(runtimeArmy.soldiers * survivorMultiplier);
                     runtimeArmy.morale = DomainMath.Min(100, runtimeArmy.morale + 5);
                 }
                 else
                 {
-                    runtimeArmy.soldiers = DomainMath.RoundToInt(runtimeArmy.soldiers * 0.45f);
+                    runtimeArmy.soldiers = DomainMath.RoundToInt(runtimeArmy.soldiers * survivorMultiplier);
                     runtimeArmy.morale = DomainMath.Max(0, runtimeArmy.morale - 15);
                 }
 
@@ -183,6 +196,32 @@ namespace WanChaoGuiYi
                     legacyArmy.morale = runtimeArmy.morale;
                 }
             }
+        }
+
+        private static float CalculateWinnerCasualtyFraction(int winnerPower, int loserPower, int winnerSoldiers, int loserSoldiers)
+        {
+            float dominance = CalculateDominanceRatio(winnerPower, loserPower, winnerSoldiers, loserSoldiers);
+            if (dominance >= 20f) return 0.04f;
+            if (dominance >= 5f) return 0.08f;
+            if (dominance >= 2f) return 0.14f;
+            if (dominance >= 1.2f) return 0.20f;
+            return 0.28f;
+        }
+
+        private static float CalculateLoserCasualtyFraction(int winnerPower, int loserPower, int winnerSoldiers, int loserSoldiers)
+        {
+            float dominance = CalculateDominanceRatio(winnerPower, loserPower, winnerSoldiers, loserSoldiers);
+            if (dominance >= 20f) return 0.82f;
+            if (dominance >= 5f) return 0.70f;
+            if (dominance >= 2f) return 0.60f;
+            return 0.50f;
+        }
+
+        private static float CalculateDominanceRatio(int sidePower, int opposingPower, int sideSoldiers, int opposingSoldiers)
+        {
+            float powerRatio = sidePower / (float)DomainMath.Max(1, opposingPower);
+            float soldierRatio = sideSoldiers / (float)DomainMath.Max(1, opposingSoldiers);
+            return DomainMath.Max(powerRatio, soldierRatio);
         }
 
         private static ArmyState FindLegacyArmy(GameContext context, string armyId)

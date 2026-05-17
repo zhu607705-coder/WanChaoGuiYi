@@ -37,6 +37,7 @@ namespace WanChaoGuiYi
         public const int OccupationRebellionRiskIncrease = 12;
         public const int OccupationLocalPowerIncrease = 8;
         public const int OccupationAnnexationPressureIncrease = 10;
+        public const int OccupationAcceptanceShockPercent = 35;
         public const int GrainShortageSupplyLoss = 8;
         public const int GrainShortageRebellionRiskIncrease = 6;
         public const int GrainShortageAcceptanceCost = 5;
@@ -118,6 +119,14 @@ namespace WanChaoGuiYi
         {
             if (faction == null) return;
             faction.legitimacy = DomainMath.Max(0, faction.legitimacy - OccupationLegitimacyCost);
+        }
+
+        public static int ApplyOccupationAcceptanceShock(int localAcceptance)
+        {
+            if (localAcceptance <= 0) return 0;
+
+            int shock = DomainMath.Max(1, DomainMath.RoundToInt(localAcceptance * OccupationAcceptanceShockPercent / 100f));
+            return DomainMath.Clamp(localAcceptance - shock, 0, 100);
         }
 
         public static bool ApplyGrainShortagePressure(FactionState faction, RegionState region, ArmyRuntimeState army)

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web-strategy-map/package-lock.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Web dependencies
+        working-directory: web-strategy-map
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: web-strategy-map
+        run: npx playwright install --with-deps chromium
+
+      - name: Restore .NET
+        working-directory: tools/headless_runner/WanChaoGuiYiTests
+        run: dotnet restore
+
+      - name: Run all checks
+        run: pwsh tools/run_all_checks.ps1
