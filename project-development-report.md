@@ -9371,3 +9371,46 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮为找缺口轮，且只修正权威报告顺序，不提交。
 - 暂缓原因：`project-development-report.md` 与未跟踪的 `docs/audit-test-coverage.md` 均混有前序多轮内容；无法在不混入既有改动的前提下安全 scoped commit。
+
+## 2026-05-22 工作树清理与 GitHub 发布收口
+
+### 目标
+
+- 承接用户要求“整理清理脏的工作树自此提交到 github 上”。
+- 将前序累计的文档、Domain Core、headless、Web 测试和审查记录整理为干净 mainline，并推送到 GitHub `main`。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 清理与历史处理
+
+- 发布前发现 GitHub API 上的 `main` 已到 `94b1e1de96f0f229c2747885a4c24d59a2b057d7`，而本地 `origin/main` 缓存仍停在较早提交。
+- 标准 `git fetch` 一度因 `github.com` 连接重置失败；随后通过 GitHub API 校验远端提交对象，并确认远端两条 CI/报告提交与本地同名提交 tree 等价但 SHA 不同。
+- 已把本地 4 个清理提交 rebase 到真实远端 `origin/main` 之后，避免非快进覆盖。
+- 前置业务清理提交已正常 `git push origin main`，远端 `main` 一度推进到 `9511a7fac1e8fa6e1dc883f1a44fdb4c8ba5ea27`。
+- 本节为报告收口提交，最终 GitHub HEAD 以本轮结束时 `git rev-parse HEAD`、`git ls-remote origin refs/heads/main` 和 GitHub API ref 三者一致结果为准。
+
+### 验证
+
+- 全量本地验证通过：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1`。
+- 验证范围包括：
+  - `validate_domain_core.py` OK。
+  - `validate_web_data_source.py` OK，数据统计为 `data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+  - Domain Core xUnit `81/81 passed`。
+  - headless war `16/16 passed`。
+  - Web typecheck OK。
+  - Vitest `66/66 passed`。
+  - Web build OK。
+  - Playwright UI `27/27 passed`。
+- `git diff --check origin/main..HEAD` 无 whitespace error。
+- 敏感密钥格式扫描无命中。
+- 新增历史最大 blob 未接近 GitHub 普通 blob 限制；全仓最大文件为已版本化音频资源，约 11.4MB。
+
+### GitHub 发布清单
+
+- 普通 git：本轮发布包含项目规则纯代码边界对齐、Domain Core/headless 回归修补与测试、Web 音频/数据/UI 测试加固、审查文档和本报告。
+- GitHub Release：本轮未上传 Release assets。
+- local-only 排除项：未发现未提交或未跟踪残留；构建产物、依赖缓存和运行时缓存继续按现有 `.gitignore` 留在本地。
+
+### 剩余风险
+
+- 本轮推送后 GitHub Actions 为最新业务 HEAD 启动过 CI run，但远端 job 长时间保持 `in_progress`，未形成通过/失败结论；本地全量验证已作为当前发布证据。
+- 若后续 CI 继续卡住，应单独诊断 GitHub runner 或 workflow 队列，而不是回滚本轮业务提交。
