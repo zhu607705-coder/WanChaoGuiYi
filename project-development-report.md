@@ -5841,3 +5841,3533 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 - Web 与 headless 入口现在更可复现：依赖版本固定，headless 默认 build 不再依赖 .NET 10。
 - 远端确认已完成：GitHub Actions run `25985482149` 在 `windows-latest` 上全绿，job `76381858003` 用时 `19m12s`；这次远端验证覆盖 `npm ci`、Playwright browser install、.NET restore、完整 `tools/run_all_checks.ps1`。
 - 当前只剩非阻塞平台提示：GitHub 标注 Node.js 20 actions 将在 2026-06-02 起默认迁移到 Node 24，并提示 `windows-latest` 会在 2026-06-15 前重定向到 `windows-2025-vs2026`。后续若 Actions 版本有更新，再升级 `actions/checkout/setup-*`。
+
+## 2026-05-17 Mavis 审查回收与 P0/P1 修复
+
+### 接入目标
+
+- 回收 Mavis 团队提交的 5 份审查报告：`docs/audit-domain-core.md`、`docs/audit-json-data.md`、`docs/audit-test-coverage.md`、`docs/audit-web-ui.md`、`docs/bug-risk-review-2026-05-17.md`。
+- 保持当前开发脱离 Unity：本轮只改 `domain-core`、headless 测试和 `web-strategy-map`，不触碰 Unity 工程或 PlayMode/VisualSmoke 验收。
+- 优先处理审查中能在无 Unity 环境验证的高风险项：Numeric NaN/Infinity override、`DomainMath.Log10(0)`、`RestoreContestedRegion` dual-state 同步、Web TypeScript 数据契约。
+
+### 已完成修复
+
+- `NumericEngine` 现在会忽略 NaN/Infinity override，不再把有效 baseValue 静默覆盖成 `0`；Additive/Multiplicative 仍按中性 `0` 修正处理异常值。
+- `DomainMath.Log10()` 对 NaN、Infinity、非正输入返回有限安全值，避免 `Log10(0)` 产生 `-Infinity`。
+- `MapState` 增加 legacy region 查找和 occupationStatus 同步入口；接敌标记与接敌恢复现在同步 `RegionRuntimeState` 和 `RegionState`。
+- 新增/加固测试：`Invalid_Override_Must_Not_Replace_A_Finite_Base_Value`、`DomainMath_Log10_Must_Return_Finite_For_NonPositive_Input`、`RestoreContestedRegion_Must_Sync_Runtime_And_Legacy_Status`。
+- 修复 Mavis 测试组留下的 xUnit 兼容问题：`ConcurrentModificationBugTests` 中 `Assert.Null(value, message)` 改为当前 xUnit 2.9 可编译的等价断言。
+- `web-strategy-map/src/types.ts` 补齐 C# 数据契约对应的 `CostSet`、`EffectSet`、`RiskSet`、`LandStructure`、`EmperorStats`、`UnitStats`、`UnitDefinition.cost`、`BuildingDefinition.requiresTech` 和 Chronicle choice effect/risk 类型。
+- `formatEffects()` 改为过滤 undefined 数值，适配显式可选的效果/风险字段。
+
+### 审查结论校正
+
+- `BattleTieBreakBugTests` 在当前代码上通过；当前 `DomainBattleSimulationSystem` 使用 `attackerPower > defenderPower`，精确平局会判为防守方守住，不存在“平局自动判进攻方获胜”的当前复现。该项保留测试，不改战斗胜负语义。
+- 旧命令 `python tools\validate_data.py` 不再属于当前仓库入口；本轮改用 `tools\validate_web_data_source.py` 和 `tools\validate_domain_core.py`。
+
+### 当前验证
+
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --logger "console;verbosity=minimal"` 通过：`79/79 passed`。
+- `dotnet build tools\headless_runner\WanChaoGuiYiHeadless\WanChaoGuiYiHeadless.csproj` 通过：`0 warning / 0 error`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过：Web 数据源门禁、Domain Core 门禁和 `16/16` headless 战争/治理/后勤场景全绿。
+- `npm run typecheck` 在 `web-strategy-map` 通过。
+- `npm run build` 在 `web-strategy-map` 通过，当前 build 输出已拆分 Three chunks，无 Vite 500 kB chunk advisory。
+- `npm run test:unit` 在 `web-strategy-map` 通过：`20` 个 test files / `50` tests。
+- `npm run test:ui -- --reporter=line --workers=1` 在 `web-strategy-map` 通过：`22/22 passed`，耗时约 `4.6m`。
+- `git diff --check` 通过；仅有 Windows 工作区 LF/CRLF 提示。
+- Unity 工程路径复查：`git diff -- 'My project' 'WanChaoGuiYi' 'Assets'` 为空，本轮没有 Unity 工程改动。
+
+### 剩余风险
+
+- Mavis 审查报告和 `CoverageGap_TODO_Placeholders.cs` 作为新产物仍处于未提交状态；其中 TODO 占位文件当前未接入 `WanChaoGuiYiTests.csproj`，仅作为覆盖计划记录。
+- `OccupationStatus` 仍没有完整状态机，本轮只修复接敌路径的 legacy/runtime 同步；若后续要防止任意代码直接跨状态写入，需要新增显式状态转换 API 和更强约束。
+- Web 类型契约已补齐主要字段，但字段消费仍按当前 UI 需要逐步展开；后续可继续把 effect/risk 选择效果接入真实局内资源变化。
+
+## 2026-05-17 Docs/Tools 一致性收尾
+
+### 接入目标
+
+- 收口 Mavis Round 2 文档审查中可直接修复的剩余项：Web 数据源验证器条件表达式、根规则帝皇数量、架构文档不存在路径、headless 平局测试注释和审查报告状态。
+- 继续保持当前主线脱离 Unity：本轮只改根规则、docs、tools、headless 注释与项目报告，不改 Unity 工程，不改战斗 `>` / `>=` 语义。
+
+### 已完成修复
+
+- `tools/validate_web_data_source.py` 增加 `schemaVersion >= 1` 门控；`validate_art_path_references()` 的 portrait/general 路径检查改为显式 `not (prefix and suffix)`，避免继续被误读为 or/and 误报。
+- `AGENTS.md` 与 `CLAUDE.md` 的 MVP 帝皇范围从“8 位核心帝皇”同步为“13 位帝皇：8 位核心 MVP + 5 位区域帝皇”。
+- `docs/architecture.md` 移除不存在的 `web-strategy-map/src/state.ts` 与 `web-strategy-map/src/systems.ts` 引用，改为当前真实入口 `types.ts`、`ui.ts`、`scene.ts` 和 `domain-core/src`。
+- `BattleTieBreakBugTests.cs` 注释已更新为当前真实行为：`attackerPower > defenderPower` 表示精确平局防守方守住；该测试用于防止误改为 `>=`。
+- `docs/audit-domain-core.md`、`docs/audit-test-coverage.md`、`docs/bug-risk-review-2026-05-17.md`、`docs/audit-tools-scripts.md`、`docs/audit-docs-consistency.md` 已追加或修正回收状态，和本轮实际修复结论对齐。
+- 复核 `emperors.json` 后补正根规则和审查报告中的第 13 位区域帝皇名单：当前数据为刘备（`liu_bei`），不是刘秀；同时把 `audit-json-data.md` 的区域总数从 59 校正为当前权威数据源的 56。
+
+### 当前验证
+
+- `python tools\validate_web_data_source.py` 通过：`data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+- `python tools\validate_domain_core.py` 通过：`domain-core/src` 保持 Unity-free。
+- 当前权威数据源复核：`emperors.json=13`，区域帝皇为杨坚、柴荣、元宏、石勒、刘备；`regions.json=56`，`map_region_shapes.json=56`，`historical_layers.json=56`。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~BattleTieBreakBugTests"` 通过：`1/1 passed`。
+- stale 文案复查通过：根规则和 `docs/architecture.md` 不再出现 `8 位核心帝皇`、`state.ts` / `systems.ts` 真实入口误引或旧 `>= defenderPower` 注释。
+- 完整统一入口通过：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 到 `[ALL GREEN]`，包含 Domain `79/79`、headless war `16/16`、Web unit `50/50`、build、Playwright UI `22/22 passed`；本轮复验 Playwright 阶段耗时约 `4.1m`。
+
+### 当前结论
+
+- Round 2 中可直接收口的 docs/tools 一致性项已完成；平局判定仍按设计暂缓，不做 `>` 改 `>=`。
+- `CLAUDE.md` 与 `AGENTS.md` 重复问题保留为兼容策略，但两者已同步修改；后续若要消除重复，应单独决定哪个文件作为 canonical。
+
+## 2026-05-19 半小时自动推进：Web unit 注释回收
+
+### 接入目标
+
+- 本轮自动推进先做轻量 preflight：确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍保留上一轮未提交修复和审查报告；本机存在另一个项目的 Qwen 训练进程，因此本轮不启动重 GPU 或长并发任务。
+- 选择低风险缺口：回收 Web unit 测试中已过期的失败描述，避免数据契约和 bundle 预算测试在审查报告中继续被误判为当前失败。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/data-contract-alignment.test.ts`：把 `gameplaySourceReference` 旧失败说明改为当前回归门说明。
+- `web-strategy-map/tests/unit/data-contract-emperor-alignment.test.ts`：移除“TS has none of them”的旧结论，改为 EmperorDefinition 字段已对齐后的防漂移说明。
+- `web-strategy-map/tests/unit/bundle-budget.test.ts` 与 `bundle-budget-three-chunk.test.ts`：把 `today ~801kB`、`three chunk is 571 kB, fails` 等旧失败描述改为历史失败和回归排查说明。
+- `docs/audit-unit-tests.md`：同步标注上述注释回收状态。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/data-contract-alignment.test.ts tests/unit/data-contract-emperor-alignment.test.ts tests/unit/bundle-budget.test.ts tests/unit/bundle-budget-three-chunk.test.ts tests/unit/bundle-budget-three-renderer.test.ts`，结果 `5` 个 test files / `16` tests 全部通过。
+- 过期注释扫描通过：`rg "Today this fails|TS has none|today ~801|Today: three chunk|Today: just 1 chunk" web-strategy-map\tests\unit` 无命中。
+
+### 当前结论
+
+- 本轮只修正文档化测试意图，不改变运行逻辑、不改变数据契约、不触碰 Unity/Tuanjie。
+- 因存在其他项目训练进程，本轮未启动完整 Playwright 或全量 `run_all_checks.ps1`；后续无冲突时可继续跑完整门禁。
+
+## 2026-05-19 半小时自动推进：Web unit 注释回收第二批
+
+### 接入目标
+
+- 继续处理 `audit-unit-tests.md` 中记录的 Web unit 注释过期问题，优先选择不改运行逻辑、可快速验证的测试说明回收。
+- 本轮 preflight 确认当前目录仍为 `E:\万朝归一\万朝归一`，未发现当前项目测试/构建进程；只推进 Web unit 文档化测试意图，不触碰 Unity/Tuanjie。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/game-data-asset-url.test.ts`：把路径穿越旧失败描述改为历史失败说明，保留 `..` 与反斜杠输入的 URL 安全回归门。
+- `web-strategy-map/tests/unit/data-asset-url.test.ts`：把 loader 原始 `Error` / `TypeError` 旧失败描述改为当前 `StrategyDatasetLoadError` 回归门说明。
+- `web-strategy-map/tests/unit/nation-aggregation-property.test.ts`：把 negative contribution 旧失败描述改为当前 clamp 行为的回归门说明。
+- `docs/audit-unit-tests.md`：同步上述三处回收状态，避免审查报告继续把已修复注释列为待更新。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/game-data-asset-url.test.ts tests/unit/data-asset-url.test.ts tests/unit/nation-aggregation-property.test.ts tests/unit/nation-aggregation-pathological-input.test.ts tests/unit/dataset-error-shape.test.ts`，结果 `5` 个 test files / `13` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `50` tests 全部通过。
+
+### 当前结论
+
+- Web unit 注释过期回收继续向前推进；本轮没有改变产品代码、数据表或 headless 逻辑。
+- 仍未启动完整 Playwright 或全量 `run_all_checks.ps1`，因为本轮变更只触及测试注释和审查文档，完整 Web unit 已覆盖直接风险。
+
+## 2026-05-19 半小时自动推进：eraProfile 契约补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中明确记录的低风险覆盖缺口：`data-contract-alignment.test.ts` 尚未把 `eraProfile` 纳入 C#/TS 字段漂移回归门。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/data-contract-alignment.test.ts` 新增 `eraProfile` 对齐断言：当 C# `DataModels.cs` 使用 `eraProfile` 时，TS `types.ts` 必须声明对应字段。
+- `docs/audit-unit-tests.md` 同步更新：`eraProfile` 覆盖缺口已回收，当前作为契约漂移回归门。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/data-contract-alignment.test.ts`，结果 `1` 个 test file / `5` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `51` tests 全部通过。
+
+### 当前结论
+
+- 本轮只增强 Web/C# 数据契约测试，不改变产品代码、数据表或 headless 逻辑。
+- 未启动完整 Playwright 或全量 `run_all_checks.ps1`；完整 Web unit 已覆盖本轮直接风险。
+
+## 2026-05-19 半小时自动推进：区域邻居自环防御
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险数据加载缺口：`region-neighbor-bidirectional.test.ts` 尚未显式覆盖 `a.neighbors=['a']` 自环邻居。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/region-neighbor-bidirectional.test.ts` 新增自环邻居回归测试，要求 `loadStrategyDataset()` 抛出 `StrategyDatasetLoadError`，并包含明确的 `cannot list itself as neighbor` 错误信息。
+- `web-strategy-map/src/data.ts` 在邻居循环中新增自环检查，先于未知邻居与双向边检查失败，避免自环数据被误报为普通单向边。
+- `docs/audit-unit-tests.md` 同步标注该覆盖缺口已回收。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/region-neighbor-bidirectional.test.ts`，结果 `1` 个 test file / `2` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `52` tests 全部通过。
+- Web 数据源校验通过：`npm --prefix web-strategy-map run check:data-source`，结果 `WEB DATA SOURCE VALIDATION PASSED data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 Web 数据加载防御与单元测试，不改变 JSON 数据、不触碰 Unity/Tuanjie。
+- 后续仍可继续回收 `region-shape-coverage` 的反向覆盖缺口，或在无并发时跑完整门禁。
+
+## 2026-05-19 半小时自动推进：区域 shape 反向覆盖防御
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险数据加载缺口：`region-shape-coverage.test.ts` 尚未覆盖 `map_region_shapes.json` 中 shape 指向不存在 region 的情况。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/region-shape-coverage.test.ts` 新增 orphan shape 回归测试：当 `shape.regionId='orphan'` 且 `regions.json` 无对应 region 时，`loadStrategyDataset()` 必须抛出 `StrategyDatasetLoadError`。
+- `web-strategy-map/src/data.ts` 的 `validateRegionShapeCoverage()` 增加 region id 集合校验，shape 指向未知 region 时提前抛出 `shape references unknown region id`，避免后续 route/scene 普通错误掩盖数据源问题。
+- `docs/audit-unit-tests.md` 同步标注该反向覆盖缺口已回收。
+
+### 当前验证
+
+- 先红后绿：新增测试初次运行失败为 `Error: Route regions are missing.`，证明 orphan shape 会漏过 shape 校验；补充校验后定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/region-shape-coverage.test.ts`，结果 `1` 个 test file / `2` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `53` tests 全部通过。
+- Web 数据源校验通过：`npm --prefix web-strategy-map run check:data-source`，结果 `WEB DATA SOURCE VALIDATION PASSED data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 Web 数据加载契约防御与单元测试，不改变 JSON 数据、不触碰 Unity/Tuanjie。
+- 后续可继续回收 `loadStrategyDataset` 成功路径性能覆盖，或在无并发时跑完整门禁。
+
+## 2026-05-19 半小时自动推进：StrategyAudio 启用后边界补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险 Web unit 缺口：`audio-not-enabled.test.ts` 只覆盖 pre-enable 行为，尚未覆盖启用后的 mode 保留和错误恢复。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/audio-not-enabled.test.ts` 新增 `enable preserves a mode selected before audio is enabled`：先 `setMode('war')`，再 `enable()`，确认 `debug.enabled=true` 且 `debug.mode='war'`。
+- 同文件新增 Audio constructor mock，覆盖一次播放失败后再成功播放时 `lastError` 从 `autoplay blocked` 恢复为空字符串。
+- `docs/audit-unit-tests.md` 同步标注该音频测试缺口已回收。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`，结果 `1` 个 test file / `4` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `55` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强音频单元测试，不改变产品代码、数据表或 Unity/Tuanjie。
+- 后续仍可继续回收 `loadStrategyDataset` 成功路径性能覆盖，或在无并发时跑完整门禁。
+
+## 2026-05-19 半小时自动推进：loadStrategyDataset 成功路径性能补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险 Web unit 缺口：`performance-baseline.test.ts` 的 loader 性能测试原先允许空 stub 抛错后继续计时，未覆盖真正成功路径。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/performance-baseline.test.ts` 的 `loadStrategyDataset` 性能用例改为最小有效 stub dataset：包含 `guanzhong`、`hanzhong`、`hexi`、`liangzhou` 四个区域、对应 shape、基础 units、metadata 和 narration。
+- 同用例现在直接 `await loadStrategyDataset()`，断言 `dataset.regions.length === 4`，并确认默认 route 从 `guanzhong` 指向 `hanzhong`，不再吞掉 loader 错误。
+- `docs/audit-unit-tests.md` 同步标注成功路径性能缺口已回收。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/performance-baseline.test.ts`，结果 `1` 个 test file / `3` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `55` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 Web loader 性能测试，不改变产品代码、数据表或 Unity/Tuanjie。
+- 后续可继续回收聚合与真实 JSON 一致性、bundle 总量或 headless 报告异常输入等剩余测试缺口。
+
+## 2026-05-19 半小时自动推进：真实 regions 聚合一致性补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险 Web unit 缺口：`nation-aggregation-property.test.ts` 尚未把 PBT 聚合逻辑连接到权威 `regions.json` 数据。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/nation-aggregation-property.test.ts` 读取 `web-strategy-map/game-data-source/data/regions.json`，按 Web 初始 player core 和 78% contribution 手算粮食/金钱聚合期望。
+- 同测试断言 `regions.json` 当前为 56 个区域，并要求 `aggregateNationFood()` / `aggregateNationMoney()` 与手算值一致。
+- `docs/audit-unit-tests.md` 同步标注真实 JSON 聚合一致性缺口已回收。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/nation-aggregation-property.test.ts`，结果 `1` 个 test file / `5` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `56` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 Web 聚合单元测试，不改变产品代码、数据表或 Unity/Tuanjie。
+- 后续可继续回收 bundle 总量、headless 报告异常输入等剩余测试缺口。
+
+## 2026-05-19 半小时自动推进：总 JS bundle 预算补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险 Web unit 缺口：现有 bundle 测试只约束单 chunk/CSS/three 子 chunk，未约束所有 JS chunk 的总 raw size。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/bundle-budget.test.ts` 新增 `total JS bundle stays under 1.1 MB raw`，统计 `dist/assets/*.js` 总大小并断言 `< 1_100_000`。
+- 当前本地 `dist/assets` JS raw 总量约 899 kB，新阈值保守覆盖整体 payload 增长，不改变现有 split 策略。
+- `docs/audit-unit-tests.md` 同步标注总 bundle size 覆盖缺口已回收。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/bundle-budget.test.ts`，结果 `1` 个 test file / `5` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `57` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 bundle 预算单元测试，不改变产品代码、构建配置、数据表或 Unity/Tuanjie。
+- 后续仍可单独整理 bundle 阈值常量来源，或回收 headless 报告异常输入缺口。
+
+## 2026-05-19 半小时自动推进：headless 报告异常输入补测
+
+### 接入目标
+
+- 本轮 preflight 确认当前目录为 `E:\万朝归一\万朝归一`，工作树仍有上一轮未提交审查与修复成果；未发现当前项目测试/构建冲突进程。
+- 选择 `audit-unit-tests.md` 中记录的低风险测试缺口：headless 报告契约测试未覆盖报告为空数组、空 scenarios、格式错误等异常输入。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/headless-vs-ui-numerics.test.ts` 新增 `parseHeadlessReport()` fixture helper，要求报告根对象、`scenarios` 非空数组、每个 scenario 的 `keyDeltas` 为数组。
+- 同文件新增异常 fixture 测试：`[]`、`{"scenarios":[]}`、`keyDeltas:"oops"` 都必须抛出明确错误。
+- 真实 `latest-war-report.json` 的既有 primitive/numeric keyDelta 断言改为复用该 parser。
+- `docs/audit-unit-tests.md` 同步标注 headless 报告异常输入缺口已回收；真实报告文件缺失时显式 skip 仍可后续单独整理。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/headless-vs-ui-numerics.test.ts`，结果 `1` 个 test file / `4` tests 全部通过。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `58` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 本轮只增强 Web 单元测试对 headless 报告契约的异常输入覆盖，不改变 C# runner、产品代码、数据表或 Unity/Tuanjie。
+- 后续可继续把真实报告缺失分支从 soft-pass 改为显式 skip，或整理 headless 报告测试的重复读取。
+
+## 2026-05-19 5分钟交替自动化：找缺口轮 1
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核、候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为上一轮累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 未发现当前项目正在运行的测试/构建冲突进程。
+
+### 本轮发现
+
+- 复核 `docs/audit-unit-tests.md` 后确认一个低风险但真实的测试可信度缺口：三份 headless 报告测试对 `latest-war-report.json` 缺失语义不一致。
+- 当前状态：
+  - `headless-keydelta-numeric-coverage.test.ts`：文件缺失时 `it.skip('no report yet')`。
+  - `headless-report-numeric-fields.test.ts`：文件缺失时直接 `return`，会静默通过。
+  - `headless-vs-ui-numerics.test.ts`：文件缺失时 `expect.soft(true)`，会软通过。
+- 当前真实报告存在并健康：`scenarioCount=16`、`scenarios=16`、`passed=true`、`generatedAt=2026-05-17T13:01:10.3150454Z`。
+
+### 当前验证
+
+- 定向 headless 报告 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/headless-vs-ui-numerics.test.ts tests/unit/headless-report-numeric-fields.test.ts tests/unit/headless-keydelta-numeric-coverage.test.ts`，结果 `3` 个 test files / `9` tests 全部通过。
+- `docs/audit-unit-tests.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可统一三份 headless 报告测试的缺失语义：优先提取共享 `loadHeadlessReportOrSkip` / `parseHeadlessReport` helper，避免直接 `return` 和 soft-pass 造成误读。
+- 该修补应只影响 Web unit 测试，不改 C# runner、产品代码、数据表或 Unity/Tuanjie。
+
+## 2026-05-19 5分钟交替自动化：修补问题轮 1
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮找缺口结论。
+- 修补范围限定为 Web unit 测试语义，不改 C# runner、产品代码、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为上一轮累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 未发现当前项目正在运行的测试/构建冲突进程。
+
+### 已完成修复
+
+- `web-strategy-map/tests/unit/headless-vs-ui-numerics.test.ts`：移除 `expect.soft(true)` 的缺失报告 soft-pass，真实报告存在时运行契约断言；报告缺失时显式 `it.skip('no report yet')`，异常 fixture 测试仍保留。
+- `web-strategy-map/tests/unit/headless-report-numeric-fields.test.ts`：移除两个测试内的直接 `return`，改为 describe 内统一 `it.skip('no report yet')`；真实报告存在时只解析一次并运行两个断言。
+- `headless-keydelta-numeric-coverage.test.ts` 已是显式 skip 模式，本轮无需修改。
+- `docs/audit-unit-tests.md` 同步标注该缺口已回收。
+
+### 当前验证
+
+- 定向 headless 报告 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/headless-vs-ui-numerics.test.ts tests/unit/headless-report-numeric-fields.test.ts tests/unit/headless-keydelta-numeric-coverage.test.ts`，结果 `3` 个 test files / `8` tests 全部通过。
+- 测试数从 `9` 变为 `8`，减少的 1 个是原先无意义的缺失报告 soft-pass 测试。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `57` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 当前结论
+
+- 三份 headless 报告测试在真实报告缺失时的语义已统一为显式 skip，不再出现 soft-pass 或直接 return。
+- 后续仍可整理重复读取逻辑，但这属于测试维护优化，不是当前阻塞风险。
+
+## 2026-05-19 5分钟交替自动化：找缺口轮 2
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 进程复核：存在多个 Node/PowerShell 进程，但命令行筛选未发现指向当前 `万朝归一` 项目的并发测试/构建任务。
+
+### 本轮发现
+
+- 复核 `docs/audit-unit-tests.md` 与三个 bundle 单测后，确认一个低风险维护缺口仍存在：bundle 预算阈值与跳过语义分散在多个测试文件中。
+- 当前真实状态：
+  - `bundle-budget.test.ts`：最大单 JS chunk 使用 `600_000` soft budget，总 JS 使用 `1_100_000` hard budget，dist 缺失时有 soft-pass/return。
+  - `bundle-budget-three-chunk.test.ts`：最大 chunk 使用 `500_000` hard budget，index chunk 使用 `250_000` hard budget。
+  - `bundle-budget-three-renderer.test.ts`：three-renderer chunk 使用 `400_000` hard budget，three chunk 数量使用 soft assertion。
+- 风险判断：当前测试通过，不是功能 bug；但阈值来源、soft/hard 断言和 dist 缺失行为不集中，后续调预算时容易只改一处导致报告与测试再次漂移。
+
+### 当前验证
+
+- 定向 bundle Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/bundle-budget.test.ts tests/unit/bundle-budget-three-chunk.test.ts tests/unit/bundle-budget-three-renderer.test.ts`，结果 `3` 个 test files / `9` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+
+### 下一轮建议
+
+- 下一轮修补可只整理测试层：新增共享 bundle budget 常量与 dist asset loader，三个 bundle 测试复用同一阈值来源和显式 skip 语义。
+- 修补范围应限定为 `web-strategy-map/tests/unit` 下的测试辅助与 bundle 单测，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-19 5分钟交替自动化：修补问题轮 2
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 bundle 预算测试维护缺口。
+- 修补范围限定为 Web unit 测试层，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- 新增 `web-strategy-map/tests/unit/bundle-budget-helpers.ts`，集中维护 `BUNDLE_SIZE_BUDGETS`、dist asset loader、largest/total size helper。
+- `bundle-budget.test.ts`、`bundle-budget-three-chunk.test.ts`、`bundle-budget-three-renderer.test.ts` 改为复用共享 helper。
+- 保留原预算语义：600kB soft guard、500kB Vite advisory hard guard、400kB renderer hard guard、1.1MB total JS hard guard。
+- `docs/audit-unit-tests.md` 已同步标注 bundle 阈值来源统一缺口已回收。
+
+### 当前验证
+
+- 定向 bundle Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/bundle-budget.test.ts tests/unit/bundle-budget-three-chunk.test.ts tests/unit/bundle-budget-three-renderer.test.ts`，结果 `3` 个 test files / `8` tests 全部通过。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `20` 个 test files / `56` tests 全部通过。
+
+### 当前结论
+
+- bundle 预算测试的阈值来源和 dist 读取逻辑已集中，不再散落多个文件。
+- 测试总数减少 1 个，是移除了原先无实际断言价值的 dist 存在 soft-pass 测试。
+- 剩余测试维护候选：Playwright 静态分析两个测试仍有计数职责重叠，可在后续找缺口轮复核。
+
+## 2026-05-19 5分钟交替自动化：找缺口轮 3
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核 `playwright-time-budget.test.ts` 与 `playwright-poll-density.test.ts` 后，确认一个低风险测试维护缺口：两者都读取 `strategy-map.spec.ts` 并统计 poll 密度，但口径不同。
+- 当前真实状态：
+  - `playwright-time-budget.test.ts`：检查 timeout 上限，同时只统计 raw `expect.poll`。
+  - `playwright-poll-density.test.ts`：统计 `expect.poll + expectDebug`，覆盖当前主流 debug helper 调用。
+  - 当前 spec 统计：`expect.poll=4`、`expectDebug=113`，合计 `117`；单测内最大合计为 `20`，低于 `30` 上限；最大 timeout 为 `75_000ms`，低于 `90_000ms` 上限。
+- 风险判断：当前测试通过，不是功能 bug；但 raw poll 计数断言已被 combined 计数断言覆盖，后续可合并为单一静态预算测试，减少重复 parser 和维护漂移。
+
+### 当前验证
+
+- 定向 Playwright 静态分析 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/playwright-time-budget.test.ts tests/unit/playwright-poll-density.test.ts`，结果 `2` 个 test files / `4` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+- `docs/audit-unit-tests.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可只整理测试层：合并 Playwright 静态分析 parser，或将 poll 密度检查集中到一个 `playwright-static-budget.test.ts`。
+- 修补范围应限定为 `web-strategy-map/tests/unit` 下的静态分析测试，不改 Playwright E2E 流程、Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-20 5分钟交替自动化：修补问题轮 3
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 Playwright 静态分析重复计数缺口。
+- 修补范围限定为 Web unit 静态分析测试，不改 Playwright E2E 流程、Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- `playwright-time-budget.test.ts` 合并 poll 密度守卫：从只统计 raw `expect.poll` 改为统计 `expect.poll + expectDebug`。
+- 新增全 spec poll-like 总量守卫，保留 `< 200` 阈值。
+- 删除重复的 `playwright-poll-density.test.ts`，避免两个 unit 文件重复解析同一个 `strategy-map.spec.ts`。
+- `docs/audit-unit-tests.md` 已同步标注 Playwright 静态分析重复计数缺口已回收。
+
+### 当前验证
+
+- 定向 Playwright 静态预算 unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/playwright-time-budget.test.ts`，结果 `1` 个 test file / `3` tests 全部通过。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `19` 个 test files / `55` tests 全部通过。
+
+### 当前结论
+
+- Playwright 静态预算检查已集中到单一测试文件，保留 timeout、单测密度、全 spec 总量三类守卫。
+- 测试文件数减少 1 个，测试数减少 1 个，是删除重复静态分析文件后的预期变化。
+- 剩余低风险维护候选：三份 headless 报告测试仍各自读取同一 `latest-war-report.json`，后续可复核是否值得合并读取 helper。
+
+## 2026-05-20 5分钟交替自动化：找缺口轮 4
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核三份 headless 报告 Web unit 后，确认一个低风险测试维护缺口：三者仍各自读取并解析同一个 `tools/headless_runner/latest-war-report.json`。
+- 当前真实状态：
+  - `headless-vs-ui-numerics.test.ts`：自带 `parseHeadlessReport()` schema parser，但同一文件内读取报告两次。
+  - `headless-report-numeric-fields.test.ts`：直接 `JSON.parse(readFileSync(...))`，复用显式 skip，但没有共享 schema parser。
+  - `headless-keydelta-numeric-coverage.test.ts`：直接 `JSON.parse(readFileSync(...)) as ...`，复用显式 skip，但没有共享 schema parser。
+  - 当前真实报告健康：`passed=true`、`scenarioCount=16`、`scenarios=16`、`keyDeltas=34`、numeric-like 字段 `21` 个且非数字异常 `0` 个。
+- 风险判断：当前测试通过，不是功能 bug；但路径、skip、schema parser 和 typed report 结构分散，后续报告契约变更时容易出现三份测试行为漂移。
+
+### 当前验证
+
+- 定向 headless 报告 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/headless-vs-ui-numerics.test.ts tests/unit/headless-report-numeric-fields.test.ts tests/unit/headless-keydelta-numeric-coverage.test.ts`，结果 `3` 个 test files / `8` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+- `docs/audit-unit-tests.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可只整理测试层：新增共享 `headless-report-helpers.ts`，集中 report path、显式 skip、schema parser、typed report 结构。
+- 修补范围应限定为 `web-strategy-map/tests/unit` 下的 headless 报告单测，不改 C# runner、Web runtime、数据表或 Unity/Tuanjie。
+
+## 2026-05-20 5分钟交替自动化：修补问题轮 4
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 headless 报告测试共享读取/parser 缺口。
+- 修补范围限定为 Web unit headless 报告测试，不改 C# runner、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- 新增 `web-strategy-map/tests/unit/headless-report-helpers.ts`，集中维护 `HEADLESS_WAR_REPORT_PATH`、`describeHeadlessReport()`、`parseHeadlessReport()` 和 typed report 结构。
+- `headless-vs-ui-numerics.test.ts` 改为复用共享 parser；异常 fixture 保留，继续验证空数组、空 scenarios、非法 keyDeltas。
+- `headless-report-numeric-fields.test.ts` 与 `headless-keydelta-numeric-coverage.test.ts` 改为复用共享 report loader，不再直接 `JSON.parse(readFileSync(...))`。
+- `docs/audit-unit-tests.md` 已同步标注 headless 报告共享读取/parser 缺口已回收。
+
+### 当前验证
+
+- 初次定向回归失败：`headless-vs-ui-numerics.test.ts` 遗留本地 `parseHeadlessReport()` 与 helper 导入冲突，运行时报 `isRecord is not defined`；已删除遗留 parser。
+- 定向 headless 报告 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/headless-vs-ui-numerics.test.ts tests/unit/headless-report-numeric-fields.test.ts tests/unit/headless-keydelta-numeric-coverage.test.ts`，结果 `3` 个 test files / `8` tests 全部通过。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `19` 个 test files / `55` tests 全部通过。
+
+### 当前结论
+
+- headless 报告测试的路径、缺失报告 skip、schema parser 和 typed report 结构已集中。
+- 三份测试仍保留不同断言职责，避免把所有契约塞进一个过大的测试文件。
+- 剩余低风险维护候选：继续清理 `docs/audit-unit-tests.md` 中已修复 bug 的历史描述，或评估 `performance-baseline.test.ts` 的真实数据 fixture smoke。
+
+## 2026-05-20 5分钟交替自动化：找缺口轮 5
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核 `performance-baseline.test.ts` 后，确认一个低风险测试覆盖/说明不一致缺口：注释称 `loadStrategyDataset on a 56-region in-memory fetch`，但测试实际只构造 `4` 个 regions 和 `4` 个 shapes。
+- 当前真实数据规模：
+  - `game-data-source/data/regions.json`：`56` regions，约 `42KB`。
+  - `map_region_shapes.json`：`56` shapes，约 `35KB`。
+  - `historical_layers.json`：`56` items，约 `66KB`。
+  - `chronicle_events.json`：`200` items，约 `262KB`。
+  - `emperor`/portrait/audio 数据已分布在 `game-data-source/data` 与 `game-data-source/audio`。
+- 风险判断：当前测试通过，不是性能回归；但性能 baseline 只覆盖小 stub，不能证明真实 56 区域数据加载路径仍保持 snappy。
+
+### 当前验证
+
+- 定向性能 baseline Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/performance-baseline.test.ts`，结果 `1` 个 test file / `3` tests 全部通过。
+- `git diff --check` 无 whitespace error，仅输出既有 LF/CRLF warning。
+- `docs/audit-unit-tests.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可只整理测试层：在 `performance-baseline.test.ts` 中新增真实 fixture fetch helper，从 `game-data-source/data` 与 `game-data-source/audio` 读取 JSON，验证 `loadStrategyDataset()` 返回 `56` 个 regions 并在宽松阈值内完成。
+- 修补范围应限定为 `web-strategy-map/tests/unit/performance-baseline.test.ts`，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-20 5分钟交替自动化：修补问题轮 5
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `performance-baseline.test.ts` 真实 56 区域数据加载 smoke 缺口。
+- 修补范围限定为 Web unit 性能测试，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- `performance-baseline.test.ts` 新增真实 fixture fetch helper，模拟 `/game-data/data/*` 与 `/game-data/audio/*` 请求，并读取 `game-data-source` 权威 JSON。
+- 新增 `loadStrategyDataset with real 56-region fixtures completes in < 1000ms` 测试。
+- 新测试断言真实加载结果包含 `56` 个 regions、`56` 个 regionById、`200` 个 chronicle events，并加载 scene music 与 narration tutorial。
+- 保留原有 4 区域 stub 测试，继续覆盖最小有效数据路径。
+- `docs/audit-unit-tests.md` 已同步标注真实 56 区域 fixture smoke 已回收。
+
+### 当前验证
+
+- 定向性能 baseline Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/performance-baseline.test.ts`，结果 `1` 个 test file / `4` tests 全部通过。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+- 完整 Web unit 通过：`npm --prefix web-strategy-map run test:unit`，结果 `19` 个 test files / `56` tests 全部通过。
+
+### 当前结论
+
+- 性能 baseline 不再只覆盖 4 区域 stub；真实 56 区域数据加载路径已有 smoke 性能守卫。
+- 本轮未改变 runtime 数据加载逻辑，只增加测试覆盖。
+- 剩余低风险维护候选：继续清理 `docs/audit-unit-tests.md` 中历史过程描述，避免已修复问题被误读为当前风险。
+
+## 2026-05-20 5分钟交替自动化：找缺口轮 6
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选到多个长期 Node/PowerShell 进程，但未识别出本轮正在运行的 `npm test`、`dotnet test`、`validate_*` 或 `run_all_checks.ps1` 冲突任务。
+
+### 本轮发现
+
+- 复核音频测试后，确认一个中低风险自动化覆盖缺口：真实浏览器 autoplay 拒绝播放时，HUD `#audio-error` 的呈现路径尚无 E2E 断言。
+- 当前真实覆盖：
+  - `audio-not-enabled.test.ts` 覆盖 `StrategyAudio` 内部 `lastError` 写入、后续成功播放清空、pre-enable mode 保留。
+  - `strategy-map.spec.ts` 覆盖正常音频启用、帝皇 cue、战争 narration 状态。
+  - `main.ts` 的 `renderAudioHud()` 会把 `audio.getDebugState().lastError` 写入 `#audio-error`。
+- 缺口判断：当前不是功能 bug；但如果浏览器 `HTMLMediaElement.play()` 被权限策略拒绝，UI 层是否展示错误文本仍未被自动化锁住。
+
+### 当前验证
+
+- 定向音频 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`，结果 `1` 个 test file / `4` tests 全部通过。
+- 代码检索确认 `strategy-map.spec.ts` 没有 `audio-error` 或 autoplay reject 断言。
+- `docs/audit-unit-tests.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 Playwright E2E 或静态测试层，模拟 browser-side `HTMLMediaElement.play()` reject，并断言 `#audio-error` 呈现错误文本。
+- 修补范围应优先限定为 `web-strategy-map/tests/strategy-map.spec.ts` 或对应测试辅助逻辑，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie，除非测试暴露真实问题。
+
+## 2026-05-20 5分钟交替自动化：修补问题轮 6
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮真实浏览器 autoplay 拒绝后 `#audio-error` HUD 呈现缺口。
+- 修补范围限定为 Web Playwright E2E 测试，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- `web-strategy-map/tests/strategy-map.spec.ts` 新增 `surfaces autoplay playback failures in the audio HUD` E2E。
+- 测试在 `openApp()` 前通过 `page.addInitScript()` mock `HTMLMediaElement.prototype.play()` reject，模拟真实浏览器 autoplay policy 拒绝。
+- 新断言覆盖：
+  - 点击启用后 `#audio-status` 仍显示“音频已启用”。
+  - `#audio-error` 呈现 `autoplay blocked by test`。
+  - `window.__WANCHAO_APP__.getDebugState().audio.lastError` 与 HUD 文本一致。
+- `docs/audit-unit-tests.md` 已同步标注音频 autoplay HUD 缺口已回收。
+
+### 当前验证
+
+- 定向 Playwright E2E 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed。
+- 同一 `test:ui` 命令前置通过：`sync:data` 同步 `403` 个 runtime game-data 文件；`check:data-source` 通过，结果 `data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+- Playwright 静态预算 unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/playwright-time-budget.test.ts`，结果 `1` 个 test file / `3` tests 全部通过。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+
+### 当前结论
+
+- 音频错误链路现在覆盖到浏览器层：`HTMLMediaElement.play()` reject -> `StrategyAudio.lastError` -> `renderAudioHud()` -> `#audio-error`。
+- 本轮未改变 runtime 行为，只增加 E2E 覆盖。
+- 剩余风险：尚未运行完整 Playwright 全量 suite；本轮变更是单用例测试覆盖，已用定向 E2E、静态预算 unit 和 typecheck 证明未破坏直接相关路径。
+
+## 2026-05-20 5分钟交替自动化：找缺口轮 7
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit、Playwright E2E 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核 `docs/audit-unit-tests.md` 后确认一个低风险文档一致性缺口：部分逐文件审查结论标签仍停留在旧状态，但正文和当前测试结果已经证明它们已确认或已对齐。
+- 具体残留标签：
+  - `audio-not-enabled.test.ts`：section 级审查结论仍写“需要代码确认”，但代码确认、unit 和 autoplay HUD E2E 已完成。
+  - `game-data-asset-url.test.ts`：section 级审查结论仍写“有断言语义问题”，但正文已确认路径穿越与反斜杠断言和实现对齐。
+  - `data-asset-url.test.ts`：section 级审查结论仍写“断言语义不匹配”，但正文已确认 `StrategyDatasetLoadError` 包装断言正确。
+- 缺口判断：当前不是产品 bug，也不是测试失败；风险在于后续自动化或人工阅读时把已回收项误判为当前问题。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts tests/unit/data-asset-url.test.ts`，结果 `3` 个 test files / `9` tests 全部通过。
+- 代码检索确认三份测试当前分别覆盖 pre-enable/audio error recovery、路径穿越/反斜杠、dataset domain error 包装。
+- `docs/audit-unit-tests.md` 已追加本轮文档一致性复核缺口，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可只改 `docs/audit-unit-tests.md`：把上述三个 section 的审查结论改为已确认/已对齐，并同步调整“主要风险”和总结中仍可能误导的表述。
+- 修补范围应限定为审查文档，不改 Web runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 7
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `docs/audit-unit-tests.md` 三处 section 级审查结论过期缺口。
+- 修补范围限定为审查文档，不改 Web runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- `docs/audit-unit-tests.md` 中 `audio-not-enabled.test.ts` 的审查结论从“需要代码确认”改为“已确认，覆盖已回收”。
+- `game-data-asset-url.test.ts` 的审查结论从“有断言语义问题”改为“已对齐，作为路径安全回归门保留”。
+- `data-asset-url.test.ts` 的审查结论从“断言语义不匹配”改为“已对齐，作为 domain error 回归门保留”。
+- “主要风险”同步清理：headless 报告缺失语义改为显式 skip 后的 freshness 风险；文档一致性缺口标记为已回收。
+- “总结”中“多处注释描述已知 bug 但代码已修复”改为“历史过程段仍较长，但 section 级过期结论标签已回收”。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts tests/unit/data-asset-url.test.ts`，结果 `3` 个 test files / `9` tests 全部通过。
+- 文档状态扫描通过：`rg "审查结论：(需要代码确认|有断言语义问题|断言语义不匹配)|文档一致性缺口：" docs/audit-unit-tests.md` 无命中。
+- `git diff --check -- docs/audit-unit-tests.md project-development-report.md` 无 whitespace error，仅输出 Windows LF/CRLF warning。
+
+### 当前结论
+
+- 上一轮定位的 `audit-unit-tests.md` 文档一致性缺口已回收。
+- 本轮只改变审查文档，不影响运行时代码；无需跑完整 `run_all_checks.ps1`。
+- 剩余风险：`docs/audit-unit-tests.md` 仍保留较多历史复核过程段，后续若继续文档清理，应优先压缩历史过程而不是改变测试逻辑。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 8
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit、Playwright E2E 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核 `docs/audit-web-ui.md` 后确认一个低风险跨报告一致性缺口：该报告仍保留 Web 审查早期结论，但相关项已在后续修复和测试中回收。
+- 具体残留：
+  - 测试覆盖概览仍写 `data-contract-alignment.test.ts` 和 `data-contract-emperor-alignment.test.ts` “存在已知失败 / 已失败”。
+  - 风险矩阵仍写 `types.ts` “C# -> TS 类型缺失（10+ 字段）”为严重风险。
+  - 音频段仍写 `lastError` “UI 不一定显示”与“静默错误无提示”，但当前已有 `#audio-error` HUD 呈现和 autoplay reject E2E。
+- 缺口判断：当前不是功能失败；风险在于 `audit-web-ui.md` 与 `audit-unit-tests.md`、`project-development-report.md` 的已回收事实不一致，会误导后续修补优先级。
+
+### 当前验证
+
+- 定向数据契约 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/data-contract-alignment.test.ts tests/unit/data-contract-emperor-alignment.test.ts`，结果 `2` 个 test files / `9` tests 全部通过。
+- 定向音频 HUD Playwright E2E 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed；同命令前置 `sync:data` 与 `check:data-source` 通过。
+- `docs/audit-web-ui.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可只改 `docs/audit-web-ui.md`：把数据契约测试失败、types.ts 字段缺失、audio lastError HUD 不显示等已回收描述改为当前状态。
+- 保留仍成立的 Web UI 风险：Audio 元素复用/crossfade/加载进度、硬编码音频路径、scene.ts 纹理错误回调和 draw call 优化。
+- 修补范围应限定为审查文档，不改 Web runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 8
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `docs/audit-web-ui.md` 跨报告一致性缺口。
+- 修补范围限定为审查文档，不改 Web runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 已完成修复
+
+- `docs/audit-web-ui.md` 的 `data.ts` 段将 C# -> TS 类型不一致改为已回收状态，并列出当前已存在的关键字段。
+- `src/types.ts` 段将 `RegionDefinition`、`EmperorDefinition.stats/score`、`UnitDefinition.cost/upkeep`、`BuildingDefinition.requiresTech`、`ChronicleEventDefinition.category/trigger`、`PolicyDefinition.effects/risks` 更新为当前已对齐状态。
+- 音频段将 `lastError` 旧描述更新为当前事实：play reject 写入 `lastError`，`renderAudioHud()` 显示到 `#audio-error`；剩余风险保留为加载进度、文件缺失分类、Audio 元素复用、crossfade 和路径配置。
+- 测试覆盖概览、风险矩阵和优先行动项已改为当前状态：数据契约测试当前通过，`types.ts` 字段缺失为已回收风险，后续重点是防字段漂移。
+
+### 当前验证
+
+- 定向数据契约 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/data-contract-alignment.test.ts tests/unit/data-contract-emperor-alignment.test.ts`，结果 `2` 个 test files / `9` tests 全部通过。
+- 定向音频 HUD Playwright E2E 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed；同命令前置 `sync:data` 与 `check:data-source` 通过。
+- 文档状态扫描通过：`rg "存在已知失败|已失败|10\\+ 字段缺失|静默错误无提示|UI 不一定显示|优先修复已知失败|让测试从 red 变 green" docs/audit-web-ui.md` 无命中。
+- `git diff --check -- docs/audit-web-ui.md project-development-report.md` 无 whitespace error，仅输出 Windows LF/CRLF warning。
+
+### 当前结论
+
+- 上一轮定位的 `audit-web-ui.md` 跨报告一致性缺口已回收。
+- 本轮只改变审查文档，不影响运行时代码；无需跑完整 `run_all_checks.ps1`。
+- 剩余风险：`audit-web-ui.md` 仍保留真实未回收的 Web UI 优化项，下一轮可继续审查 scene.ts 纹理加载错误回调或 draw call 优化是否已有现成测试护栏。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 9
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web unit、Playwright E2E 等既有修改；本轮未回滚或覆盖用户/前序改动。
+- 命令行筛选未发现指向当前 `万朝归一` 项目的并发 Node/npm/dotnet/python 测试或构建任务。
+
+### 本轮发现
+
+- 复核 `docs/audit-web-ui.md` 与 `web-strategy-map/src/scene.ts` 后确认一个仍成立的 Web UI 可靠性缺口：地图底图纹理加载没有错误回调或降级材质。
+- 当前真实状态：
+  - `scene.ts` 的 `buildMapTexture()` 仍使用 `new TextureLoader().load('/game-data/map/jiuzhou_generated_map.png')` 单参数形式。
+  - 未传入 `onLoad` / `onProgress` / `onError`，纹理 404 或加载失败时没有 runtime 降级路径。
+  - 测试层没有锁定该行为；`performance-baseline.test.ts` 只验证 metadata 的 `sourceImage` 路径，不覆盖 Three.js texture loader 错误回调。
+- 缺口判断：当前不是功能失败；风险在于底图丢失时用户只能看到区域 mesh，缺少明确 fallback 或可诊断错误。
+
+### 当前验证
+
+- 代码检索确认 `TextureLoader().load` 仅出现在 `scene.ts`，且未带错误回调。
+- 定向 Playwright 静态预算 unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/playwright-time-budget.test.ts`，结果 `1` 个 test file / `3` tests 全部通过。
+- `docs/audit-web-ui.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可先限定在测试层：新增 `scene-texture-loader` 静态 unit，要求 `TextureLoader.load` 调用包含错误回调，避免未来继续单参数加载。
+- 若要实现 runtime 修复，建议小步修改 `buildMapTexture()`：先用纯色材质创建地图平面，再在 texture onLoad 后替换 `material.map`；onError 保留纯色 fallback 并设置可诊断标记。
+- 修补范围应限定为 `web-strategy-map/src/scene.ts` 与对应 unit，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 10
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `scene.ts` 底图纹理加载缺少错误回调与 fallback 的缺口。
+- 修补范围限定为 `web-strategy-map/src/scene.ts`、对应 Web unit 和 `docs/audit-web-ui.md` 状态回收，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node 进程主要为 Codex/OMX MCP 与 hook。
+
+### TDD 红灯
+
+- 新增 `web-strategy-map/tests/unit/scene-texture-loader.test.ts`，静态锁定 `TextureLoader.load` 必须包含 `onError` 回调和 fallback 路径。
+- 首次运行定向 unit 失败，符合预期：当前 `TextureLoader.load` 只有 `1` 个参数，失败信息为 `TextureLoader.load should pass url, onLoad, onProgress, onError`。
+
+### 已完成修复
+
+- `buildMapTexture()` 改为先创建纯色 `Generated_Jiuzhou_Map_Fallback_Material`，保证底图资源失败时地图平面仍可见。
+- 纹理成功加载后设置 `colorSpace`、`anisotropy`、`material.map`，并触发 `material.needsUpdate`。
+- 纹理失败时保留 fallback 材质，并输出包含资源 URL 的 warning，便于诊断 404、网络失败或解码失败。
+- `docs/audit-web-ui.md` 已将该项从“仍成立缺口”改为“已回收”，风险矩阵和优先行动项同步更新。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/scene-texture-loader.test.ts` 初次失败，失败原因指向缺少 `onError` 参数。
+- 绿灯通过：同一命令复跑结果 `1` test passed。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+- 定向 Playwright smoke 通过：`npm --prefix web-strategy-map run test:ui -- --grep "loads map shell, emperor audio, governance, and camera selection" --reporter=line --workers=1`，结果 `1` test passed。
+
+### 当前结论
+
+- 上一轮定位的 `scene.ts` 底图纹理加载可靠性缺口已回收。
+- 本轮影响 Web runtime，但已用定向 unit 与完整 Web build 验证。
+- 剩余风险：fallback 为纯色平面，未做截图级视觉验收；后续仍需处理 draw call 优化、Audio 元素复用/crossfade/加载进度、硬编码音频路径等未回收项。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 11
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web runtime、unit 与 Playwright 既有修改；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node 进程主要为 Codex/OMX MCP 与 hook。
+
+### 本轮发现
+
+- 复核 `docs/audit-web-ui.md` 与 `web-strategy-map/src/audio.ts` 后确认一个仍成立的 Web 资源边界缺口：音频 URL 构造绕过统一资源 URL helper。
+- 当前真实状态：
+  - `audio.ts` 的 `playMusic()` 直接拼接 `/game-data/audio/music/${group}/${cue.fileName}`。
+  - `playNarration()` 直接拼接 `/game-data/audio/narration/${segment.segmentId}.mp3`。
+  - `playVoice()` 直接拼接 `/game-data/audio/emperor-voice/${emperorId}_${action}.mp3`。
+  - `data.ts` 已存在 `gameDataAssetUrl(assetPath)`，并由 `game-data-asset-url.test.ts` 覆盖路径穿越、反斜杠归一化和空路径边界。
+- 缺口判断：当前不是播放失败；风险在于音频路径绕过统一 `/game-data` asset URL 边界，未来调整 asset root、部署子路径或安全归一化规则时，音频链路会与图片/地图资产行为分叉。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 有 `3` 处 `/game-data/audio/...` 硬编码，且未引用 `gameDataAssetUrl`。
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts`，结果 `2` 个 test files / `7` tests 全部通过。
+- `docs/audit-web-ui.md` 已追加本轮复核结论，作为下一轮“修补问题”的候选输入。
+
+### 下一轮建议
+
+- 下一轮修补可先限定在测试层：新增音频 URL 静态/unit 回归，要求 `audio.ts` 通过 `gameDataAssetUrl('audio/...')` 构造 `new Audio()` source。
+- 若测试红灯符合预期，再小步替换 `playMusic()`、`playNarration()`、`playVoice()` 三处硬编码路径；修补范围应限定为 `web-strategy-map/src/audio.ts` 与对应 unit，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 12
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `audio.ts` 音频 URL 绕过统一资源边界的缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts` 与对应 Web unit，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态，包含 docs、domain-core、tools、Web runtime、unit 与 Playwright 既有修改；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前验证命令。
+
+### 已完成修复
+
+- `audio.ts` 已统一引入 `gameDataAssetUrl`，新增 `audioAssetUrl(path)`，通过 `gameDataAssetUrl('audio/...')` 生成音频资源 URL。
+- `playMusic()`、`playNarration()`、`playVoice()` 三条播放路径不再直接拼接 `/game-data/audio/...`，避免未来 asset root、部署子路径或路径归一化规则分叉。
+- `audio-not-enabled.test.ts` 已覆盖音乐、旁白、帝皇语音与帝皇主题的音频 source 归一化，包含 `..` 与 Windows 反斜杠输入。
+
+### 当前验证
+
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts`，结果 `2` 个 test files / `8` tests 全部通过。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+- 定向 Playwright 音频 HUD 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树存在大量前序未提交修改；`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 同时包含本轮音频 URL 回归与前序音频行为测试改动，无法在不混入其他轮次变更的前提下安全 scoped commit。
+- 下一步：后续可先分组整理前序 Web 测试改动，确认文件归属后再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的音频 URL 统一资源边界缺口已回收。
+- 剩余风险：本轮未跑完整 `tools/run_all_checks.ps1`；基于变更范围已用定向 unit、typecheck、build 与音频 HUD UI 用例覆盖。完整全量回归可在工作树分组提交前统一执行。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 13
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前短命令。
+- 最近完整验证沿用上一轮：音频 URL 修补的 unit、typecheck、build 与定向 Playwright 音频 HUD 均通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/strategy-map.spec.ts` 与 `web-strategy-map/tests/unit/audio-not-enabled.test.ts` 后确认一个仍成立的 Web 音频诊断缺口：媒体 `error` 事件被静默吞掉，没有写入 `lastError`。
+- 当前真实状态：
+  - `tryPlay()` 会在调用 `element.play()` 前清空 `lastError`。
+  - `element.play()` Promise reject 会写入 `lastError`，并已由 `surfaces autoplay playback failures in the audio HUD` Playwright 用例覆盖。
+  - `element.addEventListener('error', () => { /* Audio file not available, silently skip */ }, { once: true })` 只吞掉文件缺失、404、解码失败等 media error，不更新 `lastError`。
+  - 现有 unit 覆盖 autoplay reject、后续成功播放清空错误、音频 URL 归一化；没有覆盖 media error event。
+- 缺口判断：当前不影响核心玩法，但会让 MP3 缺失、资源同步遗漏或浏览器解码失败在 HUD 中表现为“无错误”，降低纯代码数据/资源链路的可诊断性。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 只有 `play()` reject 会写 `lastError`，media `error` 事件只静默跳过。
+- 代码检索确认 `strategy-map.spec.ts` 已覆盖 `play()` reject 到 `#audio-error`，但没有 media `error` event 断言。
+- 本轮只追加项目报告，不改产品代码；文档级检查使用 `git diff --check -- project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts` 与 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`。
+- 建议先补 unit：mock `Audio.addEventListener('error', handler)` 并触发 handler，断言 `getDebugState().lastError` 包含可读的音频资源加载失败信息和 source。
+- 实现上保持低风险：`error` handler 只写 `lastError`，不抛异常、不阻断玩法、不恢复旧的 console 噪声。
+- 若修补完成，复跑 `audio-not-enabled.test.ts`、`game-data-asset-url.test.ts`、`typecheck`；必要时补跑定向 Playwright 音频 HUD。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 14
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `audio.ts` media `error` 事件静默吞掉、未写入 `lastError` 的诊断缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 状态回收，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前验证命令。
+
+### TDD 红灯
+
+- 新增 `audio-not-enabled.test.ts` 用例 `surfaces media loading errors in debug state`，mock `Audio.addEventListener('error', handler)` 并触发 media error。
+- 首次运行定向 unit 失败，符合预期：`lastError` 仍为空，断言期待 `Audio failed to load: /game-data/audio/music/scene/governance_theme.mp3`。
+
+### 已完成修复
+
+- `tryPlay()` 的 media `error` listener 现在写入 `lastError = "Audio failed to load: <element.src>"`。
+- 修复保持低风险：不抛异常、不阻断玩法、不恢复旧 console 噪声；HUD 继续通过既有 `#audio-error` 展示 `lastError`。
+- `docs/audit-web-ui.md` 已同步回收旧状态：音频 URL 边界与 media error 通用诊断已完成；剩余风险改为加载进度、crossfade、Audio 元素复用和 media error 细分原因。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因指向 media error 未写入 `lastError`。
+- 绿灯通过：同一命令复跑结果 `1` test file / `6` tests passed。
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts`，结果 `2` test files / `9` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+- 定向 Playwright 音频 HUD 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续先做工作树分组整理，将 Web 音频/scene 修补、文档审查、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的 media `error` 静默诊断缺口已回收。
+- 剩余风险：未跑完整 `tools/run_all_checks.ps1`；基于本轮影响范围，已用 TDD unit、定向 unit、typecheck、Web build 和音频 HUD E2E 覆盖。完整全量回归建议放在分组提交前执行。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 15
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前短命令。
+- 最近完整验证沿用上一轮：media error unit、音频 URL unit、typecheck、Web build 与定向 Playwright 音频 HUD 均通过。
+
+### 本轮发现
+
+- 复核上一轮 `audio.ts` media error 修补后，确认一个低风险但真实的后续边界缺口：旧音频元素的迟到 `error` 事件可能覆盖当前 HUD 错误状态。
+- 当前真实状态：
+  - `tryPlay()` 的 media `error` handler 会写入 `lastError = "Audio failed to load: <element.src>"`。
+  - handler 没有判断该 `element` 是否仍是当前 `musicElement`、`narrationElement` 或 `voiceElement`。
+  - `playMusic()` 在新音乐成功尝试播放后才 `pause()` 并清空旧 music element 的 `src`；如果旧 error 迟到，仍可能写入空 source 错误。
+  - `playNarration()` 与 `playVoice()` 会暂停旧元素，但没有清空旧 `src`；旧旁白或旧语音的迟到 error 更容易覆盖当前 `lastError`。
+  - 当前 unit 只覆盖单个 audio element 的 media error，不覆盖“旧元素被替换后旧 error 迟到”的场景。
+- 缺口判断：不影响核心玩法，但会降低音频 HUD 的诊断准确性，尤其在快速切换帝皇、模式或连续触发旁白/语音时，用户可能看到旧资源错误。
+
+### 当前验证
+
+- 代码检索确认 `tryPlay()` 只按 `element.src` 写 `lastError`，没有当前性 guard。
+- 代码检索确认 `playNarration()` 与 `playVoice()` 只 pause 旧元素，没有清空旧 `src` 或移除旧 error handler。
+- 本轮同步更新 `docs/audit-web-ui.md` 的音频剩余风险与下一轮修补建议。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts` 与 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`。
+- 建议先补 unit：创建两个 audio element，先触发新元素成功播放，再触发旧元素 error，断言旧 error 不会覆盖当前 `lastError`。
+- 实现建议保持低风险：让 `tryPlay()` 接收当前性判断，只有 `this.musicElement === element` / `this.narrationElement === element` / `this.voiceElement === element` 时才写入 media `lastError`。
+- 修补后复跑 `audio-not-enabled.test.ts`、`game-data-asset-url.test.ts`、`typecheck`，必要时补跑定向音频 HUD E2E。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和审查文档，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 16
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮旧音频元素迟到 `error` 可能覆盖当前 HUD `lastError` 的诊断缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 状态回收，不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前验证命令。
+
+### TDD 红灯
+
+- 新增 `audio-not-enabled.test.ts` 用例 `ignores stale media loading errors after switching music elements`，创建两个 music audio element，新元素播放后触发旧元素迟到 media error。
+- 首次运行定向 unit 失败，符合预期：旧元素已被清空 `src` 后仍把 `lastError` 写成 `Audio failed to load: `。
+
+### 已完成修复
+
+- `tryPlay()` 现在接收当前性判断函数，media `error` handler 与 `play()` reject catch 只有在 element 仍是当前槽位时才写入 `lastError`。
+- `playMusic()`、`playNarration()`、`playVoice()` 分别传入 `this.musicElement === next`、`this.narrationElement === element`、`this.voiceElement === element`。
+- `docs/audit-web-ui.md` 已同步回收旧音频迟到 error 风险；剩余音频风险保留为 Audio 元素复用、crossfade、加载进度和 media error 细分原因。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因为旧 music element 迟到 error 覆盖 `lastError`。
+- 绿灯通过：同一命令复跑结果 `1` test file / `7` tests passed。
+- 定向 Web unit 通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts tests/unit/game-data-asset-url.test.ts`，结果 `2` test files / `10` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 首次与 Playwright 并行运行时失败，原因是两者同时执行 `sync:data` 争用 `web-strategy-map/public/game-data`，表现为 `public/game-data` 缺少 `icon_sheet_*` 或 `ENOTEMPTY`；该失败属于验证调度问题，不是本轮代码失败。
+- Web build 顺序重跑通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+- 定向 Playwright 音频 HUD 顺序重跑通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD" --reporter=line --workers=1`，结果 `1` test passed。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续先做工作树分组整理，将 Web 音频/scene 修补、文档审查、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的旧音频迟到 `error` 覆盖 HUD 状态缺口已回收。
+- 剩余风险：未跑完整 `tools/run_all_checks.ps1`；基于本轮影响范围，已用 TDD unit、定向 unit、typecheck、Web build 和音频 HUD E2E 覆盖。
+- 验证注意：`npm run build` 与 `npm run test:ui` 都会执行 `sync:data`，后续不要并行运行这两类命令，避免争用 `public/game-data`。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 17
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前短命令。
+- 最近完整验证沿用上一轮：旧音频迟到 error unit、音频 URL unit、typecheck、Web build 与定向 Playwright 音频 HUD 均通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/main.ts` 的 `bindAudioHud()` 后确认一个低风险 Web 音频交互缺口：启用音频按钮没有 pending 状态或并发点击保护。
+- 当前真实状态：
+  - `#audio-enable` 点击后直接执行 `void audio.enable().then(() => renderAudioHud(audio))`。
+  - `StrategyAudio.enable()` 一开始就把 `enabled` 设为 `true`，但 HUD 只有 promise 完成后才刷新。
+  - 如果音频加载/播放耗时，用户仍看到“点击启用音频”，容易重复点击。
+  - 重复点击会并发启动多条 `enable()` / `setMode()` / `playNarration()` 链路；当前性 guard 能避免旧 error 覆盖，但不能避免多余 Audio element 与多次播放尝试。
+- 缺口判断：不影响核心玩法，但会造成 HUD 状态滞后、重复播放尝试和资源浪费；属于低风险、适合下一轮小步修补的 Web 交互边界。
+
+### 当前验证
+
+- 代码检索确认 `bindAudioHud()` 没有 `audioEnablePending`、按钮禁用或“启动中”状态。
+- 代码检索确认现有 Playwright 只断言启用完成后的 `#audio-status` 与错误呈现，没有覆盖启用过程 pending 状态或重复点击保护。
+- 本轮同步更新 `docs/audit-web-ui.md` 的音频剩余风险与下一轮修补建议。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/main.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`，必要时不改 `StrategyAudio`。
+- 建议先补 Playwright 用例：mock `HTMLMediaElement.play()` 为可控 pending promise，点击 `#audio-enable` 后断言 `#audio-status` 显示“音频启动中”且按钮 disabled；重复点击不应触发第二次 play。
+- 实现建议保持低风险：在 `bindAudioHud()` 内加本地 `audioEnablePending` guard，点击后立即禁用按钮并写入 pending 文案，promise settle 后再解锁和 `renderAudioHud(audio)`。
+- 修补后顺序运行定向 Playwright 音频 HUD、`typecheck`、`build`；不要并行运行会触发 `sync:data` 的命令。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和审查文档，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 18
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `#audio-enable` 没有 pending 状态或并发点击保护的 Web 音频交互缺口。
+- 修补范围限定为 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts` 与 `docs/audit-web-ui.md` 状态回收，不改 `StrategyAudio`、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前验证命令。
+
+### TDD 红灯
+
+- 新增 Playwright 用例 `guards audio enable while startup is pending`，mock `HTMLMediaElement.play()` 为永不完成的 promise，并统计 play 调用次数。
+- 首次运行定向 E2E 失败，符合预期：点击 `#audio-enable` 后 `#audio-status` 仍为“点击启用音频”，没有进入“音频启动中”。
+
+### 已完成修复
+
+- `bindAudioHud()` 新增本地 `audioEnablePending` guard。
+- 点击 `#audio-enable` 后立即禁用按钮并写入 `#audio-status = 音频启动中`。
+- `audio.enable()` settle 后解锁按钮并调用 `renderAudioHud(audio)`；如果已 pending 或音频已启用，重复点击直接返回。
+- 新增 Playwright 验证 pending 状态、按钮 disabled，以及重复 DOM click 不触发第二次 `play()`。
+- `docs/audit-web-ui.md` 已同步回收启用音频 pending 风险；剩余音频风险保留为 Audio 元素复用、crossfade、加载进度和 media error 细分原因。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:ui -- --grep "guards audio enable while startup is pending" --reporter=line --workers=1` 首次失败，失败原因指向 `#audio-status` 未进入 pending 文案。
+- 绿灯通过：同一命令复跑结果 `1` test passed。
+- 定向 Playwright 音频 HUD 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD|guards audio enable while startup is pending" --reporter=line --workers=1`，结果 `2` tests passed；同命令前置 `sync:data` 与 `check:data-source` 通过。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 顺序通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续先做工作树分组整理，将 Web 音频/scene 修补、文档审查、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的音频启用 pending/并发点击保护缺口已回收。
+- 剩余风险：未跑完整 `tools/run_all_checks.ps1`；基于本轮影响范围，已用 TDD Playwright、定向 Playwright、typecheck 和 Web build 覆盖。
+- 验证注意：继续保持 `test:ui` 与 `build` 顺序运行，避免两个命令同时执行 `sync:data` 争用 `public/game-data`。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 19
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；观察到的 Node/PowerShell 进程主要为 Codex/OMX/MCP 或当前短命令。
+- 最近完整验证沿用上一轮：音频启用 pending Playwright、autoplay HUD Playwright、typecheck 与 Web build 均通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/main.ts` 的 `bindAudioHud()` 和 `web-strategy-map/index.html` 后确认一个低风险后续缺口：音频动作按钮没有 pending 保护。
+- 当前真实状态：
+  - `#audio-enable` 已有 `audioEnablePending` guard，并会在启动期间禁用启用按钮。
+  - `data-audio-action="mode|emperor|event"` 三个按钮仍直接执行 `audio.setMode()`、`audio.playEmperorTheme()` 或 `audio.playEventCue()`。
+  - `StrategyAudio.enable()` 一开始就把 `enabled` 设为 `true`；如果首个 `enable()` 仍在等待 `play()`，动作按钮点击会启动额外播放链路。
+  - 当前 Playwright 只覆盖启用按钮重复点击不触发第二次 `play()`，没有覆盖 pending 期间动作按钮点击不应触发额外 `play()`。
+- 缺口判断：不影响核心玩法，但会在慢音频启动或浏览器播放挂起时造成额外 Audio element 和多余播放尝试；适合作为下一轮小步修补。
+
+### 当前验证
+
+- 代码检索确认 `audioEnablePending` 只用于 `#audio-enable` 点击 handler，没有用于 `[data-audio-action]`。
+- 代码检索确认三个 `.audio-action` 按钮在 HTML 中始终可点击。
+- 代码检索确认现有 Playwright 用例 `guards audio enable while startup is pending` 只重复触发 `#audio-enable`，未覆盖 `.audio-action`。
+- 本轮同步更新 `docs/audit-web-ui.md` 的音频剩余风险与下一轮修补建议。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/main.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`。
+- 建议扩展 `guards audio enable while startup is pending`：启动 pending 后点击 `[data-audio-action="emperor"]` 或 dispatch click，断言 `__AUDIO_PLAY_CALLS__` 仍为 `1`。
+- 实现建议保持低风险：复用 `audioEnablePending`，pending 时禁用 `.audio-action` 或在 action handler 里直接 return；promise settle 后恢复按钮。
+- 修补后顺序运行定向 Playwright 音频 HUD、`typecheck`、`build`；不要并行运行会触发 `sync:data` 的命令。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和审查文档，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 20
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `data-audio-action="mode|emperor|event"` 三个音频动作按钮缺少 pending 保护的低风险 Web 缺口。
+- 修补范围限定为 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告；不改 `StrategyAudio`、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查发现 PID `29156` 为 `E:\peptide-synthesis-predictor\peptide-synthesis-predictor` 下的 Qwen LoRA 训练命令，不写当前仓库；未发现当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务。
+
+### TDD 红灯
+
+- 扩展 Playwright 用例 `guards audio enable while startup is pending`：在 `HTMLMediaElement.play()` 永不完成时，点击 `#audio-enable` 后再触发 `[data-audio-action="emperor"]`，断言 `__AUDIO_PLAY_CALLS__` 仍为 `1`。
+- 首次运行定向 E2E 失败，符合预期：`__AUDIO_PLAY_CALLS__` 从 `1` 增加到 `2`，证明 pending 期间动作按钮会启动额外播放链路。
+
+### 已完成修复
+
+- `bindAudioHud()` 新增 `audioActionButtons` 缓存和 `setAudioPending()`，启动 pending 期间同时禁用 `#audio-enable` 与所有 `[data-audio-action]` 按钮。
+- 动作按钮 click handler 增加 `audioEnablePending` guard，程序化 click 也不会在启动中触发 `audio.setMode()`、`audio.playEmperorTheme()` 或 `audio.playEventCue()`。
+- Playwright 用例同步断言帝王主题按钮 disabled，并用 DOM `dispatchEvent('click')` 覆盖事件级保护。
+- `docs/audit-web-ui.md` 已同步回收音频动作按钮 pending 风险。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:ui -- --grep "guards audio enable while startup is pending" --reporter=line --workers=1` 首次失败，失败原因是 `Expected: 1 / Received: 2`。
+- 绿灯通过：同一命令复跑结果 `1` test passed。
+- 定向 Playwright 音频 HUD 通过：`npm --prefix web-strategy-map run test:ui -- --grep "surfaces autoplay playback failures in the audio HUD|guards audio enable while startup is pending" --reporter=line --workers=1`，结果 `2` tests passed；同命令前置 `sync:data` 与 `check:data-source` 通过。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 顺序通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：先做工作树分组整理，将 Web 音频修补、scene/数据修补、文档审查、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的音频动作按钮 pending 保护缺口已回收。
+- 剩余风险：未跑完整 `tools/run_all_checks.ps1`；基于本轮影响范围，已用 TDD Playwright、定向 Playwright、typecheck 和 Web build 覆盖。
+- 验证注意：继续保持 `test:ui` 与 `build` 顺序运行，避免两个命令同时执行 `sync:data` 争用 `public/game-data`。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 21
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近验证沿用上一轮：音频 HUD 定向 Playwright `2` tests、`typecheck`、`build` 均通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/main.ts`、`web-strategy-map/src/data.ts` 与现有 Web 测试后确认一个低风险测试覆盖缺口：数据加载失败的浏览器降级路径没有 E2E 覆盖。
+- 当前真实状态：
+  - `bootstrap().catch()` 会在页面末尾插入 `.fatal-error[role="alert"]`，文案为 `加载失败：<escaped message>`。
+  - `loadStrategyDataset()` 已有 unit 覆盖 404、网络失败、空 JSON、缺少 `items`、重复 id、邻接/shape 不一致等错误，并抛出 `StrategyDatasetLoadError`。
+  - `strategy-map.spec.ts` 没有覆盖任一数据 JSON 请求失败时页面必须显示 `fatal-error`。
+  - 也没有浏览器层断言失败信息包含具体文件名，或确认初始化失败时 `document.documentElement.dataset.appReady` 不会被误置为 `true`。
+- 缺口判断：不影响正常路径，但会让数据源损坏、同步漏文件或部署缺文件时的用户可见降级行为缺少回归门；适合作为下一轮小步修补。
+
+### 当前验证
+
+- 代码检索确认 `fatal-error` 只出现在 `web-strategy-map/src/main.ts`，Playwright 测试中没有覆盖该选择器。
+- 代码检索确认 `StrategyDatasetLoadError` 的 unit 覆盖已存在，问题集中在 browser bootstrap 层，而非 loader unit 层。
+- 本轮同步更新 `docs/audit-web-ui.md` 的 Web 数据加载失败 E2E 缺口。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/tests/strategy-map.spec.ts`，优先不改 runtime。
+- 建议新增 Playwright 用例：`page.route('**/game-data/data/regions.json', route => route.fulfill({ status: 404, body: 'not found' }))`，打开页面后断言 `.fatal-error` 可见、包含 `regions.json`，且 `document.documentElement.dataset.appReady !== 'true'`。
+- 如果测试暴露 console/pageerror 噪声，再小步调整错误呈现；暂不引入重试按钮，先锁住现有降级行为。
+- 修补后顺序运行该定向 Playwright、`typecheck`、`build`；不要并行运行会触发 `sync:data` 的命令。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和审查文档，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 22
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“数据加载失败缺少浏览器 E2E 回归门”的低风险缺口。
+- 修补范围限定为 `web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告；不改 runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近验证沿用上一轮：音频 HUD 定向 Playwright `2` tests、`typecheck`、`build` 均通过。
+
+### 已完成修复
+
+- `strategy-map.spec.ts` 新增 `shows a fatal error when required data fails to load`。
+- 用例在浏览器层拦截 `/game-data/data/regions.json` 并返回 `404 not found`，不复用会等待 appReady 的 `openApp()`。
+- 用例断言 `.fatal-error[role="alert"]` 可见，文案包含 `加载失败`、`regions.json` 与 `HTTP 404`。
+- 用例同步断言 `document.documentElement.dataset.appReady` 不为 `true`，并记录 `pageerror` 数组必须为空。
+- `docs/audit-web-ui.md` 已同步回收数据加载失败 E2E 覆盖缺口。
+
+### 当前验证
+
+- 定向 Playwright 通过：`npm --prefix web-strategy-map run test:ui -- --grep "shows a fatal error when required data fails to load" --reporter=line --workers=1`，结果 `1` test passed；同命令前置 `sync:data` 与 `check:data-source` 通过。
+- 该用例下 Vite dev server 输出预期 console error：`Failed to load strategy data file regions.json: HTTP 404`；页面没有未处理 `pageerror`。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 顺序通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit`、Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：先做工作树分组整理，将 Web 音频/数据加载测试、scene/数据修补、文档审查、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 上一轮定位的数据加载失败浏览器降级 E2E 缺口已回收。
+- 剩余风险：仍未实现重试加载按钮；当前只锁住现有 fatal-error 降级行为。未跑完整 `tools/run_all_checks.ps1`，基于本轮影响范围已用定向 Playwright、typecheck 和 Web build 覆盖。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 23
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近验证沿用上一轮：数据加载失败 fatal-error Playwright、`typecheck`、`build` 均通过。
+
+### 本轮发现
+
+- 复核 `project-development-report.md` 尾部和轮次检索后确认一个文档一致性缺口：最近自动化轮次顺序漂移。
+- 当前真实状态：
+  - `project-development-report.md` 中 2026-05-21 轮次检索顺序为：轮 22 → 轮 20 → 轮 21 → 轮 17 → 轮 18 → 轮 19。
+  - 报告尾部仍显示轮 19，因此下一次 preflight 用 `Get-Content -Tail` 时会误以为最近一轮是轮 19。
+  - 实际最近完成状态应包含轮 20 音频动作按钮 pending 回收、轮 21 数据加载失败 E2E 缺口、轮 22 数据加载失败 E2E 回收。
+- 缺口判断：不影响运行时代码，但会影响自动化连续推进时读取“最近报告/最近验证状态”的可靠性；本轮已作为阻塞性文档小修即时归档。
+
+### 已完成修复
+
+- 仅重排 `project-development-report.md` 中轮 17-23 的 section，未改产品代码、测试代码、数据表或 Unity/Tuanjie。
+- 当前轮次顺序已恢复为 17 → 18 → 19 → 20 → 21 → 22 → 23，且轮 23 位于报告尾部。
+- `docs/audit-docs-consistency.md` 已同步标注该文档一致性缺口为已回收。
+
+### 当前验证
+
+- 代码检索确认轮次顺序漂移：`rg -n "2026-05-21 5分钟交替自动化：(找缺口轮|修补问题轮) (1[7-9]|2[0-3])" project-development-report.md`。
+- `docs/audit-docs-consistency.md` 已新增 “project-development-report.md 自动化轮次顺序漂移” 条目。
+- 重排后代码检索确认顺序为：轮 17 → 轮 18 → 轮 19 → 轮 20 → 轮 21 → 轮 22 → 轮 23。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 下一轮建议
+
+- 后续追加新轮次时避免使用非唯一 `### 提交判断` 锚点；应使用报告文件尾部锚点或脚本化追加。
+- 下一轮可转回正常交替节奏，从现有 docs/report 中选择新的低风险缺口。
+
+### 提交判断
+
+- 本轮为找缺口轮，但包含阻塞性文档归档小修；只更新权威报告和 docs 一致性审查，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 24
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，选择 `docs/audit-docs-consistency.md` 已记录的低风险文档契约缺口：`data-contract.md` 缺少 Emperor.score 完整 12 字段定义。
+- 修补范围限定为 `docs/data-contract.md`、`docs/audit-docs-consistency.md` 与本报告；不改 runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部已正确停在轮 23，轮 17-23 顺序保持为 17 → 18 → 19 → 20 → 21 → 22 → 23。
+
+### 已完成修复
+
+- `docs/data-contract.md` 的 Emperor 示例新增 `score` 对象。
+- `score` 明确记录 12 个字段：`virtue`、`wisdom`、`physique`、`aesthetics`、`diligence`、`ambition`、`dignity`、`tolerance`、`selfControl`、`personnelManagement`、`nationalPower`、`popularSupport`。
+- Emperor 字段说明补充 `stats` 与 `score` 的用途边界：`stats` 是 MVP 玩法六维能力，`score` 是跨系统评价和后续帝皇对比 UI 的十二维评分。
+- `docs/audit-docs-consistency.md` 已将 `data-contract.md Emperor.score 缺定义` 标记为已回收，并把风险分布从待修正项移到已回收项。
+
+### 当前验证
+
+- 定向契约单测通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/data-contract-emperor-alignment.test.ts`，结果 `1` test file / `4` tests passed。
+- 文档检索确认 `score`、`virtue`、`popularSupport`、`Emperor.score` 与“已回收”状态已出现在目标文档中。
+- 本轮曾有一次 `rg` 命令因本地正则转义写错失败，随后用简化模式重跑通过；不影响仓库文件。
+- 文档级检查使用 `git diff --check -- docs/data-contract.md docs/audit-docs-consistency.md project-development-report.md`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-docs-consistency.md`、`project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 docs 契约修补、Web 音频/数据加载测试、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- `data-contract.md` Emperor.score 文档契约缺口已回收。
+- 剩余文档一致性风险：`mvp-design.md` 仍缺 5 位区域帝皇机制描述；CLAUDE.md/AGENTS.md 重复文件保留但需同步维护。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 25
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 24，轮 17-24 顺序保持为 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24。
+
+### 本轮发现
+
+- 复核 `docs/mvp-design.md`、`docs/audit-docs-consistency.md` 与 `web-strategy-map/game-data-source/data/emperors.json` 后确认一个文档一致性缺口仍成立：`mvp-design.md` 的“初始帝皇机制”表只覆盖 8 位核心帝皇，缺少 5 位区域帝皇。
+- 当前权威数据源已有 13 位帝皇，其中缺失于 MVP 设计表的 5 位区域帝皇机制为：
+  - 杨坚：开皇改制；强项为户籍、财政、官僚精简；代价为猜忌心重，功臣和宗室压力累积。
+  - 柴荣：十年开拓；强项为短期改革、军事经济同步推进；代价为寿命风险大，继承安排脆弱。
+  - 元宏：汉化改革；强项为文明建设、制度汉化；代价为旧代人集团反弹，边镇隐患累积。
+  - 石勒：底层崛起；强项为军事扩张、杂胡整合；代价为合法性基础弱，继承问题严重。
+  - 刘备：以德聚人；强项为民心、人才凝聚、弱势维持；代价为国力增长慢，军事上限受限。
+- 缺口判断：不影响 runtime，但会让设计文档低估当前 MVP 数据范围，后续机制设计或验收容易只围绕 8 位核心帝皇展开。
+
+### 当前验证
+
+- 文档检索确认 `docs/mvp-design.md` 只列出秦始皇、刘邦、汉武帝、曹操、李世民、赵匡胤、朱元璋、康熙 8 行。
+- 数据检索确认 `emperors.json` 中 13 位帝皇均有 `uniqueMechanic`，且区域帝皇 5 位分别为杨坚、柴荣、元宏、石勒、刘备。
+- `docs/audit-docs-consistency.md` 已补充 5 位区域帝皇的机制表，作为下一轮修补 `mvp-design.md` 的直接来源。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/mvp-design.md`、`docs/audit-docs-consistency.md` 与本报告。
+- 建议把 5 位区域帝皇追加到 `mvp-design.md` 的“初始帝皇机制”表中，并将成功标准从“4 位差异明显”调整为“8 位核心优先、5 位区域机制保留可解释差异”。
+- 修补后运行文档级检查和 `rg` 核对 13 位帝皇姓名均出现在 `mvp-design.md`。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和 docs 一致性审查，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 26
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `mvp-design.md` 缺 5 位区域帝皇机制描述的文档一致性缺口。
+- 修补范围限定为 `docs/mvp-design.md`、`docs/audit-docs-consistency.md` 与本报告；不改 runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 25，轮 17-25 顺序保持为 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25。
+
+### 已完成修复
+
+- `docs/mvp-design.md` 的“初始帝皇机制”表新增 5 位区域帝皇：杨坚、柴荣、元宏、石勒、刘备。
+- 每位区域帝皇都补齐独特机制、强项和代价：
+  - 杨坚：开皇改制；户籍、财政、官僚精简；猜忌心重，功臣和宗室压力累积。
+  - 柴荣：十年开拓；短期改革、军事经济同步推进；寿命风险大，继承安排脆弱。
+  - 元宏：汉化改革；文明建设、制度汉化；旧代人集团反弹、边镇隐患累积。
+  - 石勒：底层崛起；军事扩张、杂胡整合；合法性基础弱、继承问题严重。
+  - 刘备：以德聚人；民心、人才凝聚、弱势维持；国力增长慢、军事上限受限。
+- `docs/mvp-design.md` 成功标准从“秦始皇、刘邦、朱元璋、赵匡胤玩起来有明显差异”改为“8 位核心帝皇优先形成明显差异，5 位区域帝皇保留可解释机制差异”。
+- `docs/audit-docs-consistency.md` 已将 `mvp-design.md` 缺 5 位区域帝皇标记为已回收，并合并已回收统计。
+
+### 当前验证
+
+- 13 位帝皇姓名覆盖检查通过：秦始皇、刘邦、汉武帝、曹操、李世民、赵匡胤、朱元璋、康熙、杨坚、柴荣、元宏、石勒、刘备均出现在 `docs/mvp-design.md`。
+- 文档检索确认 5 位区域帝皇机制和成功标准已写入 `docs/mvp-design.md` 与 `docs/audit-docs-consistency.md`。
+- 文档级检查通过：`git diff --check -- docs/mvp-design.md docs/audit-docs-consistency.md`。
+- trailing whitespace 扫描通过：`docs/mvp-design.md`、`docs/audit-docs-consistency.md` 无行尾空白。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-docs-consistency.md`、`project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 docs 契约修补、Web 音频/数据加载测试、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- `mvp-design.md` 的 13 位帝皇机制表已与当前 `emperors.json` 数据范围对齐。
+- 剩余文档一致性风险：CLAUDE.md/AGENTS.md 重复文件保留但需同步维护；其他已记录 docs 风险多为兼容策略或低优先级说明。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 27
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和候选缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 26，轮 17-26 顺序保持为 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26。
+
+### 本轮发现
+
+- 复核 `docs/audit-docs-consistency.md` 后确认一个低风险文档一致性缺口：总结风险分布仍把已回收项计为活跃风险。
+- 当前真实状态：
+  - 报告顶部已经说明 `AGENTS.md` / `CLAUDE.md` 帝皇数量已同步为 13 位。
+  - 报告顶部也说明 `docs/architecture.md` 已移除不存在的 `state.ts` / `systems.ts` 引用，并更新纯代码 Web + headless Domain Core 技术路线。
+  - 轮 24 已回收 `data-contract.md Emperor.score` 缺定义。
+  - 轮 26 已回收 `mvp-design.md` 缺 5 位区域帝皇机制表。
+  - 但“风险等级分布”仍写 `🔴 高 | 1 | AGENTS.md 帝皇数量过时（8 vs 13）`，并把 `architecture.md 引用不存在文件、技术栈描述不清` 继续列入 🟠 中风险。
+- 缺口判断：不影响 runtime，但会让后续自动化或人工审查把已修正 docs 项继续当作最高优先级。
+
+### 当前验证
+
+- 文档检索确认 `AGENTS.md` 与 `CLAUDE.md` 现均写 13 位帝皇，且技术路线写明纯代码 Web + headless Domain Core。
+- 文档检索确认 `docs/architecture.md` 不再包含 `state.ts` / `systems.ts`。
+- 文档检索确认 `docs/audit-docs-consistency.md` 总结表仍保留已回收项的活跃风险统计。
+- `docs/audit-docs-consistency.md` 已新增 “总结风险分布仍含已回收项” 条目。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/audit-docs-consistency.md` 与本报告。
+- 建议统一重写“风险等级分布”和“最高优先级修复”列表：保留 `CLAUDE.md/AGENTS.md 重复` 为活跃维护风险，已修正的帝皇数量、architecture 路径、技术路线、data-contract score、mvp-design 机制表全部移入已回收统计。
+- 修补后运行 `rg` 核对没有“AGENTS.md 帝皇数量过时”作为活跃高风险出现，再跑文档级检查和 trailing whitespace 扫描。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新权威报告和 docs 一致性审查，通常不提交。
+- 工作树仍存在大量前序未提交修改，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 28
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `audit-docs-consistency.md` 总结风险分布仍含已回收项的低风险文档一致性缺口。
+- 修补范围限定为 `docs/audit-docs-consistency.md` 与本报告；不改 runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 27，轮 17-27 顺序保持为 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27。
+
+### 已完成修复
+
+- `docs/audit-docs-consistency.md` 顶部“修复回收状态”更新为 2026-05-21 当前状态，明确 AGENTS/CLAUDE 帝皇数量、architecture 路径与技术路线、data-contract Emperor.score、mvp-design 13 位帝皇机制表均已回收。
+- 第 10 节 “总结风险分布仍含已回收项” 增加 `### 状态`，标记该缺口已回收。
+- “风险等级分布” 改为只保留仍成立的活跃风险：
+  - 🔴 高：0
+  - 🟠 中：1，`CLAUDE.md` / `AGENTS.md` 重复文件同步维护风险
+  - 🟡 中：0
+  - 🟢 低：1，roadmap 是计划模板，不要求同步当前实际进度
+  - 🟢 已回收：7
+  - 🟢 已澄清：1，OccupationStatus 误报
+- “最高优先级修复” 列表改为当前唯一活跃维护风险在前，其余已修正项作为回收记录列出。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-docs-consistency.md` 的活跃 🔴 高风险计数为 0，活跃 🟠 中风险仅保留重复根规则文件同步维护风险。
+- 文档检索确认 `AGENTS.md` 与 `CLAUDE.md` 现均写 13 位帝皇，且技术路线写明纯代码 Web + headless Domain Core。
+- 文档检索确认 `docs/architecture.md` 不再包含 `state.ts` / `systems.ts`。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-docs-consistency.md`、`project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 docs 契约修补、Web 音频/数据加载测试、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- docs 一致性审查总结表已与正文回收状态对齐。
+- 当前仍成立的 docs 维护风险主要是 `CLAUDE.md` / `AGENTS.md` 重复文件需要同步维护；这是兼容策略，不是 runtime 缺陷。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 29
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告轮次检索确认轮 17-28 仍按 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 顺序排列，报告尾部正确停在轮 28。
+- 最近验证沿用上一轮：`docs/audit-docs-consistency.md` 总结表活跃高风险为 0，活跃中风险仅剩 `CLAUDE.md` / `AGENTS.md` 重复文件同步维护风险；文档级 `git diff --check` 仅提示 `project-development-report.md` 将 LF 转 CRLF，无内容级 whitespace error。
+
+### 本轮发现
+
+- 复核 `docs/audit-docs-consistency.md` 后确认一个低风险审查可读性缺口：已回收条目仍保留原始 `### 风险等级：🔴/🟠/🟡/🟢` 标题。
+- 当前真实状态：
+  - 总结表已正确写为活跃 🔴 高风险 0、活跃 🟠 中风险 1。
+  - 但第 2、3、4、5、6、9、10 节仍保留历史风险等级标题。
+  - 自动化若用 `rg "风险等级"` 或 `rg "🔴|🟠|🟡"` 做轻量 preflight，仍可能把历史风险误判为当前活跃风险。
+- 缺口判断：不影响 runtime，也不改变上一轮修补结论；影响的是审查文档对自动化扫描的机器可读性。
+
+### 本轮记录
+
+- 已在 `docs/audit-docs-consistency.md` 新增第 11 节“已回收条目仍保留原始风险等级标题”。
+- 已同步更新该文档总结表：活跃低风险从 1 调整为 2，并把“历史/原始风险标记”列为下一轮低风险可读性修补候选。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-docs-consistency.md` 当前标题序列包含第 11 节，并且总结表活跃 🔴 高风险仍为 0。
+- 文档检索确认 `project-development-report.md` 轮 17-28 顺序未漂移。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/audit-docs-consistency.md` 与本报告。
+- 建议将已回收条目的 `### 风险等级` 标题统一改为 `### 原始风险等级`，或在标题后明确标记“已回收”，让轻量检索能区分历史风险与当前活跃风险。
+- 修补后运行 `rg -n "^### 风险等级"`，确认只剩当前活跃条目或低风险未回收条目，再跑 `git diff --check` 与 trailing whitespace 扫描。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 30
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“已回收条目仍保留原始风险等级标题”的低风险文档可读性缺口。
+- 修补范围限定为 `docs/audit-docs-consistency.md` 与本报告；不改 runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 29，轮 20-29 顺序保持为 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29。
+- 最近验证沿用上一轮：`git diff --check -- docs/audit-docs-consistency.md project-development-report.md` 仅提示 `project-development-report.md` 将 LF 转 CRLF，无内容级 whitespace error；行尾空白扫描通过。
+
+### 已完成修复
+
+- `docs/audit-docs-consistency.md` 顶部“修复回收状态”增加说明：已回收条目的风险标题已改为“原始风险等级”，避免轻量扫描误判为活跃风险。
+- 第 2、3、4、5、6、9、10 节及第 11 节的 `### 风险等级` 已改为 `### 原始风险等级`。
+- 第 8 节 roadmap 说明仍是当前低风险说明，保留 `### 风险等级：🟢 低`。
+- 第 11 节新增 `### 状态`，标记该缺口已回收。
+- 总结表同步回收该项：活跃低风险从 2 回到 1，已回收从 7 调整为 8。
+
+### 当前验证
+
+- 文档检索确认 `^### 风险等级` 现在只剩两处：
+  - `CLAUDE.md / AGENTS.md` 重复文件同步维护风险。
+  - `roadmap-12-weeks.md` 计划模板低风险说明。
+- 文档检索确认已回收条目均使用 `### 原始风险等级`，总结表仍为活跃 🔴 高风险 0、活跃 🟠 中风险 1、活跃 🟢 低风险 1、已回收 8。
+- 行尾空白扫描通过：`docs/audit-docs-consistency.md` 无行尾空白。
+- 文档级检查通过：`git diff --check -- docs/audit-docs-consistency.md`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-docs-consistency.md`、`project-development-report.md` 均混有前序轮次改动，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 docs 审查修补、Web 音频/数据加载测试、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- docs 一致性审查的“历史风险”和“当前活跃风险”已经可通过标题层级区分。
+- 当前仍成立的 docs 维护风险主要是 `CLAUDE.md` / `AGENTS.md` 重复文件需要同步维护；这是兼容策略，不是 runtime 缺陷。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 31
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 30，轮 20-30 顺序保持为 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30。
+- 最近验证沿用上一轮：`git diff --check -- docs/audit-docs-consistency.md project-development-report.md` 仅提示 `project-development-report.md` 将 LF 转 CRLF，无内容级 whitespace error；行尾空白扫描通过。
+
+### 本轮发现
+
+- 复核 `AGENTS.md` 与 `CLAUDE.md` 后确认当前唯一活跃 docs 中风险仍成立：两份根规则文件完全一致，但文件顶部没有同步维护提示。
+- 当前真实状态：
+  - `Compare-Object (Get-Content AGENTS.md) (Get-Content CLAUDE.md)` 无输出，说明两文件当前内容一致。
+  - 两文件当前均为 61 行，均已同步到 13 位帝皇范围。
+  - `rg "同步|请勿单独修改|同时修改"` 未在两份根规则文件中找到同步维护提示。
+  - 当前 diff 显示两文件前序改动只同步修改了帝皇范围，尚未加入维护提示。
+- 缺口判断：不影响 runtime，但会让后续人工或自动化修改根规则时仍有单边修改风险。
+
+### 本轮记录
+
+- 已更新 `docs/audit-docs-consistency.md` 第 1 节：把旧的“82 行”描述更正为当前“61 行”，并补充 2026-05-21 复核结论。
+- 已将下一轮修补建议明确为：在 `AGENTS.md` 与 `CLAUDE.md` 标题下加入同一句同步维护提示，保留双文件兼容入口，同时降低单边修改风险。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-docs-consistency.md` 已包含 2026-05-21 复核补充。
+- `AGENTS.md` 与 `CLAUDE.md` 内容一致性复核通过，当前无差异输出。
+- 文档级检查使用 `git diff --check -- docs/audit-docs-consistency.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `AGENTS.md`、`CLAUDE.md`、`docs/audit-docs-consistency.md` 与本报告。
+- 建议在两份根规则文件 H1 标题下加入同一句提示，例如：`> 维护提示：本文件需与 CLAUDE.md/AGENTS.md 保持同步，修改任一文件时必须同步另一份。`
+- 修补后复跑 `Compare-Object`、`rg "维护提示|保持同步"`、文档级 `git diff --check` 与行尾空白扫描。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 32
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `AGENTS.md` / `CLAUDE.md` 缺少同步维护提示的低风险文档维护缺口。
+- 修补范围限定为 `AGENTS.md`、`CLAUDE.md`、`docs/audit-docs-consistency.md` 与本报告；不改 runtime、测试代码、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 31，轮 28-31 顺序保持为 28 → 29 → 30 → 31。
+- 最近验证沿用上一轮：`AGENTS.md` 与 `CLAUDE.md` 内容一致；文档级 `git diff --check` 仅提示 LF/CRLF，无内容级 whitespace error。
+
+### 已完成修复
+
+- `AGENTS.md` 与 `CLAUDE.md` 标题下加入同一句同步维护提示：本文件需与另一份根规则文件保持同步，修改任一文件时必须同步另一份。
+- `docs/audit-docs-consistency.md` 第 1 节更新为已缓解状态：
+  - 风险等级从 🟠 中降为 🟢 低。
+  - 顶部回收状态说明两份根规则文件重复问题已通过同步维护提示降为低风险兼容策略。
+  - 总结表从活跃 🟠 中风险 1 调整为 0；活跃 🟢 低风险从 1 调整为 2。
+  - 最高优先级修复列表改为“已缓解重复根规则文件风险”。
+
+### 当前验证
+
+- `Compare-Object (Get-Content AGENTS.md) (Get-Content CLAUDE.md)` 无输出，确认两份根规则文件仍完全一致。
+- `rg "维护提示|保持同步|修改任一文件时必须同步另一份" AGENTS.md CLAUDE.md docs/audit-docs-consistency.md` 确认两份根规则文件和审查报告均包含同步维护信息。
+- `rg` 检索确认 `docs/audit-docs-consistency.md` 总结表为活跃 🔴 高风险 0、活跃 🟠 中风险 0、活跃 🟢 低风险 2。
+- 文档级检查使用 `git diff --check -- AGENTS.md CLAUDE.md docs/audit-docs-consistency.md`，仅提示 AGENTS/CLAUDE 将 LF 转 CRLF，无内容级错误。
+- 行尾空白扫描通过：`AGENTS.md`、`CLAUDE.md`、`docs/audit-docs-consistency.md` 无行尾空白。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `AGENTS.md` / `CLAUDE.md` 已混有上一轮之前的帝皇范围修订，`docs/audit-docs-consistency.md` 与 `project-development-report.md` 也混有前序自动化记录，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将根规则同步维护提示、docs 审查修补、Web 音频/数据加载测试、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 根规则双文件仍保留以兼容不同工具入口，但已经有显式同步维护提示。
+- 当前 docs 审查中不再有活跃高/中风险；剩余风险为低风险维护项。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 33
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 32，轮 28-32 顺序保持为 28 → 29 → 30 → 31 → 32。
+- 最近验证沿用上一轮：`AGENTS.md` 与 `CLAUDE.md` 内容一致；文档级 `git diff --check` 仅提示 LF/CRLF，无内容级 whitespace error；行尾空白扫描通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 资源释放缺口。
+- 当前真实状态：
+  - `playMusic()` 在切换新音乐后会 `pause()` 旧 music element 并清空 `src`。
+  - `playNarration()` 与 `playVoice()` 只会 `pause()` 旧 element，没有清空旧 `src`。
+  - `tryPlay()` 已有当前性 guard，旧 element 迟到 error 不会覆盖当前 HUD；但现有 unit 只覆盖旧 music element，未覆盖 narration/voice 旧 element 的资源释放。
+- 缺口判断：不影响核心玩法，也不影响当前错误显示；风险集中在频繁触发旁白/语音时旧媒体 source 保留到 GC，资源释放不可观测。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“旁白/语音旧元素资源释放”缺口。
+- 下一轮修补建议明确为：提取 `releaseAudioElement(element)` 小 helper，对 music/narration/voice 旧元素统一执行 `pause()` 与 `src = ''`；补 unit 验证 narration/voice 替换时旧元素 source 被清空，且旧 element 迟到 error 不覆盖 `lastError`。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-web-ui.md` 已包含“旁白/语音旧元素资源释放”缺口。
+- 代码检索确认当前 `playNarration()` 与 `playVoice()` 只暂停旧元素，未清空旧 `src`。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议先补 unit 红灯：创建两个 narration 或 voice audio element，第二个替换后断言第一个 `src === ''`，再触发旧 error 确认 `lastError` 不变。
+- 修补后顺序运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`、`npm --prefix web-strategy-map run typecheck`；若只改 audio 单元，可暂不跑 Playwright。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 34
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 Web audio 旁白/语音旧元素未清空 `src` 的低风险资源释放缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 33，轮 30-33 顺序保持为 30 → 31 → 32 → 33。
+- 最近验证沿用上一轮：文档级 `git diff --check` 仅提示 LF/CRLF，无内容级 whitespace error；行尾空白扫描通过。
+
+### 已完成修复
+
+- 新增 unit `releases stale narration and voice sources after replacement`：
+  - 构造两次旁白播放与两次语音播放。
+  - 断言旧 narration / voice element 被替换后 `src === ''`。
+  - 触发旧 element 迟到 `error`，断言 `lastError` 不被覆盖。
+- 首次运行定向 unit 失败，符合预期：旧 narration element 的 `src` 仍为 `/game-data/audio/narration/intro.mp3`。
+- `audio.ts` 新增 `releaseAudioElement(element)` helper，统一执行 `pause()` 与 `src = ''`。
+- `playMusic()`、`playNarration()`、`playVoice()` 现在都通过该 helper 清理旧 Audio element。
+- `docs/audit-web-ui.md` 已同步标记“旁白/语音旧元素资源释放”缺口已回收。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因是旧 narration `src` 未清空。
+- 绿灯通过：同一命令复跑结果 `1` test file / `8` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 旁白/语音旧 Audio element 现在与音乐旧 element 使用同一释放路径。
+- 剩余 Web audio 低风险项仍包括 crossfade、加载进度和 media error 细分原因；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 35
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 34，轮 30-34 顺序保持为 30 → 31 → 32 → 33 → 34。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 8 tests 通过；`typecheck` 通过；`build` 通过；文档级 `git diff --check` 仅提示 LF/CRLF，无内容级 whitespace error。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 资源释放语义缺口。
+- 当前真实状态：
+  - 第 34 轮已新增 `releaseAudioElement()`，旧 music/narration/voice element 统一执行 `pause()` 与 `src = ''`。
+  - 但 `releaseAudioElement()` 未调用 `HTMLMediaElement.load()`，没有显式触发浏览器媒体资源选择复位。
+  - 当前 unit 已锁定 `pause()` 与 `src=''`，但没有 mock/断言 `load()`。
+- 缺口判断：不影响当前播放、错误显示或核心玩法；风险集中在旧媒体元素内部加载状态可能保留，资源释放语义不够完整且未被测试锁定。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“旧媒体复位未调用 load”缺口。
+- 下一轮修补建议明确为：在 `releaseAudioElement()` 清空 `src` 后调用 `element.load()`；补 unit mock `load`，断言旧 narration / voice element 被替换时 `pause()`、`src=''`、`load()` 均发生。
+
+### 当前验证
+
+- 代码检索确认当前 `releaseAudioElement()` 仅执行 `pause()` 与 `src = ''`，未调用 `.load()`。
+- 文档检索确认 `docs/audit-web-ui.md` 已包含“旧媒体复位未调用 load”缺口。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议先补 unit 红灯：在 Audio mock 中加入 `load: vi.fn()`，旧 narration / voice 替换后断言旧 element 的 `load()` 被调用。
+- 修补后顺序运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 与 `npm --prefix web-strategy-map run typecheck`；若只改 audio 单元，可暂不跑 Playwright。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 36
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮 `releaseAudioElement()` 未调用 `HTMLMediaElement.load()` 的低风险 Web audio 资源复位缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现明确指向当前 `万朝归一` 的并发 Web 测试、构建或 headless 任务；匹配到的当前路径 PowerShell 进程为本轮短命令自身。
+- 最近报告尾部正确停在轮 35，轮 30-35 顺序保持为 30 → 31 → 32 → 33 → 34 → 35。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 8 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 已完成修复
+
+- `audio-not-enabled.test.ts` 的 Audio mock 补充 `load: vi.fn()`。
+- 扩展 `releases stale narration and voice sources after replacement`：旧 narration / voice element 被替换后，除 `src === ''` 外，还断言 `load()` 被调用。
+- 首次运行定向 unit 失败，符合预期：旧 element 的 `load()` 调用次数为 0。
+- `audio.ts` 的 `releaseAudioElement()` 在 `pause()` 与 `src = ''` 后调用 `element.load()`，显式触发浏览器媒体资源选择复位。
+- `docs/audit-web-ui.md` 已同步标记“旧媒体复位 load”缺口已回收。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因是旧 element 的 `load()` 未调用。
+- 绿灯通过：同一命令复跑结果 `1` test file / `8` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 旧 Audio element 释放路径现在统一为 `pause()`、清空 `src`、调用 `load()`。
+- 剩余 Web audio 低风险项仍包括 crossfade、加载进度和 media error 细分原因；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 37
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查确认匹配到的 node 进程均为 oh-my-codex MCP/code-intel/memory/state/trace 服务，未发现明确指向当前 `万朝归一` 的 Web 测试、构建或 headless 任务。
+- 最近报告尾部正确停在轮 36，轮 30-36 顺序保持为 30 → 31 → 32 → 33 → 34 → 35 → 36。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 8 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 重试缺口。
+- 当前真实状态：
+  - `playMusic()` 在 `this.musicElement?.dataset.source === source` 时直接返回，不区分该元素是否已成功播放。
+  - 现有 unit 覆盖了“播放失败后切换到另一个 cue 成功清空 `lastError`”，但没有覆盖“同一个 cue 首次 `play()` reject 后再次请求应重试”的路径。
+  - `lastError` 已能显示播放失败，不会导致玩法崩溃；问题集中在用户再次触发当前模式音乐时不会重新调用 `play()`。
+- 缺口判断：不影响核心玩法；风险是浏览器短暂拒绝或资源瞬时失败后，同源音乐 cue 无法直接重试，只能靠切换到其他 cue 间接恢复。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“同一音乐 cue 失败后不可重试”缺口。
+- 下一轮修补建议明确为：先补 unit 红灯，断言同一 cue 首次 `play()` reject 后再次 `setMode()` 会触发第二次 `play()`；再让失败后的当前 music element 可重试或被释放。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 当前存在同源 `dataset.source` 直接返回路径。
+- 测试检索确认现有 `audio-not-enabled.test.ts` 只覆盖失败后切换到另一个 cue 的恢复，不覆盖同一 cue 重试。
+- 文档检索确认本轮缺口已写入 `docs/audit-web-ui.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议优先保持实现小步：播放失败后释放当前 music element，避免引入 crossfade 或 audio pool 的较大改动。
+- 修补后顺序运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 与 `npm --prefix web-strategy-map run typecheck`；若只改 `audio.ts` 与 unit，可暂不跑 Playwright。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 38
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“同一音乐 cue 首次播放失败后无法直接重试”的低风险 Web audio 缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查确认匹配到的 node 进程主要为 oh-my-codex MCP/code-intel/memory/state/trace 服务，未发现明确指向当前 `万朝归一` 的 npm、Vite、Playwright、dotnet 或 headless 冲突任务。
+- 最近报告尾部正确停在轮 37，轮 33-37 顺序保持为 33 → 34 → 35 → 36 → 37。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 8 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 已完成修复
+
+- 新增 unit `retries the same music cue after an initial playback failure`：
+  - mock `HTMLMediaElement.play()` 首次 reject、第二次 resolve。
+  - 首次 `audio.enable()` 后断言 `lastError === 'autoplay blocked'`。
+  - 再次 `audio.setMode('governance')` 后断言 `lastError === ''` 且 `play()` 调用次数为 2。
+- 首次运行定向 unit 失败，符合预期：第二次同源 `setMode('governance')` 后 `lastError` 仍为 `autoplay blocked`。
+- `audio.ts` 的 `tryPlay()` 改为返回播放尝试是否成功。
+- `playMusic()` 在当前 music element 播放失败后调用 `releaseAudioElement(next)` 并清空 `this.musicElement`，让同源 cue 后续请求可以重新创建并重试。
+- `docs/audit-web-ui.md` 已同步标记“同一音乐 cue 失败后重试”缺口已回收。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因是 `lastError` 未从 `autoplay blocked` 清空。
+- 绿灯通过：同一命令复跑结果 `1` test file / `9` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 同一音乐 cue 首次播放失败后，现在可以通过再次触发同一模式音乐直接重试。
+- 剩余 Web audio 低风险项仍包括 crossfade、加载进度、media error 细分原因和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 39
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查确认未发现明确指向当前 `万朝归一` 的 npm、Vite、Playwright、dotnet 或 headless 冲突任务。
+- 进程检查发现另有 Qwen 训练 Python 进程与监控 PowerShell 正在运行，路径不属于当前 `万朝归一` 项目；本轮不启动重型验证，不触碰无关项目。
+- 最近报告尾部正确停在轮 38，轮 36-38 顺序保持为 36 → 37 → 38。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 9 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 诊断缺口。
+- 当前真实状态：
+  - `tryPlay()` 的 media `error` listener 当前只写入 `Audio failed to load: <source>`。
+  - 代码未读取 `HTMLMediaElement.error?.code` 或 `message`，没有区分 `MEDIA_ERR_NETWORK`、`MEDIA_ERR_DECODE`、`MEDIA_ERR_SRC_NOT_SUPPORTED` 等原因。
+  - 现有 unit `surfaces media loading errors in debug state` 只触发通用 `error` 事件，没有模拟具体 `element.error.code`。
+- 缺口判断：不影响核心玩法，且 HUD 已显示错误；风险是文件缺失、网络失败、解码失败和格式不支持都会被归为同一类文案，后续定位音频资源问题时诊断粒度不足。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“media error 细分原因”缺口。
+- 下一轮修补建议明确为：先补 unit 红灯，mock `element.error = { code: 4, message: '...' }`，要求 `lastError` 带出可读分类；再实现小型 `describeMediaError()` helper。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 当前没有 `HTMLMediaElement.error`、`MediaError` 或 `MEDIA_ERR_*` 处理。
+- 测试检索确认 `audio-not-enabled.test.ts` 当前只覆盖通用 media error，不覆盖 error code 分类。
+- 文档检索确认 `docs/audit-web-ui.md` 已包含“media error 细分原因”缺口。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议保持低风险：只增加分类文案，不改变播放流程、重试策略、crossfade 或 audio pool。
+- 修补后顺序运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 与 `npm --prefix web-strategy-map run typecheck`；如只改 audio 单元，可暂不跑 Playwright。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且本轮文件混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 40
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“media error 细分原因”低风险 Web audio 诊断缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 39，轮 37-39 顺序保持为 37 → 38 → 39。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务。
+- 进程检查发现另有 Qwen 评估 Python 进程与监控 PowerShell 正在运行，路径不属于当前 `万朝归一` 项目；本轮不触碰无关项目，不启动重型并发任务。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 9 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 已完成修复
+
+- 新增 unit `classifies media loading error codes in debug state`：
+  - mock `HTMLAudioElement.error = { code: 4, message: 'unsupported codec' }`。
+  - 触发 media `error` event 后断言 `lastError` 输出 `Audio failed to load (source not supported: unsupported codec): /game-data/audio/music/scene/governance_theme.mp3`。
+- 首次运行定向 unit 失败，符合预期：实际仍为旧文案 `Audio failed to load: /game-data/audio/music/scene/governance_theme.mp3`。
+- `audio.ts` 新增 `describeMediaLoadError()`、`describeMediaError()` 与 `mediaErrorCodeLabel()`。
+- media error 分类当前覆盖：
+  - `1` → `aborted`
+  - `2` → `network`
+  - `3` → `decode`
+  - `4` → `source not supported`
+- 未知 code 或无 `element.error` 时继续回落到旧通用文案，避免改变既有 HUD 行为。
+- `docs/audit-web-ui.md` 已同步标记“media error 细分原因”缺口已回收，并从剩余风险摘要中移除该项。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts` 首次失败，失败原因为 `lastError` 仍未携带 `source not supported` 分类。
+- 绿灯通过：同一命令复跑结果 `1` test file / `10` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- Web audio media error 现在能把格式不支持等浏览器错误码显示为可读分类，诊断粒度高于旧通用文案。
+- 剩余 Web audio 低风险项仍包括 crossfade、加载进度和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 41
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 40，轮 38-40 顺序保持为 38 → 39 → 40。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 10 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/main.ts`、`web-strategy-map/src/audio.ts`、`web-strategy-map/tests/strategy-map.spec.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 动作 pending 缺口。
+- 当前真实状态：
+  - `bindAudioHud()` 已用 `audioEnablePending` 防止音频启用阶段重复点击，并禁用 `[data-audio-action]`。
+  - 音频启用完成后，动作按钮 click handler 只检查 `audioEnablePending`，没有独立的动作播放 pending guard。
+  - `audio.playEmperorTheme()`、`audio.playEventCue()` 或 `audio.setMode()` 的 promise 未 settle 时，重复 click 仍会启动额外播放链路。
+  - 现有 Playwright 覆盖的是启用 pending 期间动作按钮不能增加 `play()` 次数，不覆盖“已启用后动作播放未完成时重复动作 click”的情况。
+- 缺口判断：不影响核心玩法；当前性 guard 与 `releaseAudioElement()` 能降低 HUD 污染和旧资源残留，但无法阻止快速点击创建多余 Audio element 与多次 `play()` 尝试。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“音频动作播放 pending”缺口。
+- 下一轮修补建议明确为：为动作按钮增加独立 `audioActionPending` guard，播放任务 settle 前禁用 `[data-audio-action]` 并显示“音频切换中”；补 Playwright 或 unit 断言重复 DOM click 不增加 `play()` 次数。
+
+### 当前验证
+
+- 代码检索确认 `main.ts` 当前只有 `audioEnablePending`，动作按钮 handler 未设置独立 pending 状态。
+- 测试检索确认 `strategy-map.spec.ts` 只覆盖启用 pending 期间的重复 click，不覆盖已启用后的动作 pending。
+- 文档检索确认 `docs/audit-web-ui.md` 已包含“音频动作播放 pending”缺口。
+- 文档级检查使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md`。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议保持低风险：只增加动作 pending guard 和 HUD 状态，不改变 `StrategyAudio` 播放流程、crossfade 或 Audio pool。
+- 修补后优先运行音频 HUD 定向 Playwright、`npm --prefix web-strategy-map run typecheck`；若触及主入口，可再跑 `npm --prefix web-strategy-map run build`。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 42
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“音频动作播放 pending”的低风险 Web audio 缺口。
+- 修补范围限定为 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 41，轮 39-41 顺序保持为 39 → 40 → 41。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` 10 tests 通过；`typecheck` 通过；`build` 通过。
+
+### 已完成修复
+
+- 新增 Playwright `guards audio actions while playback is pending`：
+  - 启用阶段让 `HTMLMediaElement.play()` 正常 resolve。
+  - 音频启用完成后设置 `__AUDIO_HOLD_ACTION_PLAYBACK__ = true`，让后续音频动作 `play()` 挂起。
+  - 点击事件音频动作后断言 HUD 进入“音频切换中”、动作按钮 disabled，程序化重复 click 不会让 `__AUDIO_ACTION_PLAY_CALLS__` 从 `1` 增加到 `2`。
+- 首次运行定向 Playwright 失败，符合预期：`#audio-status` 实际仍为“音频已启用”，未进入“音频切换中”。
+- `main.ts` 的 `bindAudioHud()` 新增独立 `audioActionPending`。
+- 新增 `updateAudioActionButtons()`，统一让动作按钮在启用 pending 或动作 pending 时 disabled。
+- 动作按钮 click handler 现在会在任务开始前设置 `audioActionPending`、写入“音频切换中”，任务 `finally` 后恢复按钮并重新渲染 audio HUD。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:ui -- --grep "guards audio actions while playback is pending" --workers=1` 首次失败，失败原因为 `#audio-status` 未显示“音频切换中”。
+- 绿灯通过：同一命令复跑结果 `1` Playwright test passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- 音频启用完成后，事件/帝王/模式音频动作现在也有 pending guard，快速重复触发不会再产生额外播放链路。
+- 剩余 Web audio 低风险项仍包括 crossfade、加载进度和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 43
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 42，轮 40-42 顺序保持为 40 → 41 → 42。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：音频动作 pending Playwright `1` test 通过；`typecheck` 通过；`build` 通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/src/main.ts`、`web-strategy-map/tests/strategy-map.spec.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 加载状态/进度缺口。
+- 当前真实状态：
+  - `StrategyAudioDebugState` 只暴露启用、模式、当前 cue、catalog 计数和 `lastError`，没有加载阶段、加载源或缓冲进度字段。
+  - `tryPlay()` 只监听 media `error` 并等待 `element.play()`，未监听 `loadstart`、`loadedmetadata`、`canplay`、`canplaythrough` 或 `progress`。
+  - `bindAudioHud()` 的“音频启动中”和“音频切换中”只表示操作 promise pending，不代表真实 media 加载生命周期。
+  - 现有 Playwright 覆盖 autoplay reject、启用 pending 和动作 pending，但没有覆盖 media loading event 映射到 HUD 或 debug state。
+- 缺口判断：不影响核心玩法，属于低风险 UX/诊断问题；风险在于慢网络或大音频文件加载时，用户只能看到操作 pending 或“音频已启用”，无法判断是加载中、可播放还是缓冲不足。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“音频加载状态/进度”缺口。
+- 下一轮修补建议明确为：让 `StrategyAudio` 暴露最近一次加载阶段，并让 HUD 在音频任务 pending 时显示真实 media loading 文案；补 unit 或 Playwright 模拟 `loadstart`/`canplay` 事件。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 只有 media `error` 监听与 `play()` await，没有 `loadstart`、`canplay`、`progress`、`duration` 或 `buffered` 处理。
+- 代码检索确认 `main.ts` 只有 `audioEnablePending`、`audioActionPending` 和固定 pending 文案，没有读取音频加载阶段。
+- 测试检索确认 `strategy-map.spec.ts` 覆盖 autoplay reject、启用 pending 和动作 pending，但没有覆盖 media loading event 到 HUD/debug state。
+- 文档级验证使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md` 与行尾空白扫描。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/src/audio.ts`、`web-strategy-map/src/main.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 或 `web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告。
+- 建议保持低风险：只增加可读加载阶段和 HUD 呈现，不引入 crossfade、Audio pool 或新依赖。
+- 修补后优先运行音频定向 unit/Playwright、`npm --prefix web-strategy-map run typecheck`；若触及主入口，可再跑 `npm --prefix web-strategy-map run build`。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 44
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“音频加载状态/进度”的低风险 Web audio 缺口。
+- 修补范围限定为 `web-strategy-map/src/audio.ts`、`web-strategy-map/src/main.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与本报告；不改 C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 43，轮 41-43 顺序保持为 41 → 42 → 43。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：文档级 `git diff --check -- docs/audit-web-ui.md project-development-report.md` 通过，行尾空白扫描无命中；第 42 轮 Web `typecheck` 与 `build` 通过。
+
+### 已完成修复
+
+- 新增 unit `reports media loading stage transitions in debug state`：
+  - mock `HTMLAudioElement.play()` 为 pending promise。
+  - 手动触发 `loadstart` 后断言 `loadingStage='loading'` 且 `loadingMessage='音频加载中'`。
+  - 手动触发 `canplay` 后断言 `loadingStage='canplay'` 且 `loadingMessage='音频可播放'`。
+  - promise resolve 后断言进入 `playing`，且用户可读 loading 文案清空。
+- 首次运行新增 unit 失败，符合预期：`loadingStage` 为 `undefined`。
+- `AudioDebugState` 新增：
+  - `loadingStage`
+  - `loadingSource`
+  - `loadingProgress`
+  - `loadingMessage`
+- `StrategyAudio.tryPlay()` 现在监听 `loadstart`、`loadedmetadata`、`progress`、`canplay` 和 `canplaythrough`，写入可读加载阶段。
+- 新增 `setDebugStateListener()`，让 UI 能在 media event 发生时立即重渲染 HUD。
+- `tryPlay()` 增加播放 promise settle guard：播放完成或失败后，迟到的 media loading event 不再覆盖 HUD 状态，避免 autoplay reject 后又被“音频缓冲完成”反写。
+- `main.ts` 的 `bindAudioHud()` 现在注册 audio debug listener，`renderAudioHud()` 优先显示 `loadingMessage`，其次显示操作 pending 文案，最后回落到“音频已启用/点击启用音频”。
+- 新增 Playwright `surfaces audio media loading stage in the HUD`，验证浏览器实际 media loading 阶段会显示到 `#audio-status`，并暴露到 `window.__WANCHAO_APP__.getDebugState().audio.loadingStage`。
+- 既有 audio pending Playwright 断言已更新为允许真实 media loading 文案与操作 pending 文案并存；按钮 disabled 与重复 click 计数断言保持不变。
+
+### 当前验证
+
+- 红灯已观察：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts -t "reports media loading stage transitions"` 首次失败，失败原因为 `loadingStage` 尚未存在。
+- 新增 UI 用例首次运行失败于旧预期：浏览器已先显示“音频缓冲完成”，说明真实 media event 已进入 HUD，但断言仍要求“音频启动中”。
+- 扩大 audio Playwright grep 首次失败 3 项：autoplay / 启用 pending / 动作 pending 旧断言未允许真实 media loading 文案；随后补 settle guard 与断言兼容。
+- 绿灯通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`，`1` file / `11` tests passed。
+- 绿灯通过：`npm --prefix web-strategy-map run test:ui -- --grep "audio" --workers=1`，`5` Playwright tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+- Web build 通过：`npm --prefix web-strategy-map run build`，包含 `sync:data`、`check:data-source`、`tsc --noEmit` 与 Vite build；数据验证输出 `WEB DATA SOURCE VALIDATION PASSED`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/src/audio.ts`、`web-strategy-map/src/main.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 修补、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- Web audio 现在能把真实 media loading 生命周期显示到 HUD/debug state：加载中、元数据读取、缓冲、可播放和缓冲完成均可见。
+- 剩余 Web audio 低风险项仍包括 crossfade 和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 45
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 44，轮 42-44 顺序保持为 42 → 43 → 44。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：`audio-not-enabled.test.ts` `11` tests 通过；audio Playwright grep `5` tests 通过；`typecheck` 通过；`build` 通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/src/main.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`web-strategy-map/tests/strategy-map.spec.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 加载百分比回归缺口。
+- 当前真实状态：
+  - `AudioDebugState` 已有 `loadingProgress`。
+  - `readBufferedProgress()` 会读取 `duration` 与 `buffered.end()` 并计算 0-100 百分比。
+  - `audioLoadingMessage()` 会在 progress 非空时输出 `音频加载中 50%` 或 `音频缓冲中 50%`。
+  - 现有新增 unit 只覆盖 `loadstart` 与 `canplay` 阶段文案，没有模拟 `duration` / `buffered`。
+  - 现有 Playwright 只确认真实 media loading stage 进入 HUD/debug state，没有断言百分比文案。
+- 缺口判断：不影响核心玩法，属于低风险测试覆盖缺口；风险在于后续改动 `readBufferedProgress()` 或 mock media element 时，百分比计算损坏但现有 audio tests 仍可能全绿。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“音频加载百分比回归”缺口。
+- 下一轮修补建议明确为：在 `audio-not-enabled.test.ts` 增加 mock `duration=10`、`buffered.end(...)=5` 的 `progress` event 用例，断言 `loadingProgress=50` 且 `loadingMessage='音频缓冲中 50%'`；必要时补 100% clamp case。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 已有 `loadingProgress`、`readBufferedProgress()` 和百分比文案生成。
+- 测试检索确认 `audio-not-enabled.test.ts` 目前只断言 `loadingStage` / `loadingMessage` 的阶段文案，没有断言 `loadingProgress`。
+- 文档检索确认 `docs/audit-web-ui.md` 已包含第 44 轮加载状态回收记录，并已新增本轮百分比回归缺口。
+- 文档级验证使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md` 与行尾空白扫描。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；若现有实现已满足断言，则无需改产品代码。
+- 建议保持低风险：只补百分比计算回归测试，不引入 UI 进度条、crossfade 或 Audio pool。
+- 修补后优先运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`；如仅测试补强，可再跑 `npm --prefix web-strategy-map run typecheck`。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 46
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“音频加载百分比回归”的低风险测试覆盖缺口。
+- 修补范围限定为 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 45，轮 43-45 顺序保持为 43 → 44 → 45。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：第 44 轮 `audio-not-enabled.test.ts` `11` tests 通过；audio Playwright grep `5` tests 通过；`typecheck` 通过；`build` 通过；第 45 轮文档级检查通过。
+
+### 已完成修补
+
+- `audio-not-enabled.test.ts` 的 `installAudioMockWithMediaEvents()` 新增可选 `duration` / `bufferedEnd` mock，用于覆盖 `readBufferedProgress()` 的百分比读取路径。
+- 新增 unit `reports buffered progress percentage in debug state`：
+  - mock `duration=10`。
+  - mock `buffered.length=1`、`buffered.end(...)=5`。
+  - 触发 `progress` event。
+  - 断言 `loadingStage='buffering'`。
+  - 断言 `loadingProgress=50`。
+  - 断言 `loadingMessage='音频缓冲中 50%'`。
+- 新增用例首跑即通过，说明第 44 轮生产实现已经满足该百分比行为；本轮未改 `web-strategy-map/src/audio.ts` 或 `web-strategy-map/src/main.ts`。
+- `docs/audit-web-ui.md` 已同步标记“音频加载百分比回归”缺口已回收。
+
+### 当前验证
+
+- 定向新增用例通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts -t "reports buffered progress percentage"`，结果 `1` test passed。
+- 音频 unit 文件通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`，结果 `1` file / `12` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 测试补强、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- `loadingProgress` 百分比现在有明确 unit 回归门，`duration=10` / `bufferedEnd=5` 会稳定映射为 `50%` 和 HUD 可读文案。
+- 剩余 Web audio 低风险项仍包括 crossfade 和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 47
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 46，轮 44-46 顺序保持为 44 → 45 → 46。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：新增 loadingProgress grep `1` test 通过；`audio-not-enabled.test.ts` `12` tests 通过；`typecheck` 通过；文档级检查通过。
+
+### 本轮发现
+
+- 复核 `web-strategy-map/src/audio.ts`、`web-strategy-map/tests/unit/audio-not-enabled.test.ts` 与 `docs/audit-web-ui.md` 后确认一个低风险 Web audio 进度 clamp 边界测试缺口。
+- 当前真实状态：
+  - `readBufferedProgress()` 会读取 `duration` 与 `buffered.end()`。
+  - 计算结果通过 `Math.max(0, Math.min(100, ...))` 限制在 `0..100`。
+  - 当前新增 unit 只覆盖 `duration=10`、`bufferedEnd=5` 的 50% 正常路径。
+  - 当前未覆盖 `bufferedEnd > duration`、`bufferedEnd < 0`、`duration <= 0` 或 `buffered.length=0` 等边界。
+- 缺口判断：不影响核心玩法，属于低风险测试覆盖缺口；风险在于未来重写 `readBufferedProgress()` 时，百分比可能溢出 HUD 或失去空状态保护而不被现有测试发现。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 的 audio 审查段新增“音频进度 clamp 边界”缺口。
+- 下一轮修补建议明确为：在 `audio-not-enabled.test.ts` 增加 clamp 边界用例，复用现有 media mock，断言 150% 输入输出 100%、负值输入输出 0%、无效 duration 输出 `null` 与无百分比文案。
+
+### 当前验证
+
+- 代码检索确认 `audio.ts` 已有 `readBufferedProgress()` 的 `0..100` clamp。
+- 测试检索确认 `audio-not-enabled.test.ts` 只覆盖 50% 正常路径，没有覆盖 clamp 或 `null` 边界。
+- 文档检索确认 `docs/audit-web-ui.md` 已包含第 46 轮百分比回收记录，并已新增本轮 clamp 边界缺口。
+- 文档级验证使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md` 与行尾空白扫描。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；若现有实现已满足断言，则无需改产品代码。
+- 建议保持低风险：只补 clamp / null 边界单元测试，不引入 UI 进度条、crossfade 或 Audio pool。
+- 修补后优先运行 `npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`；如仅测试补强，可再跑 `npm --prefix web-strategy-map run typecheck`。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 48
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“音频进度 clamp 边界”的低风险测试覆盖缺口。
+- 修补范围限定为 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与本报告；不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 47，轮 45-47 顺序保持为 45 → 46 → 47。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node 进程为 oh-my-codex MCP 服务，PowerShell hook 不属于项目构建/测试任务。
+- 最近验证沿用上一轮：第 46 轮新增 loadingProgress grep `1` test 通过；`audio-not-enabled.test.ts` `12` tests 通过；`typecheck` 通过；第 47 轮文档级检查通过。
+
+### 已完成修补
+
+- `audio-not-enabled.test.ts` 新增 unit `clamps buffered progress percentage boundaries in debug state`。
+- 新用例复用现有 `installAudioMockWithMediaEvents()`，覆盖三类边界：
+  - `duration=10`、`bufferedEnd=15` 输出 `loadingProgress=100` 与 `音频缓冲中 100%`。
+  - `duration=10`、`bufferedEnd=-1` 输出 `loadingProgress=0` 与 `音频缓冲中 0%`。
+  - `duration=0`、`bufferedEnd=5` 输出 `loadingProgress=null` 与无百分比文案 `音频缓冲中`。
+- 新增用例首跑即通过，说明第 44 轮生产实现已经满足 clamp/null 行为；本轮未改 `web-strategy-map/src/audio.ts` 或 `web-strategy-map/src/main.ts`。
+- `docs/audit-web-ui.md` 已同步标记“音频进度 clamp 边界”缺口已回收。
+
+### 当前验证
+
+- 定向新增用例通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts -t "clamps buffered progress percentage boundaries"`，结果 `1` test passed。
+- 音频 unit 文件通过：`npm --prefix web-strategy-map run test:unit -- --run tests/unit/audio-not-enabled.test.ts`，结果 `1` file / `13` tests passed。
+- TypeScript 通过：`npm --prefix web-strategy-map run typecheck`。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `web-strategy-map/tests/unit/audio-not-enabled.test.ts`、`docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 测试补强、docs 审查修补、Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+### 当前结论
+
+- `loadingProgress` 现在同时覆盖正常 50%、上界 100%、下界 0 和无效 duration 的 `null` 回落。
+- 剩余 Web audio 低风险项仍包括 crossfade 和更完整的 Audio 元素复用策略；本轮不扩大范围。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 49
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 48，轮 46-48 顺序保持为 46 → 47 → 48。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 多为 oh-my-codex MCP/hook，另有 `C:\Users\123\moni\python.exe` 的 Qwen 训练进程但不属于本项目，本轮未触碰。
+- 最近验证沿用上一轮：音频 clamp 新增 grep `1` test 通过；`audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-web-ui.md` 后发现 Web UI 审查摘要存在过期描述。
+- 当前 `src/audio.ts` 章节的潜在问题、建议、测试文件审查剩余风险和总结风险矩阵仍把“缺加载进度”或“无音频加载进度指示”列为未回收项。
+- 当前真实状态：第 44-48 轮已补 `loadingStage`、`loadingMessage`、`loadingProgress`、HUD 展示、50% 正常路径、0/100 clamp 与无效 duration 的 `null` 回落测试。
+- 缺口判断：这是审查文档摘要漂移，不影响 runtime；风险在于后续修补轮继续按过期摘要重复投入 Web audio 进度问题，而忽略仍真实存在的 Audio 元素复用、crossfade、数据恢复和 scene draw call 风险。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 追加“Web UI 审查摘要过期”缺口。
+- 下一轮修补建议明确为：只更新 `docs/audit-web-ui.md` 的 audio 初始段、测试剩余风险和总结风险矩阵，将“缺加载进度”改为“加载进度已回收，剩余为 Audio 元素复用/crossfade”，不改产品代码。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-web-ui.md` 仍存在过期的“缺加载进度/无音频加载进度指示”摘要。
+- 文档检索确认同文件已记录第 44-48 轮 loading stage、loadingProgress 和 clamp 边界回收事实。
+- 文档级验证通过：`git diff --check -- docs/audit-web-ui.md project-development-report.md` 无错误，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-web-ui.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 轮次顺序检查通过：`rg -n "5分钟交替自动化：.*轮 4[0-9]" project-development-report.md` 显示 40 → 49 递增，轮 49 位于轮 48 之后。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/audit-web-ui.md` 与本报告；优先直接修正过期摘要，不进入 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+- 若只改审查文档，验证范围保持文档级 `git diff --check`、行尾空白扫描和轮次顺序检查即可。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-21 5分钟交替自动化：修补问题轮 50
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接上一轮“Web UI 审查摘要过期”的低风险文档缺口。
+- 修补范围限定为 `docs/audit-web-ui.md` 与本报告；不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 49，轮 46-49 顺序保持为 46 → 47 → 48 → 49。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 多为 oh-my-codex MCP/hook，另有 `C:\Users\123\moni\python.exe` 的 Qwen 训练进程但不属于本项目，本轮未触碰。
+- 最近验证沿用上一轮：音频 clamp 新增 grep `1` test 通过；`audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过；第 49 轮文档级检查通过。
+
+### 已完成修补
+
+- `docs/audit-web-ui.md` 的 `src/audio.ts` 章节已把“音频错误已显示，但仍缺少加载进度”改为“音频错误和加载进度已显示”。
+- 同章节已把“无音频加载进度指示”改为“音频加载进度指示已回收”，并记录第 44-48 轮已覆盖 `loadingStage`、HUD 可读进度、`loadingProgress`、50% 正常路径、0/100 clamp 和无效 duration 的 `null` 回落。
+- 建议项已从“补充点击启用音频后的加载进度”改为“保留 HUD `lastError`、`loadingStage` 和 `loadingProgress` 回归门”。
+- 测试文件审查剩余风险与总结风险矩阵已移除过期的“加载进度缺失”，剩余 Web audio 风险收敛为 Audio 元素复用和 crossfade。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-web-ui.md` 当前摘要已出现“音频错误和加载进度已显示”“音频加载进度指示已回收”。
+- 文档检索确认测试文件审查剩余风险已移除“加载进度”，风险矩阵已改为“加载进度已回收；crossfade 未实现”。
+- 过期摘要扫描确认：`docs/audit-web-ui.md` 中“缺加载进度/无音频加载进度指示”只保留在第 49 轮缺口记录，不再出现在当前风险摘要。
+- 文档级验证通过：`git diff --check -- docs/audit-web-ui.md project-development-report.md` 无错误，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-web-ui.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 轮次顺序检查通过：`rg -n "5分钟交替自动化：.*轮 (4[0-9]|50)" project-development-report.md` 显示 40 → 50 递增，轮 50 位于轮 49 之后。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：后续应先做工作树分组整理，将 Web audio 文档回收、Web audio 测试补强和 Domain Core 修补分别隔离后，再按 Lore Commit Protocol 分批提交。
+
+## 2026-05-21 5分钟交替自动化：找缺口轮 51
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部正确停在轮 50，轮 48-50 顺序保持为 48 → 49 → 50。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 多为 oh-my-codex MCP/hook。
+- 最近验证沿用上一轮：第 50 轮文档级检查通过；更早的音频 clamp 新增 grep `1` test 通过；`audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-web-ui.md`、`web-strategy-map/src/audio.ts` 与 `web-strategy-map/tests/unit/audio-not-enabled.test.ts` 后确认一个低风险审查摘要漂移缺口。
+- 当前真实状态：
+  - `StrategyAudio.releaseAudioElement()` 已对旧元素执行 `pause()`、`src = ''` 和 `load()`。
+  - 前序轮次已回收旧音频迟到错误、旁白/语音旧元素释放、旧媒体复位 `load()`、播放失败后同源 cue 重试、media error code 分类、loading stage/progress 和 clamp 边界。
+  - 总结风险矩阵仍写作“Audio 元素累积”，容易把已回收的旧元素释放问题与仍真实存在的“无复用池 / 无 crossfade”混在一起。
+- 缺口判断：不影响 runtime，属于文档摘要漂移；风险在于后续修补轮重复投入已回收的旧元素释放问题，而不是准确评估 Audio pool、复用策略或 crossfade。
+
+### 本轮记录
+
+- 已在 `docs/audit-web-ui.md` 追加“Audio 元素累积摘要漂移”缺口。
+- 下一轮修补建议明确为：只更新 `docs/audit-web-ui.md` 的总结风险矩阵和 audio 摘要，将“Audio 元素累积”改为“旧元素释放已回收；仍无复用池 / crossfade”，不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 代码检索确认 `releaseAudioElement()` 当前执行 `pause()`、`src = ''` 和 `load()`。
+- 测试检索确认音频 unit 已覆盖旧 element 释放、错误当前性、loading progress 与 clamp 边界。
+- 文档检索确认总结风险矩阵仍存在“Audio 元素累积”过期摘要，且本轮已在审查记录中新增对应缺口。
+- 文档级验证使用 `git diff --check -- docs/audit-web-ui.md project-development-report.md` 与行尾空白扫描。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/audit-web-ui.md` 与本报告；优先直接修正过期摘要，不进入 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+- 若只改审查文档，验证范围保持文档级 `git diff --check`、行尾空白扫描和轮次顺序检查即可。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 52
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 51 的“Audio 元素累积摘要漂移”低风险文档缺口。
+- 修补范围限定为 `docs/audit-web-ui.md` 与本报告；不改 Web runtime、C# Domain Core、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 本轮由 heartbeat 回到当前线程触发；未创建 detached cron/worktree，也未调用 `automation_update` 改写自动化配置。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用上一轮：第 50 轮文档级检查通过；更早的 `audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过。
+- 先修正了报告顺序，将误插到轮 48 后的轮 51 移到轮 50 后，恢复 48 → 49 → 50 → 51 顺序。
+
+### 已完成修补
+
+- `docs/audit-web-ui.md` 的 `src/audio.ts` 段落已把“每次创建新 Audio 元素”改为“旧元素释放已回收，仍缺复用池”。
+- 当前风险说明已明确：旧元素通过 `pause()`、`src = ''` 和 `load()` 释放媒体资源；剩余风险是频繁切换仍依赖 GC，尚未实现 Audio 元素复用池。
+- 风险等级和总结风险矩阵已从“Audio 元素累积”更新为“旧元素释放已回收；仍无 Audio 复用池；crossfade 未实现”。
+
+### 当前验证
+
+- 文档检索确认当前风险摘要已包含“旧 Audio 元素释放已回收”“仍无 Audio 复用池”，且“Audio 元素累积”只保留在历史缺口记录中。
+- 代码检索确认 `releaseAudioElement()` 当前执行 `pause()`、`src = ''` 和 `load()`。
+- 轮次顺序检查确认：轮 48 → 49 → 50 → 51 已恢复递增。
+- 文档级验证通过：`git diff --check -- docs/audit-web-ui.md project-development-report.md` 无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-web-ui.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 补充检查确认 `docs/audit-web-ui.md` 当前为未跟踪文件；已用行尾空白扫描和冲突标记扫描覆盖该文件。
+
+### 提交判断
+
+- 本轮修补验证通过，但暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-web-ui.md` 与 `project-development-report.md` 均混有前序轮次内容，无法在不混入其他轮次内容的前提下安全 scoped commit。
+- 下一步：下一轮可转入找缺口轮 53，优先选择另一个文档级或低风险测试覆盖缺口；提交前仍需先做工作树分组隔离。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 53
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 52；轮 48-52 顺序已恢复为 48 → 49 → 50 → 51 → 52。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用上一轮：文档级 `git diff --check` 无内容级 whitespace error；行尾空白扫描和冲突标记扫描通过；更早的 `audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/DiplomaticRelationDuplicateBugTests.cs` 与 `domain-core/src/Core/GameState.cs` 后确认一个低风险审查摘要漂移缺口。
+- 当前真实状态：
+  - `DiplomaticRelationDuplicateBugTests.cs` 的计数条件同时覆盖 `(alpha,beta)` 与 `(beta,alpha)`，断言同一无序 pair 最多保留一条关系。
+  - `DiplomaticRelationList.FindPairIndex()` 同样按无序 pair 查找，会把反向关系视为同一对并替换旧项。
+  - `project-development-report.md` 既有记录显示 `DiplomaticRelationDuplicateBugTests` 所在定向复验曾通过。
+- 缺口判断：`docs/audit-test-coverage.md` 仍把该测试列为“只检查 alpha-beta、需补 beta-alpha”的待修复项，已经与当前测试和实现不一致。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加“外交重复关系测试摘要漂移”缺口。
+- 下一轮修补建议明确为：只更新该审查文档中 `DiplomaticRelationDuplicateBugTests.cs` 表格行和低优先级第 10 项，将其标为已对齐/已回收；不改 C# 测试、Domain Core、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 文档检索确认过期摘要位于 `docs/audit-test-coverage.md` 的测试表格和低优先级修复建议。
+- 代码检索确认 `DiplomaticRelationDuplicateBugTests.cs` 已同时计数 alpha-beta 与 beta-alpha。
+- 实现检索确认 `DiplomaticRelationList.FindPairIndex()` 已按双向 pair 去重。
+- 轮次顺序检查通过：轮 48 → 49 → 50 → 51 → 52 → 53 递增。
+- 文档级验证通过：`git diff --check -- project-development-report.md docs/audit-test-coverage.md` 无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-test-coverage.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 冲突标记扫描通过：`rg -n "^(<<<<<<<|=======|>>>>>>>)" docs/audit-test-coverage.md project-development-report.md` 无命中。
+- 补充检查确认 `docs/audit-test-coverage.md` 当前为未跟踪文件；已用行尾空白扫描和冲突标记扫描覆盖该文件。
+
+### 下一轮建议
+
+- 下一轮修补可限定在 `docs/audit-test-coverage.md` 与本报告；若只改审查文档，验证范围保持文档级检查即可。
+- 不建议为该项新增 C# 测试：当前测试已覆盖双向 pair，新增测试收益低于文档修正收益。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 54
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 53 的“外交重复关系测试摘要漂移”低风险文档缺口。
+- 修补范围限定为 `docs/audit-test-coverage.md` 与本报告；不改 C# 测试、Domain Core、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 53；轮 48-53 顺序为 48 → 49 → 50 → 51 → 52 → 53。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 本轮使用 `verification-before-completion` 验证门，只在新鲜检查后报告完成状态。
+
+### 已完成修补
+
+- `docs/audit-test-coverage.md` 中 `DiplomaticRelationDuplicateBugTests.cs` 表格行已从“覆盖不足”改为“已对齐/已回收”。
+- 同一文档的低优先级修复建议已移除“补充 `DiplomaticRelationDuplicateBugTests.cs`”项，保留仍真实存在的 `NumericModifierSourceCollisionBugTests.cs`、`TurnLogUnboundedGrowthBugTests.cs` 和 `EngagementListsCapacityLeakBugTests.cs` 测试质量缺口。
+- 文档新增“5分钟修补回收”记录，说明本轮只修审查摘要，不改 C# 测试或 Domain Core。
+
+### 当前验证
+
+- 文档检索确认当前表格已写作“已对齐/已回收”，低优先级列表已不再包含 `DiplomaticRelationDuplicateBugTests.cs`。
+- 代码检索确认 `DiplomaticRelationDuplicateBugTests.cs` 已同时计数 `(alpha,beta)` 与 `(beta,alpha)`；`DiplomaticRelationList.FindPairIndex()` 已按无序 pair 去重。
+- 轮次顺序检查通过：轮 48 → 49 → 50 → 51 → 52 → 53 → 54 递增。
+- `git diff --check -- project-development-report.md` 通过，无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-test-coverage.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 冲突标记扫描通过：`rg -n "^(<<<<<<<|=======|>>>>>>>)" docs/audit-test-coverage.md project-development-report.md` 无命中。
+- 补充检查确认 `docs/audit-test-coverage.md` 当前为未跟踪文件；已用行尾空白扫描和冲突标记扫描覆盖该文件。
+
+### 提交判断
+
+- 本轮修补验证通过后仍暂缓提交。
+- 暂缓原因：工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 当前为未跟踪文件并混有前序轮次内容，无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮应进入找缺口轮 55，可继续从审查文档中选择另一个低风险、可文档级验证的缺口。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 55
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 54；轮 52-54 顺序为 52 → 53 → 54。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet、python 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用上一轮：文档级 `git diff --check` 无内容级 whitespace error；行尾空白扫描和冲突标记扫描通过；更早的 `audio-not-enabled.test.ts` `13` tests 通过；`typecheck` 通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs` 与 `domain-core/src/Domain/World/WorldState.cs` 后确认一个低风险测试质量缺口。
+- 当前真实状态：
+  - `EngagementRuntimeState.attackerArmyIds` 与 `defenderArmyIds` 已是 `CompactStringList`，不是普通 `List<string>` 字段。
+  - `CompactStringList.Clear()` 会执行 `TrimExcess()`，当前实现的不变量可以比 `< 64` 更精确。
+  - `EngagementListsCapacityLeakBugTests.cs` 仍用 `< 64` magic number，并保留“pipeline never calls TrimExcess”“public List<string> fields”等过期注释。
+- 缺口判断：这是测试断言和注释漂移，不是当前 Domain Core 行为缺陷；风险在于非零容量仍可能通过测试，且过期注释误导后续维护。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加“交战列表容量测试断言与注释漂移”缺口。
+- 下一轮修补建议明确为：只更新 `EngagementListsCapacityLeakBugTests.cs` 断言和注释，并同步本审查文档/报告；不改 Domain Core、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-test-coverage.md` 已记录本轮缺口和下一轮修补路径。
+- 代码检索确认 `WorldState.cs` 中 `CompactStringList.Clear()` 调用 `TrimExcess()`，而测试仍保留 `< 64` 断言和过期注释。
+- 轮次顺序检查通过：轮 52 → 53 → 54 → 55 递增。
+- 文档级验证通过：`git diff --check -- project-development-report.md docs/audit-test-coverage.md` 无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-test-coverage.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 冲突标记扫描通过：`rg -n "^(<<<<<<<|=======|>>>>>>>)" docs/audit-test-coverage.md project-development-report.md` 无命中。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 56，可把 `EngagementListsCapacityLeakBugTests.cs` 的容量断言收紧为 `Capacity == 0`，并把注释更新为 `CompactStringList.Clear()` 容量释放不变量。
+- 验证建议：运行该测试文件的定向 dotnet test；若测试项目筛选困难，至少运行 headless runner 测试子集并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 56
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 55 的“交战列表容量测试断言与注释漂移”低风险缺口。
+- 修补范围限定为 `EngagementListsCapacityLeakBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 Domain Core 行为、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 55；轮 52-55 顺序为 52 → 53 → 54 → 55。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet、python 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 记忆复核确认本仓库主线仍是纯代码 Web + headless Domain Core，验证面以 `game-data-source`、`domain-core/src`、`validate_web_data_source.py`、`validate_domain_core.py` 和 headless/Web 检查为准。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs` 已把容量断言从 `< 64` 收紧为 `== 0`，防止非零残留容量继续通过。
+- 同一测试文件已移除未使用的 `System.Reflection` using，并把注释从旧的普通 `List<string>` / “pipeline never calls TrimExcess” 叙述更新为当前 `CompactStringList.Clear()` 容量释放不变量。
+- `docs/audit-test-coverage.md` 已同步标记该项为已回收，并从低优先级待修复建议中移除。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~EngagementListsCapacityLeakBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 轮次顺序检查通过：轮 52 → 53 → 54 → 55 → 56 递增。
+- 文档/测试级验证通过：`git diff --check -- project-development-report.md docs/audit-test-coverage.md tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs` 无内容级 whitespace error，仅提示 `project-development-report.md` 和该测试文件下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-test-coverage.md,project-development-report.md,tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs -Pattern '[ \t]+$'` 无命中。
+- 冲突标记扫描通过：`rg -n "^(<<<<<<<|=======|>>>>>>>)" docs/audit-test-coverage.md project-development-report.md tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs` 无命中。
+- 测试文件过期文本扫描通过：`rg -n "< 64|public List<string> fields|pipeline never calls TrimExcess" tools/headless_runner/WanChaoGuiYiTests/EngagementListsCapacityLeakBugTests.cs` 无命中；审查文档和报告仅保留历史缺口/回收记录。
+
+### 提交判断
+
+- 本轮修补验证已有定向测试通过，但暂缓提交。
+- 暂缓原因：本轮完整记录涉及 `docs/audit-test-coverage.md` 与 `project-development-report.md`，二者均混有前序轮次内容；无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮应进入找缺口轮 57，继续从审查文档中选择文档级或小测试级缺口。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 57
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 56；轮 52-56 顺序为 52 → 53 → 54 → 55 → 56。
+- 进程检查确认当前 `万朝归一` 项目无 npm、Vite、Playwright、dotnet、python 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 记忆复核确认本仓库主线仍是纯代码 Web + headless Domain Core，验证面以 `game-data-source`、`domain-core/src`、`validate_web_data_source.py`、`validate_domain_core.py` 和 headless/Web 检查为准。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/TurnLogUnboundedGrowthBugTests.cs` 与 `domain-core/src/Core/GameState.cs` 后确认一个低风险摘要漂移缺口。
+- 当前真实状态：
+  - `GameState` 已定义 `MaxTurnLogEntries = 2000` 和 `MaxCurrentTurnLogEntries = 4000`，`AddLog()` 写入后调用 `PruneTurnLog()`。
+  - `TurnLogUnboundedGrowthBugTests.cs` 当前除 `state.turnLog.Count < totalLogs` 外，已经断言 `state.turnLog.Count <= GameState.MaxCurrentTurnLogEntries`，并检查最新日志仍保留。
+  - `docs/audit-test-coverage.md` 仍沿用旧版 cap 审查描述，测试注释也保留旧版 5000 条失败现象。
+- 缺口判断：这是测试审查摘要和注释漂移，不是当前 `GameState.AddLog()` 行为缺陷；风险在于后续继续把已增强的上限测试列为待修复项。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加“TurnLog 上限测试摘要漂移”缺口。
+- 下一轮修补建议明确为：只更新 `TurnLogUnboundedGrowthBugTests.cs` 注释和 `docs/audit-test-coverage.md` 相关状态；不改 `GameState.AddLog()`、turnLog 剪枝逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 文档检索确认 `docs/audit-test-coverage.md` 已记录本轮缺口和下一轮修补路径。
+- 代码检索确认 `GameState.cs` 存在 `MaxTurnLogEntries`、`MaxCurrentTurnLogEntries` 与 `PruneTurnLog()`；`TurnLogUnboundedGrowthBugTests.cs` 已检查 `<= GameState.MaxCurrentTurnLogEntries`。
+- 轮次顺序检查通过：轮 52 → 53 → 54 → 55 → 56 → 57 递增。
+- 文档级验证通过：`git diff --check -- project-development-report.md docs/audit-test-coverage.md` 无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path docs/audit-test-coverage.md,project-development-report.md -Pattern '[ \t]+$'` 无命中。
+- 冲突标记扫描通过：`rg -n "^(<<<<<<<|=======|>>>>>>>)" docs/audit-test-coverage.md project-development-report.md` 无命中。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 58，可回收 `TurnLogUnboundedGrowthBugTests.cs` 的历史失败注释，并把审查文档中该项改为“已对齐/已回收”。
+- 验证建议：运行 `TurnLogUnboundedGrowthBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 58
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 57 的 “TurnLog 上限测试摘要漂移”低风险缺口。
+- 修补范围限定为 `TurnLogUnboundedGrowthBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 `GameState.AddLog()`、turnLog 剪枝逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 57；轮 52-57 顺序为 52 → 53 → 54 → 55 → 56 → 57。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 本轮继续遵守纯代码 Web + headless Domain Core 路线，验证范围聚焦测试文件、审查文档和权威报告。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/TurnLogUnboundedGrowthBugTests.cs` 已把注释从当前失败叙述改为历史风险与当前硬上限验证说明。
+- 同一测试仍断言 `state.turnLog.Count <= GameState.MaxCurrentTurnLogEntries` 并保留最新日志；未修改 `GameState` 行为或测试断言。
+- `docs/audit-test-coverage.md` 已把该项标为已对齐/已回收，并同步回收假阳性总结和低优先级修复建议中的过期描述。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~TurnLogUnboundedGrowthBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 文档/代码检索确认 `docs/audit-test-coverage.md` 已记录 “TurnLog 上限测试摘要漂移”修补回收；`TurnLogUnboundedGrowthBugTests.cs` 已绑定 `GameState.MaxCurrentTurnLogEntries`。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白、冲突标记和过期文本扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：本轮完整记录涉及 `docs/audit-test-coverage.md` 与 `project-development-report.md`，二者均混有前序轮次内容；无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 59。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 59
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 58；轮 52-58 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用轮 58：`TurnLogUnboundedGrowthBugTests` 定向测试 `1/1 passed`；轮 58 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/NumericModifierSourceCollisionBugTests.cs` 与 `domain-core/src/Core/NumericSystem.cs` 后确认一个低风险摘要/注释漂移缺口。
+- 当前真实状态：
+  - `NumericContext` 已通过 `modifierIndexByKey` 与 `NumericModifierKey(domain, stat, type, source)` 做 AddOrReplace。
+  - 相同 source 重复添加不会叠加；定向测试 `NumericModifierSourceCollisionBugTests` 当前通过，结果 `1/1 passed`。
+  - 审查文档仍把该测试列为待修复，测试注释仍保留旧版重复叠加失败描述。
+- 缺口判断：这是审查摘要和测试注释漂移，不是当前 `NumericContext` 行为缺陷；风险在于后续继续把已通过的 source 去重测试列为待修复项。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “Numeric modifier source 测试摘要漂移” 缺口。
+- 下一轮修补建议明确为：只更新 `NumericModifierSourceCollisionBugTests.cs` 注释和 `docs/audit-test-coverage.md` 相关状态；不改 `NumericContext`、`NumericEngine`、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~NumericModifierSourceCollisionBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 代码检索确认 `NumericSystem.cs` 存在 `modifierIndexByKey`、`AddOrReplace` 与 `NumericModifierKey`；测试仍保留旧版失败注释。
+- 最终文档级检查已完成：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 60，可回收 `NumericModifierSourceCollisionBugTests.cs` 的旧版失败注释，并把审查文档中该项改为“已对齐/已回收”。
+- 验证建议：运行 `NumericModifierSourceCollisionBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 60
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 59 的 “Numeric modifier source 测试摘要漂移”低风险缺口。
+- 修补范围限定为 `NumericModifierSourceCollisionBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 `NumericContext`、`NumericEngine`、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 59；轮 52-59 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 本轮继续遵守纯代码 Web + headless Domain Core 路线，验证范围聚焦测试文件、审查文档和权威报告。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/NumericModifierSourceCollisionBugTests.cs` 已把注释从旧版重复叠加失败叙述改为当前 AddOrReplace 回归验证说明。
+- 同一测试仍断言 `result.additive == 30f` 与 `result.finalValue == 130f`；未修改 `NumericContext` 行为或测试断言。
+- `docs/audit-test-coverage.md` 已把该项标为已对齐/已回收，并同步回收假阳性总结和低优先级修复建议中的过期描述。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~NumericModifierSourceCollisionBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 过期文本扫描通过：旧版叠加失败原文和过期待修复描述无命中。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：本轮完整记录涉及 `docs/audit-test-coverage.md` 与 `project-development-report.md`，二者均混有前序轮次内容；无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 61。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 61
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 60；轮 52-60 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用轮 60：`NumericModifierSourceCollisionBugTests` 定向测试 `1/1 passed`；轮 60 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/EmpireUpkeepDeterministicBugTests.cs` 与 `domain-core/src/Domain/Economy/DomainEconomySystem.cs` 后确认一个低风险测试强度缺口。
+- 当前真实状态：
+  - `EmpireUpkeepDeterministicBugTests.cs` 只构造 2 个 identical state，比较两次 economy outcome 的 money/food delta。
+  - 定向测试 `EmpireUpkeepDeterministicBugTests` 当前通过，结果 `1/1 passed`。
+  - 2 次 trial 对偶然一致、后续随机源引入或 dictionary 顺序回归的检出力偏弱。
+- 缺口判断：这是测试强度缺口，不是当前 `DomainEconomySystem` 行为缺陷；风险在于未来非确定性回归可能在两次 trial 中碰巧同值而漏检。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “Empire upkeep deterministic 采样偏弱” 缺口。
+- 下一轮修补建议明确为：只把 `EmpireUpkeepDeterministicBugTests.cs` 扩展为 5 个 trial，并用首个 outcome 作为基准逐次比对；不改经济系统、数值公式、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~EmpireUpkeepDeterministicBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 代码检索确认测试当时仍使用旧版 2 次 trial 与固定 outcome 数组；审查文档当时仍将该项列为中优先级待回收。
+- 最终文档级检查已完成：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 62，可把 `EmpireUpkeepDeterministicBugTests.cs` 的 trial 数扩展为 5，并同步审查文档/报告状态。
+- 验证建议：运行 `EmpireUpkeepDeterministicBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 62
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 61 的 “Empire upkeep deterministic 采样偏弱”低风险缺口。
+- 修补范围限定为 `EmpireUpkeepDeterministicBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 `DomainEconomySystem`、经济公式、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 61；轮 52-61 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 本轮继续遵守纯代码 Web + headless Domain Core 路线，验证范围聚焦测试文件、审查文档和权威报告。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/EmpireUpkeepDeterministicBugTests.cs` 已将 deterministic economy outcome 采样从 2 个 trial 扩展为 5 个 trial。
+- 测试现在分别保存 `moneyDeltas` 与 `foodDeltas`，并以首轮结果作为基准逐次断言后续 trial。
+- `docs/audit-test-coverage.md` 已把该项标为已对齐/已回收，并同步回收假阴性总结中的过期描述。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~EmpireUpkeepDeterministicBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 过期文本扫描确认测试文件和审查文档不再保留旧版固定 2 次 trial 结构或待修复状态。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：本轮完整记录涉及 `docs/audit-test-coverage.md` 与 `project-development-report.md`，二者均混有前序轮次内容；无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 63。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 63
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 62；轮 52-62 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用轮 62：`EmpireUpkeepDeterministicBugTests` 定向测试 `1/1 passed`；轮 62 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/GameStateAtomicityBugTests.cs` 与 `domain-core/src/Core/GameState.cs` 后确认一个低风险审查摘要漂移缺口。
+- 当前真实状态：
+  - `GameState.ChangeRegionOwner()` 当前在修改 previous owner 前检查 `newOwner.regionIds == null` 和 `previousOwner.regionIds == null`。
+  - `GameStateAtomicityBugTests` 当前通过，结果 `1/1 passed`。
+  - 测试同时检查 `region.ownerFactionId` 与 previous owner 的 `regionIds.Count` 未变化。
+- 缺口判断：审查文档仍沿用旧版 atomicity 风险描述，已与当前实现和测试不一致；这是审查摘要漂移，不是当前 `ChangeRegionOwner` 行为缺陷。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “GameState atomicity 审查摘要漂移” 缺口。
+- 下一轮修补建议明确为：只更新 `docs/audit-test-coverage.md` 中 `GameStateAtomicityBugTests.cs` 的表格/总结状态；如需小幅增强，可在测试中补充 `Assert.Contains("r0", player.regionIds)`，但不改 `GameState` 行为。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~GameStateAtomicityBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 代码检索确认 `GameState.cs` 在 mutation 前执行 null guard；审查文档仍保留过期摘要。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 64，可回收 `GameStateAtomicityBugTests.cs` 的过期审查描述，并可选补充 contains 断言增强可读性。
+- 验证建议：运行 `GameStateAtomicityBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 64
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 63 的 “GameState atomicity 审查摘要漂移”低风险缺口。
+- 修补范围限定为 `GameStateAtomicityBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 `GameState.ChangeRegionOwner()` 行为、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 63；轮 52-63 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 本轮继续遵守纯代码 Web + headless Domain Core 路线，验证范围聚焦测试文件、审查文档和权威报告。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/GameStateAtomicityBugTests.cs` 已补充 `Assert.Contains("r0", player.regionIds)`，避免 count 不变但 regionId 丢失时仍被误判。
+- `docs/audit-test-coverage.md` 已把该项标为已对齐/已回收，并同步回收假阴性总结中的过期描述。
+- 本轮未修改 `GameState.ChangeRegionOwner()` 行为；当前实现仍在 mutation 前处理 null owner regionIds。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~GameStateAtomicityBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 过期文本扫描确认待修复摘要原文已回收。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：本轮完整记录涉及 `docs/audit-test-coverage.md` 与 `project-development-report.md`，二者均混有前序轮次内容；无法在不混入其他内容的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 65。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 65
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 64；轮 52-64 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近验证沿用轮 64：`GameStateAtomicityBugTests` 定向测试 `1/1 passed`；轮 64 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/HeadlessScenarioMustHaveKeyDeltaBugTests.cs` 与 `domain-core/src/Domain/Core/HeadlessSimulationRunner.cs` 后确认一个低风险测试层级缺口。
+- 当前真实状态：
+  - `HeadlessScenarioMustHaveKeyDeltaBugTests.cs` 当前通过，结果 `1/1 passed`。
+  - 该测试用源码结构检查每个会 `return Pass(...)` 的 scenario 方法体内是否存在 `AddKeyDelta(...)`。
+  - 它不执行 `RunAllScenarios()` 或同等 runtime path，无法直接证明实际 passing result 的 report 一定含 keyDelta。
+- 缺口判断：这是测试层级缺口，不是当前 `HeadlessSimulationRunner` 行为缺陷；风险在于 runtime report 组装或分支重构后，源码结构检查仍可能绿色。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “Headless keyDelta 静态检查缺少运行时佐证” 缺口。
+- 下一轮修补建议明确为：在 `HeadlessScenarioMustHaveKeyDeltaBugTests.cs` 增加 runtime assertion，执行所有 headless scenarios 并断言每个 passing result 至少包含一个 keyDelta；不改 `HeadlessSimulationRunner` 场景逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~HeadlessScenarioMustHaveKeyDeltaBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 代码检索确认该测试当前依赖 `body.Contains("AddKeyDelta(")` 与 `body.Contains("return Pass(")` 的源码结构检查。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 66，可补 runtime assertion 并同步审查文档/报告状态。
+- 验证建议：运行 `HeadlessScenarioMustHaveKeyDeltaBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 66
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 65 的 “Headless keyDelta 静态检查缺少运行时佐证”低风险缺口。
+- 修补范围限定为 `HeadlessScenarioMustHaveKeyDeltaBugTests.cs`、`WanChaoGuiYiTests.csproj`、`docs/audit-test-coverage.md` 与本报告；不改 `HeadlessSimulationRunner` 场景逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 65；轮 52-65 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务。
+- 最近验证沿用轮 65：`HeadlessScenarioMustHaveKeyDeltaBugTests` 定向测试 `1/1 passed`；轮 65 文档级检查通过。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/HeadlessScenarioMustHaveKeyDeltaBugTests.cs` 已新增 runtime assertion：用 production JSON 数据执行 `HeadlessSimulationRunner.RunAllScenarios()`。
+- 新断言同时检查每个 passed `HeadlessSimulationResult.report.keyDeltas` 与最终 `suite.report.scenarios[].keyDeltas`，防止源码结构检查绿色但运行报告丢失 keyDelta。
+- `tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj` 已链接 `NonUnityJsonDataRepository.cs`，仅供该测试加载 `web-strategy-map/game-data-source/data`。
+- `docs/audit-test-coverage.md` 已把该项从“待修复”改为已对齐/已回收，并记录本轮修补。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~HeadlessScenarioMustHaveKeyDeltaBugTests" --logger "console;verbosity=minimal"`，结果 `2/2 passed`。
+- 代码差异复核确认本轮未修改 `HeadlessSimulationRunner`、Web runtime、JSON 数据表或 Unity/Tuanjie 相关文件。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：`docs/audit-test-coverage.md` 仍是未跟踪文件并混有前序多轮审查内容，`project-development-report.md` 也混有前序自动化轮次；无法在不混入既有改动的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 67。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 67
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 66；轮 52-66 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务。
+- 最近验证沿用轮 66：`HeadlessScenarioMustHaveKeyDeltaBugTests` 定向测试 `2/2 passed`；轮 66 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/ArmyMoraleClampBugTests.cs`、`domain-core/src/Core/GameState.cs` 与 `domain-core/src/Domain/World/WorldState.cs` 后确认一个低风险测试摘要/覆盖缺口。
+- 当前真实状态：
+  - `ArmyState.morale` 已是 property，setter 使用 `DomainMath.Clamp(value, 0, 100)`。
+  - `ArmyRuntimeState.morale` 同样已是 property，setter 使用 `DomainMath.Clamp(value, 0, 100)`。
+  - `ArmyMoraleClampBugTests` 定向测试当前通过，结果 `1/1 passed`。
+- 缺口判断：测试注释仍称 legacy/runtime morale 都是无 clamp 的 public int fields，已与当前实现不一致；同时测试只直接覆盖 `ArmyState`，未直接覆盖 `ArmyRuntimeState`，与注释声明的双路径不变量不完全匹配。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “Army morale clamp 测试摘要与 runtime 覆盖不一致” 缺口。
+- 下一轮修补建议明确为：在 `ArmyMoraleClampBugTests.cs` 补充 `ArmyRuntimeState.morale` 直接赋值 clamp 断言，并同步更新测试注释与审查文档状态；不改 morale 生产逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~ArmyMoraleClampBugTests" --logger "console;verbosity=minimal"`，结果 `1/1 passed`。
+- 代码检索确认 legacy/runtime morale 当前均通过 property setter clamp。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 68，可只触碰 `ArmyMoraleClampBugTests.cs`、`docs/audit-test-coverage.md` 与本报告。
+- 验证建议：运行 `ArmyMoraleClampBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 68
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 67 的 “Army morale clamp 测试摘要与 runtime 覆盖不一致”低风险缺口。
+- 修补范围限定为 `ArmyMoraleClampBugTests.cs`、`docs/audit-test-coverage.md` 与本报告；不改 morale 生产逻辑、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 67；轮 52-67 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66 → 67。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务。
+- 最近验证沿用轮 67：`ArmyMoraleClampBugTests` 定向测试 `1/1 passed`；轮 67 文档级检查通过。
+
+### 已完成修补
+
+- `tools/headless_runner/WanChaoGuiYiTests/ArmyMoraleClampBugTests.cs` 注释已从旧版 public field 风险更新为当前 setter-level clamp 回归验证说明。
+- 新增 `Runtime_Army_Morale_Must_Stay_In_Range_After_Assignment()`，直接覆盖 `ArmyRuntimeState.morale` 的负值与超上限赋值路径。
+- `docs/audit-test-coverage.md` 已把 `ArmyMoraleClampBugTests.cs` 从待确认/覆盖缺口改为已对齐/已回收，并同步回收假阴性总结。
+- 本轮未修改 `ArmyState.morale`、`ArmyRuntimeState.morale` 或任何生产逻辑。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~ArmyMoraleClampBugTests" --logger "console;verbosity=minimal"`，结果 `2/2 passed`。
+- 差异复核确认本轮只修改测试、审查文档和权威报告。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：`docs/audit-test-coverage.md` 仍是未跟踪文件并混有前序多轮审查内容，`project-development-report.md` 也混有前序自动化轮次；无法在不混入既有改动的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 69。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 69
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，只做 preflight、审查复核和低风险缺口记录，不改产品代码。
+- 继续保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 68；轮 52-68 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66 → 67 → 68。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务。
+- 最近验证沿用轮 68：`ArmyMoraleClampBugTests` 定向测试 `2/2 passed`；轮 68 文档级检查通过。
+
+### 本轮发现
+
+- 复核 `docs/audit-test-coverage.md`、`tools/headless_runner/WanChaoGuiYiTests/GameStateFactoryNullDataBugTests.cs` 与 `domain-core/src/Core/GameStateFactory.cs` 后确认一个低风险审查摘要漂移缺口。
+- 当前真实状态：
+  - `GameStateFactory.CreateDefault()` 入口先调用 `ValidateRepository(data)`。
+  - `ValidateRepository()` 对 `data == null`、`Emperors == null`、`Regions == null`、`Units == null` 均抛 `InvalidOperationException`。
+  - `GameStateFactoryNullDataBugTests.cs` 当前注释和断言都明确要求 documented `InvalidOperationException`。
+  - 定向测试当前通过，结果 `2/2 passed`。
+- 缺口判断：审查表格仍写“若修复方案是 `ArgumentNullException`，测试失败，应接受两种异常类型”，已与当前实现选择和测试意图不一致；这是审查摘要漂移，不是当前 `GameStateFactory` 行为缺陷。
+
+### 本轮记录
+
+- 已在 `docs/audit-test-coverage.md` 追加 “GameStateFactory null-data 异常类型摘要漂移” 缺口。
+- 下一轮修补建议明确为：只更新 `docs/audit-test-coverage.md` 中 `GameStateFactoryNullDataBugTests.cs` 的表格状态，把该项标为已对齐/已回收；不改 `GameStateFactory`、C# 测试、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~GameStateFactoryNullDataBugTests" --logger "console;verbosity=minimal"`，结果 `2/2 passed`。
+- 代码检索确认 `ValidateRepository()` 当前抛 documented `InvalidOperationException`。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 70，可只触碰 `docs/audit-test-coverage.md` 与本报告。
+- 验证建议：运行 `GameStateFactoryNullDataBugTests` 定向 dotnet test，并补充文档级检查。
+
+### 提交判断
+
+- 本轮为找缺口轮，只更新审查记录和权威报告，通常不提交。
+- 工作树仍存在大量前序未提交修改，且 `docs/audit-test-coverage.md` 与 `project-development-report.md` 混有前序轮次内容，暂不做 scoped commit。
+
+## 2026-05-22 5分钟交替自动化：修补问题轮 70
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“修补问题”轮，承接轮 69 的 “GameStateFactory null-data 异常类型摘要漂移”低风险缺口。
+- 修补范围限定为 `docs/audit-test-coverage.md` 与本报告；不改 `GameStateFactory`、C# 测试、Web runtime、数据表或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 最近报告尾部停在轮 69；轮 52-69 顺序为 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66 → 67 → 68 → 69。
+- 进程检查未发现当前项目的 dotnet、python、Vite、Playwright 或 headless 冲突任务。
+- 最近验证沿用轮 69：`GameStateFactoryNullDataBugTests` 定向测试 `2/2 passed`；轮 69 文档级检查通过。
+
+### 已完成修补
+
+- `docs/audit-test-coverage.md` 中 `GameStateFactoryNullDataBugTests.cs` 表格行已从“应接受 `ArgumentNullException`”改为“已对齐/已回收”。
+- 当前记录明确 `GameStateFactory.CreateDefault()` 和测试都使用 documented `InvalidOperationException` 表达缺失 repository 或关键数据表。
+- 本轮未修改 `GameStateFactory`、`GameStateFactoryNullDataBugTests.cs` 或任何生产逻辑。
+
+### 当前验证
+
+- 定向 headless 测试通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~GameStateFactoryNullDataBugTests" --logger "console;verbosity=minimal"`，结果 `2/2 passed`。
+- 代码检索确认 `ValidateRepository()` 当前抛 documented `InvalidOperationException`。
+- 最终文档级检查通过：轮次顺序、`git diff --check`、行尾空白和冲突标记扫描均未发现阻塞项。
+
+### 提交判断
+
+- 当前暂缓提交。
+- 暂缓原因：`docs/audit-test-coverage.md` 仍是未跟踪文件并混有前序多轮审查内容，`project-development-report.md` 也混有前序自动化轮次；无法在不混入既有改动的前提下安全 scoped commit。
+- 下一步：下一轮进入找缺口轮 71。
+
+## 2026-05-22 5分钟交替自动化：找缺口轮 71
+
+### 接入目标
+
+- 本轮为 5 分钟交替自动化的“找漏洞/找缺口”轮，优先复核上一轮报告状态是否可作为后续自动轮次依据。
+- 保持纯代码 Web + headless Domain Core 路线，不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，工作树仍为大量前序累计未提交状态；本轮未回滚或覆盖用户/前序改动。
+- 进程检查未发现当前项目正在运行的 dotnet、python、Vite、Playwright 或 headless 冲突任务；匹配到的 node/PowerShell 为 oh-my-codex MCP/hook 或本轮短命令。
+- 最近测试/构建状态沿用轮 70：`GameStateFactoryNullDataBugTests` 定向测试 `2/2 passed`；本轮不改核心或 Web 代码。
+
+### 本轮发现与小修
+
+- 复核 `project-development-report.md` 后发现轮 70 段落仍插在轮 59 与轮 60 之间，和其正文“承接轮 69”不一致。
+- 该问题会污染后续 5 分钟轮次判断，属于报告记录层阻塞性小修；本轮已把轮 70 移动到轮 69 之后。
+- 本轮未修改 `docs/audit-test-coverage.md`、C# 测试、Domain Core、Web runtime、数据表或 Unity/Tuanjie。
+
+### 当前验证
+
+- 轮次顺序检查通过：轮 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66 → 67 → 68 → 69 → 70 → 71。
+- 文档级验证通过：`git diff --check -- project-development-report.md docs\audit-test-coverage.md` 无内容级 whitespace error，仅提示 `project-development-report.md` 下次 Git 接触时 LF 会替换为 CRLF。
+- 行尾空白扫描通过：`Select-String -Path project-development-report.md,docs\audit-test-coverage.md -Pattern '[ \t]+$'` 无命中。
+- 冲突标记和待补验证占位扫描通过，未发现 merge marker、待补执行、待补最终验证或完成后再补记类残留文本。
+
+### 下一轮建议
+
+- 下一轮应进入修补问题轮 72，可从 `docs/audit-test-coverage.md` 的仍活跃项中选择 `OccupationContributionInvariantBugTests.cs` 测试构造无效缺口，小步修补测试或审查描述。
+
+### 提交判断
+
+- 本轮为找缺口轮，且只修正权威报告顺序，不提交。
+- 暂缓原因：`project-development-report.md` 与未跟踪的 `docs/audit-test-coverage.md` 均混有前序多轮内容；无法在不混入既有改动的前提下安全 scoped commit。
