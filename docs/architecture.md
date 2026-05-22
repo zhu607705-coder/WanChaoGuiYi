@@ -28,8 +28,8 @@ Three.js map / UI panels / audio
 
 - `web-strategy-map/src/main.ts`：Web 游戏启动、加载数据、创建新局、绑定 UI。
 - `web-strategy-map/src/data.ts`：读取 `game-data-source` 同步后的 JSON、音频 manifest 和地图资源。
-- `web-strategy-map/src/state.ts` / `types.ts`：运行态数据与存档结构。
-- `web-strategy-map/src/systems.ts`：回合、治理、战争、事件、胜利等规则推进。
+- `web-strategy-map/src/types.ts`：运行态数据、静态数据和存档结构类型。
+- `web-strategy-map/src/ui.ts`：Web 运行态、行动 reducer、治理/战争/编年事件与存档导入导出。
 - `web-strategy-map/src/scene.ts`：Three.js 九州地图、区域面片、相机和交互。
 - `domain-core/src`：C# 玩法核心，用于 headless 战争/治理因果回归。
 
@@ -41,7 +41,7 @@ Three.js map / UI panels / audio
 | 帝皇 | `EmperorMechanicSystem` | 每位帝皇独特机制 |
 | 经济 | `EconomySystem`, `TaxSystem`, `PopulationSystem`, `LandSystem` | 收入、人口、土地兼并 |
 | 政治 | `LegitimacySystem`, `FactionSystem`, `ReformSystem`, `RebellionSystem` | 法统、派系、改革、民变 |
-| 军事 | `systems.ts`, `domain-core/src/Domain/Military` | 行军、战斗、围城 |
+| 军事 | `ui.ts`, `domain-core/src/Domain/Military` | Web 军令交互、headless 行军、战斗、围城 |
 | 继承 | `SuccessionSystem` | 继承风险和继位结算 |
 | 人才 | `TalentSystem` | 人才获得和任命入口 |
 | AI | `StrategicAI`, `PolicyAI`, `MilitaryAI` | 政策倾向和扩张目标 |

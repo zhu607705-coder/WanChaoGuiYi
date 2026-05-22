@@ -29,6 +29,20 @@
     "diplomacy": 52,
     "successionControl": 38
   },
+  "score": {
+    "virtue": 45,
+    "wisdom": 92,
+    "physique": 70,
+    "aesthetics": 68,
+    "diligence": 96,
+    "ambition": 100,
+    "dignity": 98,
+    "tolerance": 35,
+    "selfControl": 86,
+    "personnelManagement": 90,
+    "nationalPower": 100,
+    "popularSupport": 62
+  },
   "uniqueMechanic": {
     "id": "liu_he_tong_gui",
     "name": "六合同轨",
@@ -46,6 +60,11 @@
   }
 }
 ```
+
+字段说明：
+- `stats` 是 MVP 玩法直接使用的六维能力，范围 0 到 100。
+- `score` 是跨系统评价和后续帝皇对比 UI 的十二维评分，范围 0 到 100；字段必须包含 `virtue`、`wisdom`、`physique`、`aesthetics`、`diligence`、`ambition`、`dignity`、`tolerance`、`selfControl`、`personnelManagement`、`nationalPower`、`popularSupport`。
+- `diplomacySkills` 中的 `moneyCost`、`talentCost`、`cooldownTurns` 使用非负整数；缺省技能应使用空数组而不是省略字段。
 
 ## Portrait
 
