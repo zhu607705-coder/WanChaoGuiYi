@@ -169,6 +169,109 @@ namespace WanChaoGuiYi.Tests
             Assert.True(HasLogContaining(state, "前线整备"));
         }
 
+        [Fact]
+        public void Succession_Pressure_Must_Trigger_Dynasty_Crisis_With_Readable_Consequences()
+        {
+            FakeDataRepository data;
+            FactionState player;
+            FactionState rival;
+            GameState state = BuildPressureWorld(10, 8, out data, out player, out rival);
+            WorldState world = TestFixtures.BuildWorldState(state, data);
+            GameContext context = TestFixtures.BuildContext(state, data);
+            DomainEconomySystem economy = new DomainEconomySystem(world);
+            DomainSuccessionSystem succession = new DomainSuccessionSystem();
+
+            player.successionRisk = 68;
+            player.courtFactionPressure = 58;
+            player.heir = new HeirState
+            {
+                name = "Fragile Heir",
+                age = 14,
+                legitimacy = 32,
+                ability = 36
+            };
+            RegionState fragileRegion = state.FindRegion("r7");
+            fragileRegion.rebellionRisk = 42;
+            fragileRegion.localPower = 38;
+            fragileRegion.annexationPressure = 24;
+            fragileRegion.localAcceptance = 36;
+
+            int legitimacyBefore = player.legitimacy;
+            int courtBefore = player.courtFactionPressure;
+            int rebellionBefore = fragileRegion.rebellionRisk;
+            for (int turn = 0; turn < 4; turn++)
+            {
+                economy.ExecuteTurn(context);
+                state.AdvanceHalfYear();
+            }
+
+            int successionBeforeCrisis = player.successionRisk;
+            SuccessionCrisisPayload crisis = succession.TryTriggerSuccessionCrisis(context, player);
+
+            output.WriteLine("successionRisk crisis: " + successionBeforeCrisis + " -> " + player.successionRisk);
+            output.WriteLine("legitimacy crisis: " + legitimacyBefore + " -> " + player.legitimacy);
+            output.WriteLine("court pressure crisis: " + courtBefore + " -> " + player.courtFactionPressure);
+            output.WriteLine("fragile region rebellion: " + rebellionBefore + " -> " + fragileRegion.rebellionRisk);
+
+            Assert.NotNull(crisis);
+            Assert.True(crisis.triggered, "High succession pressure must become a crisis event, not remain an isolated number.");
+            Assert.True(player.successionRisk > successionBeforeCrisis, "The crisis should make unresolved succession visibly worse.");
+            Assert.True(player.legitimacy < legitimacyBefore, "Succession crisis should damage legitimacy.");
+            Assert.True(player.courtFactionPressure > courtBefore, "Succession crisis should raise court faction pressure.");
+            Assert.True(fragileRegion.rebellionRisk > rebellionBefore, "Succession crisis should spill into local stability.");
+            Assert.Contains("继承风险", crisis.reason);
+            Assert.True(HasLogContaining(state, "继承危机"));
+        }
+
+        [Fact]
+        public void Player_Takeover_Must_Buy_Time_For_Dynasty_At_A_Resource_Cost()
+        {
+            FakeDataRepository data;
+            FactionState player;
+            FactionState rival;
+            GameState state = BuildPressureWorld(8, 6, out data, out player, out rival);
+            GameContext context = TestFixtures.BuildContext(state, data);
+            DomainSuccessionSystem succession = new DomainSuccessionSystem();
+
+            player.money = 360;
+            player.legitimacy = 64;
+            player.successionRisk = 82;
+            player.courtFactionPressure = 74;
+            player.stableSuccessions = 0;
+            player.heir = new HeirState
+            {
+                name = "Contested Heir",
+                age = 18,
+                legitimacy = 44,
+                ability = 48
+            };
+
+            SuccessionCrisisPayload crisis = succession.TryTriggerSuccessionCrisis(context, player);
+            Assert.NotNull(crisis);
+            Assert.True(crisis.triggered);
+            int moneyBeforeIntervention = player.money;
+            int legitimacyBeforeIntervention = player.legitimacy;
+            int successionBeforeIntervention = player.successionRisk;
+            int courtBeforeIntervention = player.courtFactionPressure;
+            int stableBeforeIntervention = player.stableSuccessions;
+
+            SuccessionStabilizationPayload stabilized = succession.StabilizeSuccession(context, player);
+
+            output.WriteLine("takeover money: " + moneyBeforeIntervention + " -> " + player.money);
+            output.WriteLine("takeover legitimacy: " + legitimacyBeforeIntervention + " -> " + player.legitimacy);
+            output.WriteLine("takeover successionRisk: " + successionBeforeIntervention + " -> " + player.successionRisk);
+            output.WriteLine("takeover courtPressure: " + courtBeforeIntervention + " -> " + player.courtFactionPressure);
+
+            Assert.True(stabilized.applied, "Player takeover should provide a direct succession-stabilizing action.");
+            Assert.True(player.successionRisk < successionBeforeIntervention, "Intervention should reduce succession risk.");
+            Assert.True(player.courtFactionPressure < courtBeforeIntervention, "Intervention should reduce court pressure.");
+            Assert.True(player.money < moneyBeforeIntervention, "Intervention should spend treasury resources.");
+            Assert.True(player.legitimacy < legitimacyBeforeIntervention, "Intervention should sacrifice some legitimacy through compromise.");
+            Assert.True(player.stableSuccessions > stableBeforeIntervention, "A successful intervention should count as a stable succession step.");
+            Assert.Contains("立储", stabilized.reason);
+            Assert.True(HasLogContaining(state, "继承续命"));
+        }
+
         private static GameState BuildPressureWorld(
             int regionCount,
             int initialPlayerRegions,

@@ -67,6 +67,9 @@ export interface StrategyDataset {
     money: number;
     army: number;
     legitimacy: number;
+    successionRisk: number;
+    courtPressure: number;
+    stableSuccessions: number;
   };
 }
 
@@ -218,11 +221,29 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
   ];
 
   const route = buildRouteForecast(armies[0], regionById);
+  const playerRegions = regions.filter((region) => region.owner === 'player');
+  const averagePlayerRisk = playerRegions.reduce((sum, region) => sum + region.risk, 0) / Math.max(1, playerRegions.length);
+  const firstEmperor = emperorsData.items[0];
+  const successionControl = firstEmperor?.stats?.successionControl ?? 55;
+  const legitimacy = Math.round(playerRegions.reduce((sum, r) => sum + r.legitimacy, 0) / Math.max(1, playerRegions.length));
+  const successionRisk = Math.round(clamp(
+    24 + playerRegions.length * 3 + averagePlayerRisk * 0.4 + Math.max(0, 60 - successionControl) * 0.7,
+    0,
+    100
+  ));
+  const courtPressure = Math.round(clamp(
+    18 + Math.max(0, successionRisk - 35) * 0.55 + Math.max(0, 70 - legitimacy) * 0.4,
+    0,
+    100
+  ));
   const nation = {
     food: aggregateNationFood(regions.map(regionToNationAggregationInput)),
     money: aggregateNationMoney(regions.map(regionToNationAggregationInput)),
     army: armies.filter((army) => army.faction === 'player').reduce((sum, army) => sum + army.soldiers, 0),
-    legitimacy: Math.round(regions.filter((r) => r.owner === 'player').reduce((sum, r) => sum + r.legitimacy, 0) / Math.max(1, regions.filter((r) => r.owner === 'player').length))
+    legitimacy,
+    successionRisk,
+    courtPressure,
+    stableSuccessions: 0
   };
 
   return {

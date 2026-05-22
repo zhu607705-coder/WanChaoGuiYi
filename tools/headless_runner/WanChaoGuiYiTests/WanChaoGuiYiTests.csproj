@@ -95,6 +95,7 @@
     <Compile Include="../../../domain-core/src/Domain/Core/StrategyMapRulebook.cs" Link="Game/StrategyMapRulebook.cs" />
     <Compile Include="../../../domain-core/src/Domain/Economy/DomainEconomySystem.cs" Link="Game/DomainEconomySystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Governance/DomainGovernanceImpactSystem.cs" Link="Game/DomainGovernanceImpactSystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Governance/DomainSuccessionSystem.cs" Link="Game/DomainSuccessionSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/IMapGraphData.cs" Link="Game/IMapGraphData.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/MapCommandService.cs" Link="Game/MapCommandService.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/MapGraphData.cs" Link="Game/MapGraphData.cs" />

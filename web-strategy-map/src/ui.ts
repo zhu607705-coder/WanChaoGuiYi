@@ -745,6 +745,10 @@ export class StrategyUi {
     money: number;
     army: number;
     legitimacy: number;
+    successionRisk: number;
+    courtPressure: number;
+    stableSuccessions: number;
+    dynastyPressureSummary: string;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -821,6 +825,7 @@ export class StrategyUi {
     const routeAlternatives = this.routeAlternativesFor(this.selectedRegion);
     return {
       ...this.nationState,
+      dynastyPressureSummary: this.dynastyPressureSummary(),
       governanceQueueLength: this.governanceQueue.length,
       logisticsQueueLength: this.logisticsQueue.length,
       commandQueueLength: this.commandQueue.length,
@@ -3081,6 +3086,7 @@ export class StrategyUi {
     const nextEnemyInterdiction = this.enemyInterdictionOrders[0];
     list.innerHTML = [
       outlinerItem('高风险', `${risky[0].definition.name} 民变 ${Math.round(risky[0].risk)}%`, risky[0].definition.id),
+      outlinerItem('王朝', this.dynastyPressureSummary(), this.selectedRegion.definition.id),
       outlinerItem('行军中', `${route.army.name} → ${route.target.definition.name}`, route.target.definition.id),
       outlinerItem('经营', this.governanceQueue[0] ?? `${this.selectedRegion.recommendedPolicy?.name ?? '安抚'} / ${this.selectedRegion.definition.name}`, this.selectedRegion.definition.id),
       outlinerItem('后勤', nextCommand ? describeWarCommand(nextCommand) : `${route.target.definition.name} 需粮 ${route.occupationCost}`, nextCommand?.targetRegionId ?? route.target.definition.id),
@@ -3095,6 +3101,29 @@ export class StrategyUi {
         if (regionId) this.events.onSelectRegion(regionId);
       });
     });
+  }
+
+  private dynastyPressureSummary(): string {
+    const successionRisk = Math.round(this.nationState.successionRisk ?? 0);
+    const courtPressure = Math.round(this.nationState.courtPressure ?? 0);
+    const stable = Math.round(this.nationState.stableSuccessions ?? 0);
+    const label =
+      successionRisk >= 70 || courtPressure >= 70 ? '继承危机' :
+        successionRisk >= 50 || courtPressure >= 50 ? '继承承压' :
+          '继承稳定';
+    return `${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，可立储安宗`;
+  }
+
+  private advanceDynastyPressure(): void {
+    const playerRegions = this.dataset.regions.filter((region) => region.owner === 'player');
+    const averageRisk = playerRegions.reduce((sum, region) => sum + region.risk, 0) / Math.max(1, playerRegions.length);
+    const expansionPressure = Math.max(0, playerRegions.length - 5);
+    const lowLegitimacyPressure = Math.max(0, 65 - this.nationState.legitimacy);
+    const riskDelta = Math.max(0, Math.round(expansionPressure / 4 + averageRisk / 55 + lowLegitimacyPressure / 35));
+    const courtDelta = Math.max(0, Math.round((this.nationState.successionRisk >= 55 ? 1 : 0) + lowLegitimacyPressure / 35));
+
+    this.nationState.successionRisk = clamp((this.nationState.successionRisk ?? 0) + riskDelta, 0, 100);
+    this.nationState.courtPressure = clamp((this.nationState.courtPressure ?? 0) + courtDelta, 0, 100);
   }
 
   private createActiveRouteForecast(targetCandidate: RegionViewModel): RouteForecast {
@@ -4473,6 +4502,11 @@ export class StrategyUi {
     region.contribution = clamp(region.contribution + plan.delta.contribution, 0, 100);
     region.risk = clamp(region.risk + plan.delta.risk, 0, 100);
     region.legitimacy = clamp(region.legitimacy + plan.delta.legitimacy, 0, 100);
+    if (focusId === 'legitimacy' || focusId === 'relief') {
+      this.nationState.successionRisk = clamp((this.nationState.successionRisk ?? 0) - 3, 0, 100);
+      this.nationState.courtPressure = clamp((this.nationState.courtPressure ?? 0) - 2, 0, 100);
+      this.nationState.stableSuccessions = Math.max(0, this.nationState.stableSuccessions ?? 0);
+    }
     region.governanceFocus = focusId;
     region.specialization = plan.specialization;
     this.refreshRegionRecommendations(region);
@@ -4732,6 +4766,7 @@ export class StrategyUi {
     region.contribution = clamp(region.contribution + plan.delta.contribution, 0, 100);
     region.risk = clamp(region.risk + plan.delta.risk, 0, 100);
     region.legitimacy = clamp(region.legitimacy + plan.delta.legitimacy, 0, 100);
+    this.advanceDynastyPressure();
 
     const completedProjects: GovernanceProject[] = [];
     for (const project of this.governanceProjects) {

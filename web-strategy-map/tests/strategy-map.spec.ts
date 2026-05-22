@@ -57,6 +57,10 @@ type DebugState = {
     money: number;
     army: number;
     legitimacy: number;
+    successionRisk: number;
+    courtPressure: number;
+    stableSuccessions: number;
+    dynastyPressureSummary: string;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -290,6 +294,9 @@ type GameExportState = {
     money: number;
     army: number;
     legitimacy: number;
+    successionRisk: number;
+    courtPressure: number;
+    stableSuccessions: number;
   };
   regions: Array<{
     id: string;
@@ -363,6 +370,16 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('governance-metrics')).toContainText('人口');
     await expect(page.getByTestId('governance-actions')).toContainText('收益');
     await expect(page.getByTestId('governance-actions')).toContainText('副作用');
+    await expect(page.locator('#outliner-list')).toContainText('王朝');
+    await expect(page.locator('#outliner-list')).toContainText(/继承(稳定|承压|危机)/);
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.successionRisk >= 0 &&
+        state.ui.courtPressure >= 0 &&
+        state.ui.dynastyPressureSummary.includes('可立储安宗'),
+      'dynasty pressure should be visible in outliner and debug state'
+    );
     await expect(page.getByTestId('emperor-dock')).toContainText('帝皇');
     await expect(page.getByTestId('emperor-dock')).toContainText('六合同轨');
     await expect(page.locator('[data-asset-icon="metric:人口"]').first()).toHaveAttribute('src', /\/game-data\/art\/Icons\/Systems\/population\.png$/);

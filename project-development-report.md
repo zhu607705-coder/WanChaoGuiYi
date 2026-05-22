@@ -9511,3 +9511,93 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮只覆盖场景 A/B；场景 C“继承压力触发王朝危机”和场景 D“玩家接管续命”仍未落地。
 - 当前测试固定 Domain Core 因果链，尚未补 Web outliner / 接管入口的 Playwright 玩家理解断言。
+
+## 2026-05-22 王朝周期继承危机与续命验收
+
+### 类型
+
+- MVP 收口实现轮：承接上一节剩余风险，把王朝周期场景 C/D 从文档推进到可运行 Domain Core 规则和回归测试，并补 Web outliner 的王朝压力可见性。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 开始时 `git status --short --branch` 为 `## main...origin/main`，工作树干净。
+- 继承现有边界：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不新增依赖，不进入战术战斗。
+- 相关技能检查已完成：`using-superpowers` 先行；`brainstorming` 的等待批准硬门与本仓库自治执行规则冲突，本轮只采用“先读上下文再选切口”的部分；收口前使用 verification-before-completion 规则执行新鲜验证。
+
+### 已完成
+
+- 新增 `domain-core/src/Domain/Governance/DomainSuccessionSystem.cs`。
+  - `TryTriggerSuccessionCrisis()`：当继承风险、朝局压力、扩张规模和继承人脆弱性达到阈值时，触发继承危机。
+  - 危机后果会同时影响继承风险、合法性、朝局压力，并把冲击外溢到最脆弱的已控地区民变、地方势力、兼并压力和地方接受度。
+  - `StabilizeSuccession()`：玩家可通过立储安宗消耗金钱和少量法统，降低继承风险与朝局压力，并在成功压回阈值后推进 `stableSuccessions`。
+- 更新 headless 工程和测试工程 csproj，纳入 `DomainSuccessionSystem`。
+- 扩展 `DynastyCyclePressureAcceptanceTests`：
+  - 场景 C：继承压力触发王朝危机，断言继承风险不再是孤立字段，必须影响合法性、朝局和地方稳定，并有“继承危机/继承风险”解释日志。
+  - 场景 D：玩家接管续命，断言立储安宗能降低继承风险和朝局压力，同时付出金钱与法统代价，并产生“继承续命”解释日志。
+- 扩展 Web nation state：
+  - `data.ts` 初始化 `successionRisk`、`courtPressure`、`stableSuccessions`。
+  - `ui.ts` outliner 新增“王朝”条目，展示继承稳定/承压/危机、朝局压力、续承次数和“可立储安宗”行动提示。
+  - 治理推进会按扩张、民变和低法统积累王朝压力；法统/赈济类治理焦点会小幅缓解继承与朝局压力。
+- 更新 `web-strategy-map/tests/strategy-map.spec.ts`，首屏 Playwright smoke 断言 outliner 显示王朝压力摘要，并检查 debug state 中的 `successionRisk`、`courtPressure` 与 `dynastyPressureSummary`。
+- 更新 `docs/mvp-closure-ledger.md`：记录场景 C/D、`DomainSuccessionSystem` 和 Web outliner 王朝压力摘要已经启动收口。
+
+### 当前验证
+
+- 定向 xUnit 通过：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~DynastyCyclePressureAcceptanceTests" --logger "console;verbosity=minimal"`，结果 `4/4 passed`。
+- Web typecheck 通过：`npm --prefix web-strategy-map run typecheck`。
+- 聚焦 UI 通过：`npm --prefix web-strategy-map run test:ui -- --grep "loads map shell" --reporter=line --workers=1`，结果 `1/1 passed`。
+- 全量门禁通过：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1`，结果 `[ALL GREEN]`。
+- 全量门禁细分：
+  - `validate_domain_core.py` OK。
+  - `validate_web_data_source.py` OK，统计 `data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+  - Domain Core xUnit `85/85 passed`。
+  - headless war `16/16 passed`。
+  - Web typecheck OK。
+  - Vitest `66/66 passed`。
+  - Web build OK。
+  - Playwright UI `27/27 passed`。
+- `git diff --check` 未发现 whitespace error；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 场景 C/D 的 Domain Core 因果链已落地；Web 目前只显示王朝压力摘要和轻量压力变化，还没有完整“模拟观战 -> 接管王朝 -> 继承续命按钮/面板”的专门 UI 流。
+- `stableSuccessions` 已进入 Domain Core 续命动作和 Web 存档状态，但三代延续胜利/失败长线仍需要独立 20-40 回合场景。
+- 本轮未提交；当前工作树包含本轮实现和报告/台账更新，适合下一步做 scoped commit 或继续补 Web 接管入口。
+
+## 2026-05-23 自动化提交前复核与收口
+
+### 类型
+
+- 修补问题：对上一轮未提交的继承危机、玩家续命和 Web 王朝压力摘要改动做提交前复核，形成干净 scoped commit。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main`，存在上一轮未提交改动。
+- 未发现 `dotnet`、`node`、`python` 或 PowerShell 中有本项目路径相关的冲突任务。
+- GitHub Actions 最新 `main` run `26278092239` 已完成且结论为 `success`。
+
+### 本轮复核
+
+- 复核 diff 边界：改动集中在 `DomainSuccessionSystem`、王朝周期 C/D 测试、headless/test csproj、Web `data.ts`/`ui.ts`、Playwright smoke、MVP 台账和本报告。
+- 未发现 Unity/Tuanjie、无关项目、新依赖或战术战斗扩展。
+- 当前仍保留剩余 P0：Web 侧还需要专门的“模拟观战 -> 接管王朝 -> 继承续命/立储安宗”入口和 Playwright UI 接管断言。
+
+### 当前验证
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 通过，结果 `[ALL GREEN]`。
+- 全量门禁细分：
+  - `validate_domain_core.py` OK。
+  - `validate_web_data_source.py` OK，统计 `data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+  - Domain Core xUnit `85/85 passed`。
+  - headless war `16/16 passed`。
+  - Web typecheck OK。
+  - Vitest `66/66 passed`。
+  - Web build OK。
+  - Playwright UI `27/27 passed`。
+- `git diff --check` 无 whitespace error；仅有 Windows 换行提示。
+
+### 提交策略
+
+- 本轮改动与既有工作树可安全隔离，准备按 Lore Commit Protocol 提交。
