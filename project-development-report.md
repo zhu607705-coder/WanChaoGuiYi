@@ -9471,3 +9471,43 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 下一步
 
 - 进入实现阶段：优先新增 `DynastyCyclePressureAcceptanceTests`，从“扩张后过热”和“财政军队土地挤压”两个场景开始。
+
+## 2026-05-22 王朝周期压力验收 A/B
+
+### 类型
+
+- 修补问题：把已定义的王朝周期长线验收从文档推进到 headless 回归测试。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main [ahead 2]`，开始本轮实现前工作树干净。
+- 未发现 `dotnet`、`node`、`python` 或 PowerShell 中有本项目路径相关的冲突任务。
+- 最近远端 `main` CI 为 `c556ae1` / run `26274912349`，状态 `completed success`。
+
+### 已完成
+
+- 新增 `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs`。
+- 更新 `tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj`，纳入新验收测试。
+- 场景 A 覆盖“强盛王朝扩张后过热”：
+  - 6 个核心区扩张到 9 区。
+  - 前线整备先消耗粮食并预留占后治理粮。
+  - 新占领地区进入 `Occupied` / `NewlyAttached`，税粮贡献低于核心区。
+  - 合法性下降、治理成本上升、地方压力上升，并在 20 回合经济结算中累计继承风险。
+  - 日志必须解释前线整备、新占领和地区贡献率折算。
+- 场景 B 覆盖“财政军队土地挤压”：
+  - 急征税增加金钱，同时降低合法性、接受度并提高民变。
+  - 征兵消耗人口和兵源，同时提高地方风险。
+  - 前线整备继续消耗粮食，形成财政、军队和地方压力同屏移动。
+
+### 当前验证
+
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~DynastyCyclePressureAcceptanceTests" --logger "console;verbosity=minimal"`：2/2 passed。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --logger "console;verbosity=minimal"`：83/83 passed。
+- `python tools\validate_domain_core.py`：OK。
+- `git diff --check -- tools\headless_runner\WanChaoGuiYiTests\DynastyCyclePressureAcceptanceTests.cs tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj`：无 whitespace error；PowerShell 提示 csproj 下次由 Git 接触时会 LF 转 CRLF。
+
+### 剩余风险
+
+- 本轮只覆盖场景 A/B；场景 C“继承压力触发王朝危机”和场景 D“玩家接管续命”仍未落地。
+- 当前测试固定 Domain Core 因果链，尚未补 Web outliner / 接管入口的 Playwright 玩家理解断言。

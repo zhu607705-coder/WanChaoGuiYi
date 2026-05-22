@@ -33,7 +33,7 @@
 | 玩家接管和战役指挥 | Web 战争命令、路线、补给、截粮、撤退、战报、27 条 Playwright | 已可玩 | 下场接管必须稳定覆盖调军、路线、补给、进攻、撤退、占后处理 | headless war、Playwright 战役指挥流 |
 | 自动战斗结算 | Domain battle simulation、tie-break、casualty、morale、supply tests | 已可玩 | 保持自动结算，不进入战术战斗；战报解释胜负、伤亡、补给影响 | xUnit battle/morale/supply tests |
 | 扩张后的治理拖累 | occupation status、control stage、contribution caps、pacification queue | 已可玩 | 新占地不能立刻完整贡献；玩家必须处理占领治理成本 | headless occupation/control chain、Web 治理行动断言 |
-| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | 新增 20-40 回合王朝周期 headless/Web 验收 |
+| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure、`DynastyCyclePressureAcceptanceTests` 场景 A/B | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | 20-40 回合王朝周期 headless/Web 验收 |
 | 财政、粮食、人口、兵力 | EconomySystem、DomainEconomySystem、Web nation aggregation tests | 已可玩 | 财政和粮食要参与扩张、军队、治理的真实取舍 | xUnit economy tests、Web aggregation/property tests |
 | 土地兼并和民变 | landStructure、annexationPressure、rebellionRisk、relief/tax pressure scenarios | 部分可玩 | 土地和民变必须成为王朝周期压力的显性后果，而不是只做数值字段 | 治理压力 headless 场景、UI 最大风险断言 |
 | 继承系统 | heir、successionRisk、stableSuccessions、victory condition data | 部分可玩 | 帝皇老去或继承不稳必须能触发王朝断裂风险和玩家介入窗口 | 继承危机场景、三代延续验收 |
@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 建立 20-40 回合王朝周期验收场景设计 | `docs/mvp-closure-ledger.md`、`project-development-report.md`、headless tests | 文档检查，后续 xUnit |
+| P0 | 补齐王朝周期继承危机和玩家接管续命验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | xUnit 场景 C/D、UI 接管断言 |
 | P0 | 盘点现有 Web 是否有“接管王朝/恢复模拟”入口 | `web-strategy-map/src/ui.ts`、Playwright | Playwright targeted grep/test |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
@@ -83,3 +83,4 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 ## 已启动的收口工件
 
 - `docs/dynasty-cycle-acceptance-scenarios.md`：定义 20-40 回合王朝周期长线验收场景，作为后续 headless 和 Playwright 实现依据。
+- `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs`：已覆盖场景 A“扩张后过热”和场景 B“财政军队土地挤压”，验证资源收益、治理/军队成本、地方压力、继承压力和解释日志同时出现。

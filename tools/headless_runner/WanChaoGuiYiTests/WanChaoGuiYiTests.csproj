@@ -77,6 +77,7 @@
     <Compile Include="BattleSimulationDeterministicBugTests.cs" />
     <Compile Include="NumericFormulasBattlePowerPbtBugTests.cs" />
     <Compile Include="PerformanceBaselineBugTests.cs" />
+    <Compile Include="DynastyCyclePressureAcceptanceTests.cs" />
     <Compile Include="TestSupport.cs" />
 
     <!-- Reused production sources from domain-core -->
