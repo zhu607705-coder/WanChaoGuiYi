@@ -1,75 +1,61 @@
-import { describe, expect, it } from 'vitest';
-import { existsSync, statSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { expect, it } from 'vitest';
+import {
+  BUNDLE_SIZE_BUDGETS,
+  describeBuiltBundle,
+  largestAsset,
+  totalAssetSize,
+} from './bundle-budget-helpers';
 
 /**
- * Bug under investigation: Vite production build emits a single
- * ~800kB JS chunk + ~25kB CSS. Gzip drops it to ~205kB but the
- * un-gzipped wire cost is paid by every cold visitor. The build
- * itself emits an advisory; CI doesn't fail on it.
+ * Bug under investigation: early Vite production builds emitted a
+ * single ~800kB JS chunk + ~25kB CSS. Gzip reduced transfer size, but
+ * raw chunk size still hurt cold-load performance and triggered Vite's
+ * advisory. The current build is split; this file keeps the budget
+ * from regressing.
  *
  * Pinned invariants:
- *   1. The largest single JS chunk should not exceed 600 kB raw
- *      (today ~801kB, so this fails).
- *   2. The CSS bundle should stay under 50 kB raw (today ~25kB,
- *      passes — but pinning prevents regression).
+ *   1. The largest single JS chunk should not exceed 600 kB raw.
+ *   2. The CSS bundle should stay under 50 kB raw.
  *   3. dist/ should contain at least one JS chunk other than the
  *      main bundle (i.e. there should be SOME code-splitting today).
+ *   4. Total JS should stay under 1.1 MB raw so code-splitting does
+ *      not hide overall payload growth.
  *
  * This test runs as a unit test that consults the most recent build
  * output. It skips itself if dist/ does not exist (e.g. in CI before
  * the build step). When dist/ DOES exist, it enforces the budget.
  */
-describe('Vite bundle size budget', () => {
-  const distDir = join(__dirname, '..', '..', 'dist');
-  const assetsDir = join(distDir, 'assets');
-
-  function listAssets(): string[] {
-    if (!existsSync(assetsDir)) return [];
-    return readdirSync(assetsDir);
-  }
-
-  it('skips when dist not built', () => {
-    if (!existsSync(distDir)) {
-      expect.soft(true).toBe(true);
-      return;
-    }
-  });
-
+describeBuiltBundle('Vite bundle size budget', (bundle) => {
   it('largest JS chunk stays under 600 kB raw', () => {
-    if (!existsSync(assetsDir)) return;
-    const jsFiles = listAssets().filter((f) => f.endsWith('.js'));
+    const jsFiles = bundle.jsFiles;
     expect(jsFiles.length).toBeGreaterThan(0);
 
-    let largest = 0;
-    let largestName = '';
-    for (const f of jsFiles) {
-      const size = statSync(join(assetsDir, f)).size;
-      if (size > largest) {
-        largest = size;
-        largestName = f;
-      }
-    }
-    // Today: ~801,510. Budget: 600,000.
-    expect.soft(largest, `largest js chunk: ${largestName} = ${largest} bytes`).toBeLessThan(600_000);
+    const largest = largestAsset(bundle, jsFiles);
+    // Historical failure: ~801,510. Budget: 600,000.
+    expect
+      .soft(largest.size, `largest js chunk: ${largest.name} = ${largest.size} bytes`)
+      .toBeLessThan(BUNDLE_SIZE_BUDGETS.maxJsChunkSoftBytes);
   });
 
   it('CSS bundle stays under 50 kB raw', () => {
-    if (!existsSync(assetsDir)) return;
-    const cssFiles = listAssets().filter((f) => f.endsWith('.css'));
+    const cssFiles = bundle.cssFiles;
     if (cssFiles.length === 0) return;
-    let largest = 0;
-    for (const f of cssFiles) {
-      const size = statSync(join(assetsDir, f)).size;
-      if (size > largest) largest = size;
-    }
-    expect(largest).toBeLessThan(50_000);
+    const largest = largestAsset(bundle, cssFiles);
+    expect(largest.size).toBeLessThan(BUNDLE_SIZE_BUDGETS.maxCssBundleBytes);
+  });
+
+  it('total JS bundle stays under 1.1 MB raw', () => {
+    const jsFiles = bundle.jsFiles;
+    expect(jsFiles.length).toBeGreaterThan(0);
+    const total = totalAssetSize(bundle, jsFiles);
+    expect(total, `total js bundle size: ${total} bytes across ${jsFiles.length} chunks`).toBeLessThan(
+      BUNDLE_SIZE_BUDGETS.maxTotalJsBytes
+    );
   });
 
   it('build produces at least 2 JS chunks (some code splitting)', () => {
-    if (!existsSync(assetsDir)) return;
-    const jsFiles = listAssets().filter((f) => f.endsWith('.js') && !f.endsWith('.map'));
-    // Today: just 1 chunk. Splitting would produce >=2.
-    expect(jsFiles.length).toBeGreaterThanOrEqual(2);
+    const jsFiles = bundle.jsFiles;
+    // Historical failure: just 1 chunk. Splitting should produce >=2.
+    expect(jsFiles.length).toBeGreaterThanOrEqual(BUNDLE_SIZE_BUDGETS.minJsChunks);
   });
 });

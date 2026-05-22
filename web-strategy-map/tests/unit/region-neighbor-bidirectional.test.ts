@@ -53,4 +53,31 @@ describe('loadStrategyDataset neighbor symmetry contract', () => {
 
     expect(caught).toBeInstanceOf(StrategyDatasetLoadError);
   });
+
+  it('rejects self-loop neighbor edges', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.endsWith('regions.json')) {
+        return new Response(
+          JSON.stringify({
+            items: [
+              { id: 'a', name: 'A', terrain: 'plain', population: 0, foodOutput: 0, taxOutput: 0, manpower: 0, landStructure: {}, legitimacyMemory: [], localPower: 0, neighbors: ['a'] }
+            ]
+          }),
+          { status: 200 }
+        );
+      }
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    }) as typeof fetch;
+
+    let caught: unknown = null;
+    try {
+      await loadStrategyDataset();
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(StrategyDatasetLoadError);
+    expect(caught).toHaveProperty('message', expect.stringContaining('cannot list itself as neighbor'));
+  });
 });

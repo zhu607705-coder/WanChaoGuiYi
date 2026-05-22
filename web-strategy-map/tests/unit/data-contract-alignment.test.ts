@@ -33,10 +33,10 @@ describe('cross-language data contract alignment', () => {
     return fields.filter((f) => cs.includes(f) && !ts.includes(f));
   }
 
-  // RegionDefinition fields. C# has gameplaySourceReference,
-  // regionSpecialization, supplyNode, eraProfile that are NOT in TS.
-  // They are arguably designer-side metadata, but TS code that round-trips
-  // a save should at least preserve them as opaque.
+  // RegionDefinition fields. C# carries designer-facing metadata such as
+  // gameplaySourceReference, regionSpecialization, supplyNode, and
+  // eraProfile. TS must keep the shared gameplay surface aligned so Web
+  // loaders and save/export paths do not silently drop contract fields.
   it('RegionDefinition fields agree on critical gameplay surface', () => {
     const critical = [
       'population',
@@ -56,8 +56,8 @@ describe('cross-language data contract alignment', () => {
   });
 
   it('TS types must declare gameplaySourceReference if C# uses it', () => {
-    // Today this fails: gameplaySourceReference is in C# but missing
-    // from TS RegionDefinition. Save round-trips drop the field.
+    // This used to fail when gameplaySourceReference existed only in C#.
+    // Keep it as a regression guard for future contract drift.
     const drift = presentInCsButNotTs(['gameplaySourceReference']);
     expect(drift, `fields present in C# but missing in TS: ${drift.join(', ')}`).toEqual([]);
   });
@@ -69,6 +69,11 @@ describe('cross-language data contract alignment', () => {
 
   it('TS types must declare supplyNode if C# uses it', () => {
     const drift = presentInCsButNotTs(['supplyNode']);
+    expect(drift, `fields present in C# but missing in TS: ${drift.join(', ')}`).toEqual([]);
+  });
+
+  it('TS types must declare eraProfile if C# uses it', () => {
+    const drift = presentInCsButNotTs(['eraProfile']);
     expect(drift, `fields present in C# but missing in TS: ${drift.join(', ')}`).toEqual([]);
   });
 });

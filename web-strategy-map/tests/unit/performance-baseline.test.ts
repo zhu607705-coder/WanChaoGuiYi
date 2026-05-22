@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   loadStrategyDataset,
   aggregateNationFood,
@@ -24,6 +25,7 @@ import {
  */
 describe('performance baselines', () => {
   let originalFetch: typeof globalThis.fetch;
+  const gameDataSourceRoot = new URL('../../game-data-source/', import.meta.url);
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
@@ -64,51 +66,158 @@ describe('performance baselines', () => {
     expect(elapsed, `1000 aggregations took ${elapsed.toFixed(1)}ms`).toBeLessThan(100);
   });
 
-  it('loadStrategyDataset with stub fetch completes in < 1000ms', async () => {
-    // Use a minimal stub that returns empty/valid items; we are
-    // measuring loader machinery, not network.
+  it('loadStrategyDataset with a valid stub dataset completes in < 1000ms', async () => {
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : input.toString();
-      // Return shape-correct stubs for every collection. Most
-      // need {items: []}, map_render_metadata is its own shape,
-      // narration script has its own shape.
+      if (url.endsWith('regions.json')) {
+        return jsonResponse({
+          items: [
+            makeRegion('guanzhong', '关中', ['hanzhong']),
+            makeRegion('hanzhong', '汉中', ['guanzhong']),
+            makeRegion('hexi', '河西', ['liangzhou']),
+            makeRegion('liangzhou', '凉州', ['hexi'])
+          ]
+        });
+      }
+      if (url.endsWith('map_region_shapes.json')) {
+        return jsonResponse({
+          items: [
+            makeShape('guanzhong', 0, 0),
+            makeShape('hanzhong', 3, 0),
+            makeShape('hexi', -3, 1),
+            makeShape('liangzhou', -5, 1)
+          ]
+        });
+      }
+      if (url.endsWith('units.json')) {
+        return jsonResponse({
+          items: [
+            {
+              id: 'infantry',
+              name: '步军',
+              category: 'infantry',
+              upkeep: { food: 1, money: 1 },
+              stats: { attack: 10, defense: 12, mobility: 4, siege: 2, supplyUse: 1 }
+            },
+            {
+              id: 'cavalry',
+              name: '骑军',
+              category: 'cavalry',
+              upkeep: { food: 2, money: 2 },
+              stats: { attack: 14, defense: 8, mobility: 10, siege: 1, supplyUse: 2 }
+            }
+          ]
+        });
+      }
       if (url.endsWith('map_render_metadata.json')) {
-        return new Response(
-          JSON.stringify({
-            schemaVersion: 1,
-            precision: 'high',
-            shapeCenter: { x: 0, y: 0 },
-            pixelsPerShapeUnit: 1,
-            spritePixelsPerUnit: 1,
-            sourceImage: '/game-data/map/jiuzhou_generated_map.png',
-            imageSize: { width: 1, height: 1 }
-          }),
-          { status: 200 }
-        );
+        return jsonResponse({
+          schemaVersion: 1,
+          precision: 'high',
+          shapeCenter: { x: 0, y: 0 },
+          pixelsPerShapeUnit: 1,
+          spritePixelsPerUnit: 1,
+          sourceImage: '/game-data/map/jiuzhou_generated_map.png',
+          imageSize: { width: 1, height: 1 }
+        });
       }
       if (url.endsWith('narration_script.json')) {
-        return new Response(
-          JSON.stringify({
-            schemaVersion: 1,
-            description: '',
-            tutorial: { title: '', segments: [] },
-            emperor_voices: []
-          }),
-          { status: 200 }
-        );
+        return jsonResponse({
+          schemaVersion: 1,
+          description: '',
+          tutorial: { title: '', segments: [] },
+          emperor_voices: []
+        });
       }
-      // Default: empty collection.
-      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      return jsonResponse({ items: [] });
     }) as typeof fetch;
 
     const start = performance.now();
-    try {
-      await loadStrategyDataset();
-    } catch {
-      // Empty regions might be rejected by validators; that's fine
-      // for this perf test. We still measured the loader path.
-    }
+    const dataset = await loadStrategyDataset();
     const elapsed = performance.now() - start;
+    expect(dataset.regions).toHaveLength(4);
+    expect(dataset.route.from.definition.id).toBe('guanzhong');
+    expect(dataset.route.target.definition.id).toBe('hanzhong');
     expect(elapsed, `loadStrategyDataset took ${elapsed.toFixed(0)}ms`).toBeLessThan(1000);
   });
+
+  it('loadStrategyDataset with real 56-region fixtures completes in < 1000ms', async () => {
+    installRealGameDataFetch(gameDataSourceRoot);
+
+    const start = performance.now();
+    const dataset = await loadStrategyDataset();
+    const elapsed = performance.now() - start;
+
+    expect(dataset.regions).toHaveLength(56);
+    expect(dataset.regionById.size).toBe(56);
+    expect(dataset.chronicleEvents).toHaveLength(200);
+    expect(dataset.audio.sceneMusic.length).toBeGreaterThan(0);
+    expect(dataset.audio.narration.tutorial.segments.length).toBeGreaterThan(0);
+    expect(elapsed, `real loadStrategyDataset took ${elapsed.toFixed(0)}ms`).toBeLessThan(1000);
+  });
 });
+
+function jsonResponse(value: unknown): Response {
+  return new Response(JSON.stringify(value), { status: 200 });
+}
+
+function rawJsonResponse(raw: string): Response {
+  return new Response(raw, {
+    status: 200,
+    headers: { 'content-type': 'application/json' }
+  });
+}
+
+function installRealGameDataFetch(gameDataSourceRoot: URL): void {
+  globalThis.fetch = vi.fn(async (input) => {
+    const urlText = typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
+    const pathname = new URL(urlText, 'http://unit.test').pathname;
+    const relativePath = pathname.startsWith('/game-data/')
+      ? pathname.slice('/game-data/'.length)
+      : '';
+    if (relativePath === '') {
+      return new Response('not found', { status: 404 });
+    }
+
+    const fixtureUrl = new URL(relativePath, gameDataSourceRoot);
+    try {
+      return rawJsonResponse(readFileSync(fixtureUrl, 'utf8'));
+    } catch (error) {
+      return new Response(error instanceof Error ? error.message : 'not found', { status: 404 });
+    }
+  }) as typeof fetch;
+}
+
+function makeRegion(id: string, name: string, neighbors: string[]): Record<string, unknown> {
+  return {
+    id,
+    name,
+    terrain: 'plain',
+    population: 100000,
+    foodOutput: 120,
+    taxOutput: 80,
+    manpower: 40,
+    landStructure: {},
+    legitimacyMemory: [],
+    localPower: 20,
+    rebellionRisk: 4,
+    neighbors
+  };
+}
+
+function makeShape(regionId: string, x: number, y: number): Record<string, unknown> {
+  return {
+    id: `shape_${regionId}`,
+    regionId,
+    center: { x, y },
+    boundary: [
+      { x: x - 0.5, y: y - 0.5 },
+      { x: x + 0.5, y: y - 0.5 },
+      { x: x + 0.5, y: y + 0.5 },
+      { x: x - 0.5, y: y + 0.5 }
+    ]
+  };
+}

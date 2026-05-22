@@ -5656,7 +5656,7 @@ function outlinerItem(group: string, text: string, regionId: string): string {
   return `<button class="outliner-item" type="button" data-region-id="${escapeHtml(regionId)}"><span>${escapeHtml(group)}</span><b>${escapeHtml(text)}</b></button>`;
 }
 
-function formatEffects(effects: Record<string, number>): string {
+function formatEffects(effects: Record<string, number | undefined>): string {
   const labels: Record<string, string> = {
     food: '粮',
     money: '钱',
@@ -5670,7 +5670,9 @@ function formatEffects(effects: Record<string, number>): string {
     mobility: '机动'
   };
   return Object.entries(effects)
-    .map(([key, value]) => `${escapeHtml(labels[key] ?? key)}${value > 0 ? '+' : ''}${value}`)
+    .flatMap(([key, value]) => typeof value === 'number'
+      ? [`${escapeHtml(labels[key] ?? key)}${value > 0 ? '+' : ''}${value}`]
+      : [])
     .join(' / ');
 }
 

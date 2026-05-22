@@ -73,6 +73,93 @@ export interface MapPoint {
   y: number;
 }
 
+export interface CostSet {
+  [key: string]: number | undefined;
+  money?: number;
+  food?: number;
+  manpower?: number;
+  legitimacy?: number;
+}
+
+export interface EffectSet {
+  [key: string]: number | undefined;
+  integrationSpeed?: number;
+  taxEfficiency?: number;
+  taxBase?: number;
+  annexationPressure?: number;
+  rebellionRisk?: number;
+  legitimacy?: number;
+  manpowerToArmy?: number;
+  talentChance?: number;
+  courtCapacity?: number;
+  armyMorale?: number;
+  generalLoyalty?: number;
+  factionPressure?: number;
+  localPower?: number;
+  money?: number;
+  food?: number;
+  populationGrowth?: number;
+  successionRisk?: number;
+  treasuryStability?: number;
+  treasuryPressure?: number;
+  battlePower?: number;
+  science?: number;
+  culture?: number;
+  techProgress?: number;
+  weatherResilience?: number;
+  disasterMitigation?: number;
+  astronomyInsight?: number;
+  weaponQuality?: number;
+  mobility?: number;
+  landSurveyEfficiency?: number;
+  treasuryControl?: number;
+  frontierIntegration?: number;
+  multiethnicAcceptance?: number;
+}
+
+export interface RiskSet {
+  [key: string]: number | undefined;
+  corveePressure?: number;
+  rebellionRisk?: number;
+  eliteAnger?: number;
+  treasuryPressure?: number;
+  populationGrowth?: number;
+  annexationPressure?: number;
+  factionPressure?: number;
+  localPower?: number;
+  armyMorale?: number;
+  taxEfficiency?: number;
+  legitimacy?: number;
+  money?: number;
+  science?: number;
+  successionRisk?: number;
+  astronomyInsight?: number;
+  weatherDamage?: number;
+}
+
+export interface LandStructure {
+  smallFarmers?: number;
+  localElites?: number;
+  stateLand?: number;
+  religiousLand?: number;
+}
+
+export interface EmperorStats {
+  military: number;
+  administration: number;
+  reform: number;
+  charisma: number;
+  diplomacy: number;
+  successionControl: number;
+}
+
+export interface UnitStats {
+  attack: number;
+  defense: number;
+  mobility: number;
+  siege: number;
+}
+
 export interface RegionShape {
   id: string;
   regionId: string;
@@ -90,7 +177,7 @@ export interface RegionDefinition {
   foodOutput: number;
   taxOutput: number;
   manpower: number;
-  landStructure: Record<string, number>;
+  landStructure: LandStructure;
   legitimacyMemory: string[];
   regionSpecialization?: string;
   supplyNode?: boolean;
@@ -117,8 +204,9 @@ export interface BuildingDefinition {
   id: string;
   name: string;
   category: string;
+  requiresTech?: string;
   cost: number;
-  effects: Record<string, number>;
+  effects: EffectSet;
   sourceReference: string;
 }
 
@@ -126,9 +214,9 @@ export interface PolicyDefinition {
   id: string;
   name: string;
   category: string;
-  cost: Record<string, number>;
-  effects: Record<string, number>;
-  risks: Record<string, number>;
+  cost: CostSet;
+  effects: EffectSet;
+  risks: RiskSet;
   sourceReference: string;
   mechanicTags: string[];
 }
@@ -137,8 +225,9 @@ export interface UnitDefinition {
   id: string;
   name: string;
   category: string;
-  stats: Record<string, number>;
-  upkeep: Record<string, number>;
+  cost?: CostSet;
+  upkeep: CostSet;
+  stats: UnitStats;
 }
 
 export type RouteRoadClass = 'open-road' | 'river-road' | 'hill-road' | 'pass-bottleneck' | 'frontier-track' | 'water-network';
@@ -219,7 +308,7 @@ export interface EmperorDefinition {
   era: string;
   legitimacyTypes: string[];
   globalMechanicTag: string;
-  stats: Record<string, number>;
+  stats: EmperorStats;
   score: {
     virtue: number;
     wisdom: number;
@@ -295,15 +384,34 @@ export interface ChronicleTurnWindow {
 export interface ChronicleChoiceDefinition {
   id: string;
   label: string;
-  effects?: Record<string, number>;
-  risks?: Record<string, number>;
+  effects?: EffectSet;
+  risks?: RiskSet;
   followUpTags?: string[];
+}
+
+export interface ChronicleTriggerDefinition {
+  emperorId?: string;
+  minTurn?: number;
+  era?: string;
+  minArmyStrength?: number;
+  maxArmyStrength?: number;
+  minSuccessionRisk?: number;
+  minCourtFactionPressure?: number;
+  minRebellionRisk?: number;
+  minPopularDissatisfaction?: number;
+  minLocalPower?: number;
+  minFrontierThreat?: number;
+  policyUsed?: string;
+  recentBattleWon?: boolean;
+  terrainTag?: string;
 }
 
 export interface ChronicleEventDefinition {
   id: string;
   name: string;
+  category?: string;
   eventType: string;
+  trigger?: ChronicleTriggerDefinition;
   eraScope?: string[];
   turnWindow?: ChronicleTurnWindow;
   regionScopeTags?: string[];

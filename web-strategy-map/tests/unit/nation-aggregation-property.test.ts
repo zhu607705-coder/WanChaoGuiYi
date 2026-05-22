@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
-import { aggregateNationFood } from '../../src/data';
+import { readFileSync } from 'node:fs';
+import { aggregateNationFood, aggregateNationMoney, type NationAggregationInput } from '../../src/data';
 
 /**
  * Property-based test for the nation aggregation logic in data.ts:
@@ -20,6 +21,8 @@ import { aggregateNationFood } from '../../src/data';
  */
 
 const aggregateFood = aggregateNationFood;
+const realRegionsPath = new URL('../../game-data-source/data/regions.json', import.meta.url);
+const initialPlayerCore = new Set(['guanzhong', 'chang_an', 'xianyang', 'yongzhou', 'longxi', 'hexi', 'liangzhou']);
 
 describe('nation food aggregation property tests', () => {
   it('returns non-negative when inputs are non-negative', () => {
@@ -95,13 +98,39 @@ describe('nation food aggregation property tests', () => {
         (regions) => {
           const result = aggregateFood(regions);
           // Strong invariant: a region with negative contribution
-          // should not subtract from the nation total. Today the
-          // formula uses `r.contribution / 100` directly, so negative
-          // contribution DOES subtract. UI shows nonsense numbers.
-          // Pin: result must be >= 0 even with negative inputs.
+          // should not subtract from the nation total. This used to
+          // regress when contribution was used directly; keep the
+          // clamp behavior pinned.
           expect(result).toBeGreaterThanOrEqual(0);
         }
       )
     );
+  });
+
+  it('matches manual aggregation for the real regions.json player core', () => {
+    const regionsJson = JSON.parse(readFileSync(realRegionsPath, 'utf8')) as {
+      items: Array<{ id: string; foodOutput: number; taxOutput: number }>;
+    };
+    const regions: NationAggregationInput[] = regionsJson.items.map((region) => ({
+      owner: initialPlayerCore.has(region.id) ? 'player' : 'rival',
+      foodOutput: region.foodOutput,
+      taxOutput: region.taxOutput,
+      contribution: initialPlayerCore.has(region.id) ? 78 : 32
+    }));
+
+    const expectedFood = Math.round(
+      regionsJson.items
+        .filter((region) => initialPlayerCore.has(region.id))
+        .reduce((sum, region) => sum + (region.foodOutput * 78) / 100, 0)
+    );
+    const expectedMoney = Math.round(
+      regionsJson.items
+        .filter((region) => initialPlayerCore.has(region.id))
+        .reduce((sum, region) => sum + (region.taxOutput * 78) / 100, 0)
+    );
+
+    expect(regionsJson.items).toHaveLength(56);
+    expect(aggregateFood(regions)).toBe(expectedFood);
+    expect(aggregateNationMoney(regions)).toBe(expectedMoney);
   });
 });

@@ -376,7 +376,21 @@ async function bootstrap(): Promise<void> {
           activeArmyWaypointId: '',
           visibleLabels: 0,
           sidebarCollapsed: false,
-          audio: { enabled: false, mode: 'governance' as const, currentMusicCue: '', currentNarration: '', currentVoice: '', sceneCueCount: 0, emperorThemeCount: 0, chronicleEventCount: 0, lastError: String(err) }
+          audio: {
+            enabled: false,
+            mode: 'governance' as const,
+            currentMusicCue: '',
+            currentNarration: '',
+            currentVoice: '',
+            sceneCueCount: 0,
+            emperorThemeCount: 0,
+            chronicleEventCount: 0,
+            loadingStage: 'idle',
+            loadingSource: '',
+            loadingProgress: null,
+            loadingMessage: '',
+            lastError: String(err)
+          }
         };
       }
     },
@@ -428,28 +442,64 @@ function escapeHtml(value: string): string {
 }
 
 function bindAudioHud(audio: StrategyAudio): void {
+  let audioEnablePending = false;
+  let audioActionPending = false;
+  let audioOperationStatus = '';
+  const audioEnableButton = document.getElementById('audio-enable');
+  const audioActionButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-audio-action]'));
+  const updateAudioActionButtons = (): void => {
+    audioActionButtons.forEach((button) => {
+      button.disabled = audioEnablePending || audioActionPending;
+    });
+  };
+  const setAudioPending = (pending: boolean): void => {
+    audioEnablePending = pending;
+    if (audioEnableButton instanceof HTMLButtonElement) audioEnableButton.disabled = pending;
+    updateAudioActionButtons();
+  };
+  const setAudioActionPending = (pending: boolean): void => {
+    audioActionPending = pending;
+    updateAudioActionButtons();
+  };
+  const setAudioOperationStatus = (status: string): void => {
+    audioOperationStatus = status;
+    renderAudioHud(audio, audioOperationStatus);
+  };
+  audio.setDebugStateListener(() => renderAudioHud(audio, audioOperationStatus));
   renderAudioHud(audio);
-  document.getElementById('audio-enable')?.addEventListener('click', () => {
-    void audio.enable().then(() => renderAudioHud(audio));
+  audioEnableButton?.addEventListener('click', () => {
+    if (audioEnablePending || audio.isEnabled()) return;
+    setAudioPending(true);
+    setAudioOperationStatus('音频启动中');
+    void audio.enable().finally(() => {
+      setAudioPending(false);
+      setAudioOperationStatus('');
+    });
   });
-  document.querySelectorAll<HTMLButtonElement>('[data-audio-action]').forEach((button) => {
+  audioActionButtons.forEach((button) => {
     button.addEventListener('click', () => {
+      if (audioEnablePending || audioActionPending) return;
       const action = button.dataset.audioAction;
+      setAudioActionPending(true);
+      setAudioOperationStatus('音频切换中');
       const task =
         action === 'emperor'
           ? audio.playEmperorTheme()
           : action === 'event'
             ? audio.playEventCue()
             : audio.setMode(audio.getDebugState().mode);
-      void task.then(() => renderAudioHud(audio));
+      void task.finally(() => {
+        setAudioActionPending(false);
+        setAudioOperationStatus('');
+      });
     });
   });
 }
 
-function renderAudioHud(audio: StrategyAudio): void {
+function renderAudioHud(audio: StrategyAudio, operationStatus = ''): void {
   const state = audio.getDebugState();
   document.documentElement.dataset.audioEnabled = String(state.enabled);
-  setText('audio-status', state.enabled ? '音频已启用' : '点击启用音频');
+  setText('audio-status', state.loadingMessage || operationStatus || (state.enabled ? '音频已启用' : '点击启用音频'));
   setText('audio-mode', state.mode === 'war' ? '战争混音' : '治理混音');
   setText('audio-music', state.currentMusicCue);
   setText('audio-narration', state.currentNarration);

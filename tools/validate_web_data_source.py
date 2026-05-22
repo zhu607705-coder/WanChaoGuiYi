@@ -59,10 +59,17 @@ def load_json(path):
 
 def require_collection(path):
     payload = load_json(path)
+    require_schema_version(path, payload)
     items = payload.get("items")
     if not isinstance(items, list):
         fail(f"{path.relative_to(ROOT)} must contain an items array")
     return items
+
+
+def require_schema_version(path, payload):
+    schema_version = payload.get("schemaVersion")
+    if not isinstance(schema_version, int) or schema_version < 1:
+        fail(f"{path.relative_to(ROOT)} schemaVersion must be an integer >= 1")
 
 
 def main():
@@ -86,6 +93,7 @@ def main():
             collections[name] = require_collection(path)
         else:
             metadata = load_json(path)
+            require_schema_version(path, metadata)
             source_image = str(metadata.get("sourceImage", ""))
             if source_image.startswith("Assets/") or source_image.startswith("My project/"):
                 fail("map_render_metadata.json still points at a Unity asset path")
@@ -95,7 +103,7 @@ def main():
         if not path.exists():
             fail(f"missing audio data file: {path.relative_to(ROOT)}")
         if name == "narration_script.json":
-            load_json(path)
+            require_schema_version(path, load_json(path))
         else:
             require_collection(path)
 
@@ -765,14 +773,14 @@ def validate_runtime_icon_assets(art_dir, units):
 def validate_art_path_references(collections):
     for portrait in collections["portraits.json"]:
         asset_path = str(portrait.get("assetPath", ""))
-        if not asset_path.startswith("art/Portraits/") or not asset_path.endswith(".png"):
+        if not (asset_path.startswith("art/Portraits/") and asset_path.endswith(".png")):
             fail(f"portrait {portrait.get('id')} has invalid assetPath: {asset_path}")
         if not (SOURCE / asset_path).exists():
             fail(f"portrait {portrait.get('id')} assetPath does not exist: {asset_path}")
 
     for general in collections["generals.json"]:
         asset_path = str(general.get("portraitAssetPath", ""))
-        if not asset_path.startswith("art/Portraits/Generals/") or not asset_path.endswith(".png"):
+        if not (asset_path.startswith("art/Portraits/Generals/") and asset_path.endswith(".png")):
             fail(f"general {general.get('id')} has invalid portraitAssetPath: {asset_path}")
         if not (SOURCE / asset_path).exists():
             fail(f"general {general.get('id')} portraitAssetPath does not exist: {asset_path}")

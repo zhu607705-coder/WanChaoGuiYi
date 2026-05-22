@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { describeHeadlessReport, parseHeadlessReport } from './headless-report-helpers';
 
 /**
  * Bug under investigation: tools/headless_runner/latest-war-report.json
@@ -19,60 +18,45 @@ import { join } from 'node:path';
  * render it directly.
  */
 describe('headless war report contract', () => {
-  const reportPath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'tools',
-    'headless_runner',
-    'latest-war-report.json'
-  );
-
-  it('skips when report not generated yet', () => {
-    if (!existsSync(reportPath)) {
-      expect.soft(true, `report not at ${reportPath}`).toBe(true);
-      return;
-    }
-  });
-
-  it('every keyDelta has primitive before/after values', () => {
-    if (!existsSync(reportPath)) return;
-    const raw = readFileSync(reportPath, 'utf8');
-    const report = JSON.parse(raw);
-    expect(Array.isArray(report.scenarios)).toBe(true);
-
-    for (const sc of report.scenarios) {
-      const deltas = sc.keyDeltas ?? [];
-      for (const d of deltas) {
-        const primitive = (v: unknown) =>
-          v === null ||
-          typeof v === 'string' ||
-          typeof v === 'number' ||
-          typeof v === 'boolean';
-        expect.soft(
-          primitive(d.before),
-          `scenario ${sc.name} delta ${d.field}: before=${JSON.stringify(d.before)}`
-        ).toBe(true);
-        expect.soft(
-          primitive(d.after),
-          `scenario ${sc.name} delta ${d.field}: after=${JSON.stringify(d.after)}`
-        ).toBe(true);
+  describeHeadlessReport('real latest-war-report.json', (report) => {
+    it('every keyDelta has primitive before/after values', () => {
+      for (const sc of report.scenarios) {
+        const deltas = sc.keyDeltas ?? [];
+        for (const d of deltas) {
+          const primitive = (v: unknown) =>
+            v === null ||
+            typeof v === 'string' ||
+            typeof v === 'number' ||
+            typeof v === 'boolean';
+          expect.soft(
+            primitive(d.before),
+            `scenario ${sc.name} delta ${d.field}: before=${JSON.stringify(d.before)}`
+          ).toBe(true);
+          expect.soft(
+            primitive(d.after),
+            `scenario ${sc.name} delta ${d.field}: after=${JSON.stringify(d.after)}`
+          ).toBe(true);
+        }
       }
-    }
+    });
+
+    it('every scenario has at least one numeric keyDelta', () => {
+      for (const sc of report.scenarios) {
+        const deltas = sc.keyDeltas ?? [];
+        const hasNumeric = deltas.some(
+          (d: { before: unknown; after: unknown }) =>
+            typeof d.before === 'number' || typeof d.after === 'number'
+        );
+        expect.soft(hasNumeric, `scenario ${sc.name} has no numeric keyDelta`).toBe(true);
+      }
+    });
   });
 
-  it('every scenario has at least one numeric keyDelta', () => {
-    if (!existsSync(reportPath)) return;
-    const raw = readFileSync(reportPath, 'utf8');
-    const report = JSON.parse(raw);
-    for (const sc of report.scenarios) {
-      const deltas = sc.keyDeltas ?? [];
-      const hasNumeric = deltas.some(
-        (d: { before: unknown; after: unknown }) =>
-          typeof d.before === 'number' || typeof d.after === 'number'
-      );
-      expect.soft(hasNumeric, `scenario ${sc.name} has no numeric keyDelta`).toBe(true);
-    }
+  it('rejects empty or malformed report fixtures', () => {
+    expect(() => parseHeadlessReport('[]')).toThrow('report root must be an object');
+    expect(() => parseHeadlessReport('{"scenarios":[]}')).toThrow('scenarios must be a non-empty array');
+    expect(() => parseHeadlessReport('{"scenarios":[{"name":"bad","keyDeltas":"oops"}]}')).toThrow(
+      'scenario bad keyDeltas must be an array'
+    );
   });
 });

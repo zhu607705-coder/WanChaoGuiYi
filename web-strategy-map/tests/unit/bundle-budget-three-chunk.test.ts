@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { existsSync, statSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { expect, it } from 'vitest';
+import { BUNDLE_SIZE_BUDGETS, describeBuiltBundle, largestAsset } from './bundle-budget-helpers';
 
 /**
- * Bug under investigation: previous round split three.js into its
- * own chunk (manualChunks). three-DGy14Mgf.js = 571,890 bytes,
- * still over Vite's built-in 500 kB advisory.
+ * Bug under investigation: earlier builds split three.js into a
+ * single 571,890 byte chunk, still over Vite's built-in 500 kB
+ * advisory. The current build splits three into smaller chunks; this
+ * file keeps that budget from regressing.
  *
  * The advisory exists because chunks > 500 kB significantly hurt
  * cold-load performance on slow networks (3G, rural). For a
@@ -14,49 +14,31 @@ import { join } from 'node:path';
  *
  * Pinned invariant: NO single JS chunk should exceed 500 kB.
  *
- * Today: three chunk is 571 kB, fails. The fix requires either:
- *   - Use three's modular imports (e.g. `three/examples/jsm/...`
- *     individually) plus tree-shaking analysis
- *   - Lazy-import three behind a "Start Game" button
- *   - Replace some three features (OrbitControls etc.) with
- *     lighter alternatives
+ * If this fails again, check for:
+ *   - broad `import * as THREE from 'three'` imports
+ *   - new renderer/post-processing modules pulled into the hot path
+ *   - manual chunk settings collapsing back into one three bundle
  */
-describe('Vite three.js chunk budget', () => {
-  const distDir = join(__dirname, '..', '..', 'dist');
-  const assetsDir = join(distDir, 'assets');
-
+describeBuiltBundle('Vite three.js chunk budget', (bundle) => {
   it('no single JS chunk exceeds Vite advisory limit (500 kB)', () => {
-    if (!existsSync(assetsDir)) {
-      expect.soft(true, 'dist not built yet').toBe(true);
-      return;
-    }
-    const jsFiles = readdirSync(assetsDir).filter((f) => f.endsWith('.js') && !f.endsWith('.map'));
+    const jsFiles = bundle.jsFiles;
     expect(jsFiles.length).toBeGreaterThan(0);
 
     const sizes: Record<string, number> = {};
-    let largest = 0;
-    let largestName = '';
     for (const f of jsFiles) {
-      const size = statSync(join(assetsDir, f)).size;
-      sizes[f] = size;
-      if (size > largest) {
-        largest = size;
-        largestName = f;
-      }
+      sizes[f] = bundle.sizeOf(f);
     }
+    const largest = largestAsset(bundle, jsFiles);
     expect(
-      largest,
-      `largest chunk: ${largestName} = ${largest} bytes; all chunks: ${JSON.stringify(sizes)}`
-    ).toBeLessThan(500_000);
+      largest.size,
+      `largest chunk: ${largest.name} = ${largest.size} bytes; all chunks: ${JSON.stringify(sizes)}`
+    ).toBeLessThan(BUNDLE_SIZE_BUDGETS.viteAdvisoryChunkBytes);
   });
 
   it('index chunk stays under 250 kB (regression guard)', () => {
-    if (!existsSync(assetsDir)) return;
-    const jsFiles = readdirSync(assetsDir).filter(
-      (f) => f.endsWith('.js') && !f.endsWith('.map') && f.startsWith('index')
-    );
+    const jsFiles = bundle.jsFiles.filter((f) => f.startsWith('index'));
     expect(jsFiles.length).toBe(1);
-    const size = statSync(join(assetsDir, jsFiles[0])).size;
-    expect(size, `${jsFiles[0]} = ${size} bytes`).toBeLessThan(250_000);
+    const size = bundle.sizeOf(jsFiles[0]);
+    expect(size, `${jsFiles[0]} = ${size} bytes`).toBeLessThan(BUNDLE_SIZE_BUDGETS.maxIndexChunkBytes);
   });
 });

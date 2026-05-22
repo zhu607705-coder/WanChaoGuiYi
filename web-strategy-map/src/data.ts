@@ -355,6 +355,9 @@ function validateRegionDefinitions(regions: RegionDefinition[]): void {
   for (const region of regions) {
     const neighbors = Array.isArray(region.neighbors) ? region.neighbors : [];
     for (const neighborId of neighbors) {
+      if (neighborId === region.id) {
+        throw new StrategyDatasetLoadError('regions.json', `region ${region.id} cannot list itself as neighbor`);
+      }
       if (!regionById.has(neighborId)) {
         throw new StrategyDatasetLoadError('regions.json', `region ${region.id} references unknown neighbor ${neighborId}`);
       }
@@ -368,11 +371,15 @@ function validateRegionDefinitions(regions: RegionDefinition[]): void {
 }
 
 function validateRegionShapeCoverage(regions: RegionDefinition[], shapes: RegionShape[]): void {
+  const regionIds = new Set(regions.map((region) => region.id));
   const shapeRegionIds = new Set<string>();
   for (const shape of shapes) {
     const regionId = typeof shape?.regionId === 'string' ? shape.regionId.trim() : '';
     if (!regionId) {
       throw new StrategyDatasetLoadError('map_region_shapes.json', 'shape item is missing regionId');
+    }
+    if (!regionIds.has(regionId)) {
+      throw new StrategyDatasetLoadError('map_region_shapes.json', `shape references unknown region id: ${regionId}`);
     }
     if (shapeRegionIds.has(regionId)) {
       throw new StrategyDatasetLoadError('map_region_shapes.json', `duplicate shape regionId: ${regionId}`);

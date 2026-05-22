@@ -46,6 +46,10 @@ type DebugState = {
     sceneCueCount: number;
     emperorThemeCount: number;
     chronicleEventCount: number;
+    loadingStage: string;
+    loadingSource: string;
+    loadingProgress: number | null;
+    loadingMessage: string;
     lastError: string;
   };
   ui: {
@@ -421,6 +425,142 @@ test.describe('code-driven strategy map', () => {
     await expectDebugState(page, (state) => !state.sidebarCollapsed, 'sidebar should expand');
 
     expect(await labelOverlapCount(page)).toBe(0);
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows a fatal error when required data fails to load', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(45_000));
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.route('**/game-data/data/regions.json', (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: 'text/plain',
+        body: 'not found'
+      })
+    );
+
+    await page.goto('/');
+
+    await expect(page.locator('.fatal-error[role="alert"]')).toContainText('加载失败');
+    await expect(page.locator('.fatal-error[role="alert"]')).toContainText('regions.json');
+    await expect(page.locator('.fatal-error[role="alert"]')).toContainText('HTTP 404');
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.appReady ?? '')).not.toBe('true');
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('surfaces autoplay playback failures in the audio HUD', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(45_000));
+    await page.addInitScript(() => {
+      Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+        configurable: true,
+        value: () => Promise.reject(new Error('autoplay blocked by test'))
+      });
+    });
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await page.locator('.audio-summary').click();
+    await page.locator('#audio-enable').click();
+
+    await expect(page.locator('#audio-status')).toHaveText('音频已启用');
+    await expect(page.locator('#audio-error')).toContainText('autoplay blocked by test');
+    const state = await debug(page);
+    expect(state.audio.enabled).toBe(true);
+    expect(state.audio.lastError).toBe('autoplay blocked by test');
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('guards audio enable while startup is pending', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(45_000));
+    await page.addInitScript(() => {
+      (window as Window & { __AUDIO_PLAY_CALLS__?: number }).__AUDIO_PLAY_CALLS__ = 0;
+      Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+        configurable: true,
+        value: () => {
+          (window as Window & { __AUDIO_PLAY_CALLS__?: number }).__AUDIO_PLAY_CALLS__ =
+            ((window as Window & { __AUDIO_PLAY_CALLS__?: number }).__AUDIO_PLAY_CALLS__ ?? 0) + 1;
+          return new Promise<void>(() => { /* keep audio startup pending */ });
+        }
+      });
+    });
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await page.locator('.audio-summary').click();
+    await page.locator('#audio-enable').click();
+
+    await expect(page.locator('#audio-status')).toHaveText(/^音频(启动中|加载中|元数据已读取|缓冲中|可播放|缓冲完成)/);
+    await expect(page.locator('#audio-enable')).toBeDisabled();
+    await expect(page.locator('[data-audio-action="emperor"]')).toBeDisabled();
+    await page.locator('#audio-enable').dispatchEvent('click');
+    await page.locator('[data-audio-action="emperor"]').dispatchEvent('click');
+
+    await expect.poll(() => page.evaluate(() => (window as Window & { __AUDIO_PLAY_CALLS__?: number }).__AUDIO_PLAY_CALLS__ ?? 0)).toBe(1);
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('guards audio actions while playback is pending', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(45_000));
+    await page.addInitScript(() => {
+      const testWindow = window as Window & {
+        __AUDIO_ACTION_PLAY_CALLS__?: number;
+        __AUDIO_HOLD_ACTION_PLAYBACK__?: boolean;
+      };
+      testWindow.__AUDIO_ACTION_PLAY_CALLS__ = 0;
+      testWindow.__AUDIO_HOLD_ACTION_PLAYBACK__ = false;
+      Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+        configurable: true,
+        value: () => {
+          if (testWindow.__AUDIO_HOLD_ACTION_PLAYBACK__) {
+            testWindow.__AUDIO_ACTION_PLAY_CALLS__ = (testWindow.__AUDIO_ACTION_PLAY_CALLS__ ?? 0) + 1;
+            return new Promise<void>(() => { /* keep audio action pending */ });
+          }
+          return Promise.resolve();
+        }
+      });
+    });
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await page.locator('.audio-summary').click();
+    await page.locator('#audio-enable').click();
+    await expect(page.locator('#audio-status')).toHaveText('音频已启用');
+    await page.evaluate(() => {
+      (window as Window & { __AUDIO_HOLD_ACTION_PLAYBACK__?: boolean }).__AUDIO_HOLD_ACTION_PLAYBACK__ = true;
+    });
+
+    const eventAudioButton = page.locator('[data-audio-action="event"]');
+    await eventAudioButton.click();
+    await expect(page.locator('#audio-status')).toHaveText(/^音频(切换中|加载中|元数据已读取|缓冲中|可播放|缓冲完成)/);
+    await expect(eventAudioButton).toBeDisabled();
+    await eventAudioButton.dispatchEvent('click');
+
+    await expect.poll(() => page.evaluate(() => (window as Window & { __AUDIO_ACTION_PLAY_CALLS__?: number }).__AUDIO_ACTION_PLAY_CALLS__ ?? 0)).toBe(1);
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('surfaces audio media loading stage in the HUD', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(45_000));
+    await page.addInitScript(() => {
+      Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+        configurable: true,
+        value: function playMock() {
+          return new Promise<void>(() => { /* keep media loading observable */ });
+        }
+      });
+    });
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    await page.locator('.audio-summary').click();
+    await page.locator('#audio-enable').click();
+    await expect.poll(async () => page.locator('#audio-status').textContent()).toMatch(/^音频(加载中|元数据已读取|缓冲中|可播放|缓冲完成)/);
+    await expectDebugState(
+      page,
+      (state) => ['loading', 'metadata', 'buffering', 'canplay', 'ready'].includes(state.audio.loadingStage),
+      'audio debug state should report a media loading stage'
+    );
     expect(consoleErrors).toEqual([]);
   });
 

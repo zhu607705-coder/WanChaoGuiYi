@@ -53,4 +53,42 @@ describe('loadStrategyDataset region/shape coverage', () => {
 
     expect(caught).toBeInstanceOf(StrategyDatasetLoadError);
   });
+
+  it('rejects shapes without matching regions', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.endsWith('regions.json')) {
+        return new Response(
+          JSON.stringify({
+            items: [
+              { id: 'a', name: 'A', terrain: 'plain', population: 0, foodOutput: 0, taxOutput: 0, manpower: 0, landStructure: {}, legitimacyMemory: [], localPower: 0, neighbors: [] }
+            ]
+          }),
+          { status: 200 }
+        );
+      }
+      if (url.endsWith('map_region_shapes.json')) {
+        return new Response(
+          JSON.stringify({
+            items: [
+              { id: 'shape_a', regionId: 'a', center: { x: 0, y: 0 }, boundary: [] },
+              { id: 'shape_orphan', regionId: 'orphan', center: { x: 1, y: 1 }, boundary: [] }
+            ]
+          }),
+          { status: 200 }
+        );
+      }
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    }) as typeof fetch;
+
+    let caught: unknown = null;
+    try {
+      await loadStrategyDataset();
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(StrategyDatasetLoadError);
+    expect(caught).toHaveProperty('message', expect.stringContaining('shape references unknown region id: orphan'));
+  });
 });

@@ -509,20 +509,34 @@ export class StrategyScene {
     const { imageSize, pixelsPerShapeUnit, shapeCenter } = this.dataset.metadata;
     const width = imageSize.width / pixelsPerShapeUnit;
     const height = imageSize.height / pixelsPerShapeUnit;
-    const texture = new TextureLoader().load('/game-data/map/jiuzhou_generated_map.png');
-    texture.colorSpace = SRGBColorSpace;
-    texture.anisotropy = 8;
 
     const geometry = new PlaneGeometry(width, height);
     geometry.rotateX(-Math.PI / 2);
     const material = new MeshStandardMaterial({
-      map: texture,
-      color: 0xffffff,
+      color: 0x2f4a4a,
       roughness: 0.88,
       metalness: 0,
       transparent: true,
       opacity: 0.88
     });
+    material.name = 'Generated_Jiuzhou_Map_Fallback_Material';
+
+    const mapTextureUrl = '/game-data/map/jiuzhou_generated_map.png';
+    new TextureLoader().load(
+      mapTextureUrl,
+      (texture) => {
+        texture.colorSpace = SRGBColorSpace;
+        texture.anisotropy = 8;
+        material.map = texture;
+        material.color.setHex(0xffffff);
+        material.needsUpdate = true;
+      },
+      undefined,
+      (error) => {
+        console.warn(`Failed to load map texture ${mapTextureUrl}; using fallback material.`, error);
+      }
+    );
+
     const plane = new Mesh(geometry, material);
     plane.name = 'Generated_Jiuzhou_Map_Texture';
     plane.position.set(shapeCenter.x, -0.08, -shapeCenter.y);

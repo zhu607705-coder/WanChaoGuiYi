@@ -6,6 +6,9 @@ import type {
   NarrationSegment,
   SceneMusicCue
 } from './types';
+import { gameDataAssetUrl } from './data';
+
+export type AudioLoadingStage = 'idle' | 'loading' | 'metadata' | 'buffering' | 'canplay' | 'ready' | 'playing' | 'error';
 
 export interface AudioDebugState {
   enabled: boolean;
@@ -16,6 +19,10 @@ export interface AudioDebugState {
   sceneCueCount: number;
   emperorThemeCount: number;
   chronicleEventCount: number;
+  loadingStage: AudioLoadingStage;
+  loadingSource: string;
+  loadingProgress: number | null;
+  loadingMessage: string;
   lastError: string;
 }
 
@@ -33,6 +40,10 @@ export class StrategyAudio {
   private currentMusicCue = '未启用';
   private currentNarration = '未播放';
   private currentVoice = '未播放';
+  private loadingStage: AudioLoadingStage = 'idle';
+  private loadingSource = '';
+  private loadingProgress: number | null = null;
+  private debugStateListener: (() => void) | null = null;
   private lastError = '';
 
   constructor(
@@ -64,6 +75,10 @@ export class StrategyAudio {
 
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  setDebugStateListener(listener: (() => void) | null): void {
+    this.debugStateListener = listener;
   }
 
   async setEmperor(emperorId: string): Promise<void> {
@@ -127,12 +142,16 @@ export class StrategyAudio {
       sceneCueCount: this.musicByScene.size,
       emperorThemeCount: this.emperorThemeById.size,
       chronicleEventCount: new Set([...this.chronicleEventById.values()].map((cue) => cue.musicCueId)).size,
+      loadingStage: this.loadingStage,
+      loadingSource: this.loadingSource,
+      loadingProgress: this.loadingProgress,
+      loadingMessage: audioLoadingMessage(this.loadingStage, this.loadingProgress),
       lastError: this.lastError
     };
   }
 
   private async playMusic(cue: SceneMusicCue | EmperorThemeCue | ChronicleEventMusicCue, group: 'scene' | 'emperor' | 'chronicle-event' = 'scene'): Promise<void> {
-    const source = `/game-data/audio/music/${group}/${cue.fileName}`;
+    const source = audioAssetUrl(`music/${group}/${cue.fileName}`);
     if (this.musicElement?.dataset.source === source) return;
 
     const previous = this.musicElement;
@@ -142,46 +161,151 @@ export class StrategyAudio {
     next.volume = 0.46;
     this.musicElement = next;
     this.currentMusicCue = `${group}:${cue.musicCueId}`;
-    await this.tryPlay(next);
-
-    if (previous) {
-      previous.pause();
-      previous.src = '';
+    const played = await this.tryPlay(next, () => this.musicElement === next);
+    if (!played && this.musicElement === next) {
+      this.releaseAudioElement(next);
+      this.musicElement = null;
     }
+
+    this.releaseAudioElement(previous);
   }
 
   private async playNarration(trigger: string): Promise<void> {
     if (!this.enabled) return;
     const segment = this.narrationByTrigger.get(trigger);
     if (!segment) return;
-    const element = new Audio(`/game-data/audio/narration/${segment.segmentId}.mp3`);
+    const element = new Audio(audioAssetUrl(`narration/${segment.segmentId}.mp3`));
     element.volume = 0.84;
-    this.narrationElement?.pause();
+    const previous = this.narrationElement;
     this.narrationElement = element;
+    this.releaseAudioElement(previous);
     this.currentNarration = segment.segmentId;
-    await this.tryPlay(element);
+    await this.tryPlay(element, () => this.narrationElement === element);
   }
 
   private async playVoice(action: 'select' | 'attack' | 'defend'): Promise<void> {
     if (!this.enabled) return;
     const emperorId = this.selectedEmperorId;
     const line = this.narration.emperor_voices.find((voice) => voice.emperorId === emperorId)?.lines[action] ?? action;
-    const element = new Audio(`/game-data/audio/emperor-voice/${emperorId}_${action}.mp3`);
+    const element = new Audio(audioAssetUrl(`emperor-voice/${emperorId}_${action}.mp3`));
     element.volume = 0.9;
-    this.voiceElement?.pause();
+    const previous = this.voiceElement;
     this.voiceElement = element;
+    this.releaseAudioElement(previous);
     this.currentVoice = `${emperorId}_${action}: ${line}`;
-    await this.tryPlay(element);
+    await this.tryPlay(element, () => this.voiceElement === element);
   }
 
-  private async tryPlay(element: HTMLAudioElement): Promise<void> {
+  private releaseAudioElement(element: HTMLAudioElement | null): void {
+    if (!element) return;
+    element.pause();
+    element.src = '';
+    element.load();
+  }
+
+  private async tryPlay(element: HTMLAudioElement, isCurrent: () => boolean): Promise<boolean> {
+    let settled = false;
+    const isLoadingCurrent = () => !settled && isCurrent();
     try {
       this.lastError = '';
-      // Suppress audio fetch errors from console
-      element.addEventListener('error', () => { /* Audio file not available, silently skip */ }, { once: true });
+      this.bindMediaLoadingState(element, isLoadingCurrent);
+      element.addEventListener('error', () => {
+        if (!isCurrent()) return;
+        settled = true;
+        this.lastError = describeMediaLoadError(element);
+        this.setLoadingState('error', element);
+      }, { once: true });
       await element.play();
+      settled = true;
+      if (isCurrent()) this.setLoadingState('playing', element);
+      return true;
     } catch (error) {
+      settled = true;
+      if (!isCurrent()) return false;
       this.lastError = error instanceof Error ? error.message : String(error);
+      this.setLoadingState('error', element);
+      return false;
     }
+  }
+
+  private bindMediaLoadingState(element: HTMLAudioElement, isCurrent: () => boolean): void {
+    const setIfCurrent = (stage: AudioLoadingStage) => {
+      if (!isCurrent()) return;
+      this.setLoadingState(stage, element);
+    };
+    element.addEventListener('loadstart', () => setIfCurrent('loading'), { once: true });
+    element.addEventListener('loadedmetadata', () => setIfCurrent('metadata'), { once: true });
+    element.addEventListener('progress', () => setIfCurrent('buffering'));
+    element.addEventListener('canplay', () => setIfCurrent('canplay'), { once: true });
+    element.addEventListener('canplaythrough', () => setIfCurrent('ready'), { once: true });
+  }
+
+  private setLoadingState(stage: AudioLoadingStage, element: HTMLAudioElement): void {
+    this.loadingStage = stage;
+    this.loadingSource = element.src || element.dataset.source || '';
+    this.loadingProgress = readBufferedProgress(element);
+    this.debugStateListener?.();
+  }
+}
+
+function audioAssetUrl(path: string): string {
+  return gameDataAssetUrl(`audio/${path}`);
+}
+
+function describeMediaLoadError(element: HTMLAudioElement): string {
+  const reason = describeMediaError(element.error);
+  if (!reason) return `Audio failed to load: ${element.src}`;
+  return `Audio failed to load (${reason}): ${element.src}`;
+}
+
+function describeMediaError(error: MediaError | null): string {
+  if (!error) return '';
+  const label = mediaErrorCodeLabel(error.code);
+  if (!label) return '';
+  const detail = error.message.trim();
+  return detail ? `${label}: ${detail}` : label;
+}
+
+function mediaErrorCodeLabel(code: number): string {
+  switch (code) {
+    case 1:
+      return 'aborted';
+    case 2:
+      return 'network';
+    case 3:
+      return 'decode';
+    case 4:
+      return 'source not supported';
+    default:
+      return '';
+  }
+}
+
+function readBufferedProgress(element: HTMLAudioElement): number | null {
+  const duration = element.duration;
+  const buffered = element.buffered;
+  if (!Number.isFinite(duration) || duration <= 0 || !buffered || buffered.length === 0) return null;
+  try {
+    const end = buffered.end(buffered.length - 1);
+    return Math.max(0, Math.min(100, Math.round((end / duration) * 100)));
+  } catch {
+    return null;
+  }
+}
+
+function audioLoadingMessage(stage: AudioLoadingStage, progress: number | null): string {
+  switch (stage) {
+    case 'loading':
+      return progress === null ? '音频加载中' : `音频加载中 ${progress}%`;
+    case 'metadata':
+      return '音频元数据已读取';
+    case 'buffering':
+      return progress === null ? '音频缓冲中' : `音频缓冲中 ${progress}%`;
+    case 'canplay':
+      return '音频可播放';
+    case 'ready':
+      return '音频缓冲完成';
+    default:
+      return '';
   }
 }

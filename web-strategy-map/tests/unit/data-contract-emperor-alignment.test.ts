@@ -3,10 +3,11 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Bug under investigation: previous round aligned RegionDefinition
- * fields. EmperorDefinition is similarly drifted: C# carries
- * versionScope, score (a heavy 12-field nested struct),
- * diplomacySkills, aiPersonality — TS has none of them.
+ * Bug under investigation: previous rounds exposed cross-language
+ * drift between C# EmperorDefinition and TS EmperorDefinition.
+ * versionScope, score, diplomacySkills, and aiPersonality are now
+ * aligned; this file pins them so future save/export and comparison
+ * UI work cannot drop the fields silently.
  *
  * Pinned invariant: TS EmperorDefinition must declare the fields
  * present in C#'s public field list. Save round-trips and any
