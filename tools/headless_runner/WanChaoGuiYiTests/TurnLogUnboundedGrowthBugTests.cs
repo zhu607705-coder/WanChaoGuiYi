@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 namespace WanChaoGuiYi.Tests
 {
     /// <summary>
-    /// Bug under investigation: GameState.AddLog appends to turnLog
+    /// Bug under investigation: GameState.AddLog once appended to turnLog
     /// without any cap, eviction policy, or category-aware filter.
     /// In a long-running simulation (50+ turns at MVP volume) this
     /// list grows unbounded.  Each economy pass alone can write
@@ -18,8 +18,9 @@ namespace WanChaoGuiYi.Tests
     /// pruned.  A reasonable cap for an MVP demo is ~2000 entries
     /// (well above one full turn's worth, well below memory pressure).
     ///
-    /// We test by writing 5000 distinct log lines.  After that the
-    /// length should be bounded.  Today turnLog.Count == 5000.
+    /// We test by writing 5000 distinct log lines. After that the
+    /// length must stay below the current-turn hard ceiling while
+    /// retaining the newest entry.
     /// </summary>
     public sealed class TurnLogUnboundedGrowthBugTests
     {

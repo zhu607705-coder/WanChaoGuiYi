@@ -41,10 +41,18 @@ namespace WanChaoGuiYi
 
         public static void RestoreContestedRegion(MapState mapState, string regionId)
         {
+            if (mapState == null) return;
+
             RegionRuntimeState region;
-            if (mapState != null && mapState.TryGetRegion(regionId, out region) && region.occupationStatus == OccupationStatus.Contested)
+            if (mapState.TryGetRegion(regionId, out region) && region.occupationStatus == OccupationStatus.Contested)
             {
                 region.occupationStatus = OccupationStatus.Controlled;
+            }
+
+            RegionState legacyRegion = mapState.FindLegacyRegion(regionId);
+            if (legacyRegion != null && legacyRegion.occupationStatus == OccupationStatus.Contested)
+            {
+                legacyRegion.occupationStatus = OccupationStatus.Controlled;
             }
         }
 

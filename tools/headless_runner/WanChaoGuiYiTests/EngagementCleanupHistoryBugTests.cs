@@ -74,5 +74,26 @@ namespace WanChaoGuiYi.Tests
             Assert.True(traceFound,
                 "Engagement was cleared without a single log entry; players cannot reconstruct what happened.");
         }
+
+        [Fact]
+        public void RestoreContestedRegion_Must_Sync_Runtime_And_Legacy_Status()
+        {
+            FakeDataRepository data;
+            GameState state = TestFixtures.BuildSinglePlayerWorld(1, out data);
+            WorldState world = WorldStateFactory.Create(state, data);
+
+            RegionState legacyRegion = state.FindRegion("r0");
+            RegionRuntimeState runtimeRegion;
+            Assert.NotNull(legacyRegion);
+            Assert.True(world.Map.TryGetRegion("r0", out runtimeRegion));
+
+            legacyRegion.occupationStatus = OccupationStatus.Contested;
+            runtimeRegion.occupationStatus = OccupationStatus.Contested;
+
+            DomainEngagementCleanup.RestoreContestedRegion(world.Map, "r0");
+
+            Assert.Equal(OccupationStatus.Controlled, runtimeRegion.occupationStatus);
+            Assert.Equal(OccupationStatus.Controlled, legacyRegion.occupationStatus);
+        }
     }
 }

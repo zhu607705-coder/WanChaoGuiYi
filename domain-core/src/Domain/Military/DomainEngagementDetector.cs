@@ -112,6 +112,7 @@ namespace WanChaoGuiYi
             if (mapState.TryGetRegion(regionId, out region))
             {
                 region.occupationStatus = OccupationStatus.Contested;
+                mapState.SyncLegacyRegionOccupationStatus(regionId, OccupationStatus.Contested);
             }
         }
 

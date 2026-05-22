@@ -76,6 +76,7 @@ namespace WanChaoGuiYi.Tests
             // Atomic: nothing changed.
             Assert.Equal(ownerBefore, ownerAfter);
             Assert.Equal(playerRegionsBefore, playerRegionsAfter);
+            Assert.Contains("r0", player.regionIds);
         }
     }
 }

@@ -5,14 +5,14 @@ namespace WanChaoGuiYi.Tests
 {
     /// <summary>
     /// Bug under investigation: DomainBattleSimulationSystem.ResolveEngagement
-    /// uses 'attackerWon = attackerPower >= defenderPower'.  On exact ties,
-    /// the attacker wins automatically and the defending region is
-    /// transferred via DomainOccupationSystem.  Combined with the fact
-    /// that ApplySideLosses uses fixed multipliers (0.85 / 0.45) regardless
-    /// of margin, this means a 1:1 power tie hands the attacker the region
-    /// at a 15% loss while the defender is permanently halved — entirely
-    /// deterministically.  The desired invariant: an exact tie must NOT
-    /// auto-attribute the region to the attacker.
+    /// currently uses 'attackerWon = attackerPower > defenderPower'.  This
+    /// means exact ties are defender holds.  The regression risk is changing
+    /// the comparison back to '>=' or otherwise auto-awarding a no-margin
+    /// result to the attacker while ApplySideLosses still imposes asymmetric
+    /// winner/loser casualty fractions.
+    ///
+    /// Pinned invariant: an exact tie must NOT auto-attribute the region to
+    /// the attacker.
     /// </summary>
     public sealed class BattleTieBreakBugTests
     {
@@ -114,9 +114,9 @@ namespace WanChaoGuiYi.Tests
             // would be testing nothing meaningful).
             Assert.Equal(result.defenderPower, result.attackerPower);
 
-            // The bug pin: today this returns true.  We want a tie to
-            // either be a defender hold (attackerWon == false) or a
-            // probabilistic outcome that the system flags explicitly.
+            // Tie policy: defender hold.  If design later changes to an
+            // explicit draw/probabilistic result, this assertion should be
+            // replaced with a richer outcome field rather than >=.
             Assert.False(result.attackerWon, "Exact tie auto-awarded to attacker. Defender lost the region with no margin.");
         }
     }

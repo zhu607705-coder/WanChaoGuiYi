@@ -4,19 +4,19 @@ using Xunit.Abstractions;
 namespace WanChaoGuiYi.Tests
 {
     /// <summary>
-    /// Bug under investigation: NumericContext.Add appends modifiers
-    /// to a list and never deduplicates by source.  If the same source
+    /// Bug under investigation: NumericContext.Add once appended modifiers
+    /// to a list without deduplicating by source. If the same source
     /// (e.g. an event id, a tech id, an AI flag) is published twice in
-    /// the same turn — which is a real risk because EventBus has no
-    /// idempotency guarantee — its Additive value is doubled, its
+    /// the same turn, which is a real risk because EventBus has no
+    /// idempotency guarantee, its Additive value is doubled, its
     /// Multiplicative is doubled (since multiplicative is *summed*
     /// into a +delta in NumericEngine!), and its Override is silently
     /// shadowed by whichever Add came last.
     ///
     /// Pinned invariant: Adding the SAME (domain, stat, type, source)
     /// twice with the same value must not double its effective impact.
-    /// Either NumericContext rejects the duplicate, or it must collapse
-    /// duplicates by source on Evaluate.
+    /// NumericContext currently enforces this by replacing duplicate
+    /// (domain, stat, type, source) entries before Evaluate.
     ///
     /// Note: this is independent of the override-conflict signal added
     /// in the previous round.  That one detected DIFFERENT overrides;
@@ -46,9 +46,7 @@ namespace WanChaoGuiYi.Tests
             output.WriteLine("additive:  " + result.additive);
             output.WriteLine("finalValue: " + result.finalValue);
 
-            // Today: additive = 60, finalValue = 160.
-            // Desired: additive = 30, finalValue = 130 (idempotent on
-            // duplicate (domain, stat, type, source)).
+            // Regression target: the duplicate tuple evaluates once.
             Assert.Equal(30f, result.additive);
             Assert.Equal(130f, result.finalValue);
         }

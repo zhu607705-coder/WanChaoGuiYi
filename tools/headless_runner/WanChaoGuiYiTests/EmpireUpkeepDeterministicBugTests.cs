@@ -16,6 +16,7 @@ namespace WanChaoGuiYi.Tests
     /// </summary>
     public sealed class EmpireUpkeepDeterministicBugTests
     {
+        private const int TrialCount = 5;
         private readonly ITestOutputHelper output;
 
         public EmpireUpkeepDeterministicBugTests(ITestOutputHelper output) { this.output = output; }
@@ -23,8 +24,9 @@ namespace WanChaoGuiYi.Tests
         [Fact]
         public void Same_Initial_State_Must_Produce_Same_Economy_Outcome()
         {
-            int[] outcomes = new int[4];
-            for (int trial = 0; trial < 2; trial++)
+            int[] moneyDeltas = new int[TrialCount];
+            int[] foodDeltas = new int[TrialCount];
+            for (int trial = 0; trial < TrialCount; trial++)
             {
                 FakeDataRepository data;
                 GameState state = TestFixtures.BuildSinglePlayerWorld(5, out data);
@@ -50,13 +52,16 @@ namespace WanChaoGuiYi.Tests
                 int moneyBefore = faction.money;
                 int foodBefore = faction.food;
                 new DomainEconomySystem(null).ExecuteTurn(TestFixtures.BuildContext(state, data));
-                outcomes[trial * 2] = moneyBefore - faction.money;
-                outcomes[trial * 2 + 1] = foodBefore - faction.food;
+                moneyDeltas[trial] = moneyBefore - faction.money;
+                foodDeltas[trial] = foodBefore - faction.food;
+                output.WriteLine("trial " + trial + ": money delta=" + moneyDeltas[trial] + " food delta=" + foodDeltas[trial]);
             }
-            output.WriteLine("trial 0: money delta=" + outcomes[0] + " food delta=" + outcomes[1]);
-            output.WriteLine("trial 1: money delta=" + outcomes[2] + " food delta=" + outcomes[3]);
-            Assert.Equal(outcomes[0], outcomes[2]);
-            Assert.Equal(outcomes[1], outcomes[3]);
+
+            for (int trial = 1; trial < TrialCount; trial++)
+            {
+                Assert.Equal(moneyDeltas[0], moneyDeltas[trial]);
+                Assert.Equal(foodDeltas[0], foodDeltas[trial]);
+            }
         }
     }
 }

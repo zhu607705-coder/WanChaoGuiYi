@@ -109,5 +109,6 @@
 
     <!-- Reused BattleResult / EquipmentLookup so we don't depend on Unity adapter -->
     <Compile Include="../WanChaoGuiYiHeadless/HeadlessBattleTypes.cs" Link="Game/HeadlessBattleTypes.cs" />
+    <Compile Include="../WanChaoGuiYiHeadless/NonUnityJsonDataRepository.cs" Link="Game/NonUnityJsonDataRepository.cs" />
   </ItemGroup>
 </Project>

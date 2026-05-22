@@ -4,14 +4,11 @@ using Xunit.Abstractions;
 namespace WanChaoGuiYi.Tests
 {
     /// <summary>
-    /// Bug under investigation: ArmyState.morale and
-    /// ArmyRuntimeState.morale are public int fields with no clamp.
-    /// Battle losses, frontier supply attrition, and emperor traits
-    /// modify morale through assignment; nothing stops it from going
-    /// negative (despondent past death) or above 100 (rallying past
-    /// max). NumericFormulas.CalculateBattlePower clamps via
-    /// Clamp01(morale/100f) on read, but that's only one consumer.
-    /// UI, save export, and AI scoring read raw morale.
+    /// Historical bug: ArmyState.morale and ArmyRuntimeState.morale
+    /// used to be assignment paths where out-of-range values could
+    /// survive until a later consumer clamped on read. Both legacy and
+    /// runtime morale are now properties, so this pins the setter-level
+    /// clamp directly.
     ///
     /// Pinned invariant: morale must stay in [0, 100] regardless of
     /// the assignment path.
@@ -39,6 +36,25 @@ namespace WanChaoGuiYi.Tests
                 "ArmyState.morale = -50 produced " + afterNegative + ". Negative morale is undefined.");
             Assert.True(afterOverflow <= 100,
                 "ArmyState.morale = 250 produced " + afterOverflow + ". Morale > 100 breaks battle power formulas.");
+        }
+
+        [Fact]
+        public void Runtime_Army_Morale_Must_Stay_In_Range_After_Assignment()
+        {
+            ArmyRuntimeState army = new ArmyRuntimeState { morale = 70 };
+            army.morale = -50;
+            int afterNegative = army.morale;
+
+            army.morale = 250;
+            int afterOverflow = army.morale;
+
+            output.WriteLine("runtime after -50: " + afterNegative);
+            output.WriteLine("runtime after 250: " + afterOverflow);
+
+            Assert.True(afterNegative >= 0,
+                "ArmyRuntimeState.morale = -50 produced " + afterNegative + ". Negative runtime morale is undefined.");
+            Assert.True(afterOverflow <= 100,
+                "ArmyRuntimeState.morale = 250 produced " + afterOverflow + ". Runtime morale > 100 breaks battle power formulas.");
         }
     }
 }

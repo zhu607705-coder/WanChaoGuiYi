@@ -20,9 +20,9 @@ namespace WanChaoGuiYi.Tests
     /// HeadlessKeyDelta.  If a scenario truly has nothing to record,
     /// it is not a useful scenario and should be pruned.
     ///
-    /// To avoid running the full simulation here, we lift the assertion
-    /// to source level: any method that returns a Pass(...) call must
-    /// have at least one AddKeyDelta(...) earlier in the same method.
+    /// Keep both guardrails: source-level coverage catches new Pass()
+    /// paths without AddKeyDelta(), while the runtime assertion below
+    /// executes production JSON data and verifies the assembled report.
     /// </summary>
     public sealed class HeadlessScenarioMustHaveKeyDeltaBugTests
     {
@@ -76,6 +76,61 @@ namespace WanChaoGuiYi.Tests
             Assert.Empty(offenders);
         }
 
+        [Fact]
+        public void Every_Passing_Runtime_Scenario_Report_Must_Keep_KeyDelta()
+        {
+            NonUnityJsonDataRepository repository = new NonUnityJsonDataRepository();
+            repository.Load(LocateDataDirectory());
+
+            HeadlessSimulationRunner runner = new HeadlessSimulationRunner();
+            HeadlessSimulationSuiteResult suite = runner.RunAllScenarios(repository, "faction_qin_shi_huang");
+
+            List<string> offenders = new List<string>();
+            if (suite.report == null)
+            {
+                offenders.Add("suite report is null");
+            }
+
+            foreach (HeadlessSimulationResult scenario in suite.scenarios)
+            {
+                if (!scenario.passed)
+                {
+                    offenders.Add(scenario.scenarioName + " failed at runtime: " + scenario.failureReason);
+                    continue;
+                }
+
+                if (scenario.report == null)
+                {
+                    offenders.Add(scenario.scenarioName + " passed but report is null");
+                    continue;
+                }
+
+                if (scenario.report.keyDeltas == null || scenario.report.keyDeltas.Count == 0)
+                {
+                    offenders.Add(scenario.scenarioName + " passed but result report has no keyDelta");
+                }
+            }
+
+            if (suite.report != null)
+            {
+                foreach (HeadlessScenarioReport scenario in suite.report.scenarios)
+                {
+                    if (!scenario.passed) continue;
+                    if (scenario.keyDeltas == null || scenario.keyDeltas.Count == 0)
+                    {
+                        offenders.Add(scenario.name + " passed but suite report has no keyDelta");
+                    }
+                }
+            }
+
+            output.WriteLine("runtime scenarios inspected: " + suite.scenarios.Count);
+            output.WriteLine("runtime report scenarios inspected: " + (suite.report != null ? suite.report.scenarios.Count : 0));
+            output.WriteLine("offenders: " + offenders.Count);
+            foreach (string o in offenders) output.WriteLine("  " + o);
+
+            Assert.Empty(offenders);
+        }
+
         private static int FindMatchingBrace(string text, int openIndex)
         {
             int depth = 0;
@@ -112,6 +167,19 @@ namespace WanChaoGuiYi.Tests
                 current = Path.GetDirectoryName(current);
             }
             throw new FileNotFoundException("HeadlessSimulationRunner.cs not found near " + baseDir);
+        }
+
+        private static string LocateDataDirectory()
+        {
+            string baseDir = Path.GetDirectoryName(typeof(HeadlessScenarioMustHaveKeyDeltaBugTests).GetTypeInfo().Assembly.Location);
+            string current = baseDir;
+            for (int i = 0; i < 10 && current != null; i++)
+            {
+                string candidate = Path.Combine(current, "web-strategy-map", "game-data-source", "data");
+                if (Directory.Exists(candidate)) return candidate;
+                current = Path.GetDirectoryName(current);
+            }
+            throw new DirectoryNotFoundException("web-strategy-map/game-data-source/data not found near " + baseDir);
         }
     }
 }

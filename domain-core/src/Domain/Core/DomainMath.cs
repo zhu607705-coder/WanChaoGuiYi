@@ -55,6 +55,11 @@ namespace WanChaoGuiYi
 
         public static float Log10(float value)
         {
+            if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f)
+            {
+                return 0f;
+            }
+
             return (float)Math.Log10(value);
         }
     }

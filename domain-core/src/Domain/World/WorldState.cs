@@ -188,6 +188,21 @@ namespace WanChaoGuiYi
             }
         }
 
+        internal RegionState FindLegacyRegion(string regionId)
+        {
+            if (legacyState == null || string.IsNullOrEmpty(regionId)) return null;
+            return legacyState.FindRegion(regionId);
+        }
+
+        internal void SyncLegacyRegionOccupationStatus(string regionId, OccupationStatus occupationStatus)
+        {
+            RegionState region = FindLegacyRegion(regionId);
+            if (region != null)
+            {
+                region.occupationStatus = occupationStatus;
+            }
+        }
+
         public List<ArmyRuntimeState> GetArmiesInRegion(string regionId)
         {
             RebuildArmyLocationIndex();

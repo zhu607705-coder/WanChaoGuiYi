@@ -208,17 +208,29 @@ namespace WanChaoGuiYi
             foreach (NumericModifier modifier in modifiers)
             {
                 if (modifier.domain != domain || modifier.stat != stat) continue;
-                float modifierValue = SanitizeModifierValue(modifier.value);
 
                 switch (modifier.type)
                 {
                     case NumericModifierType.Additive:
+                    {
+                        float modifierValue = SanitizeModifierValue(modifier.value, 0f);
                         result.additive += modifierValue;
                         break;
+                    }
                     case NumericModifierType.Multiplicative:
+                    {
+                        float modifierValue = SanitizeModifierValue(modifier.value, 0f);
                         result.multiplier += modifierValue;
                         break;
+                    }
                     case NumericModifierType.Override:
+                    {
+                        float modifierValue;
+                        if (!TrySanitizeOverrideValue(modifier.value, out modifierValue))
+                        {
+                            break;
+                        }
+
                         if (result.overrideCount == 0)
                         {
                             firstOverrideValue = modifierValue;
@@ -229,6 +241,7 @@ namespace WanChaoGuiYi
                         result.overrideValue = modifierValue;
                         AddBoundedOverrideSource(overrideSources, string.IsNullOrEmpty(modifier.source) ? "(anonymous)" : modifier.source);
                         break;
+                    }
                 }
             }
 
@@ -241,10 +254,18 @@ namespace WanChaoGuiYi
             return result;
         }
 
-        private static float SanitizeModifierValue(float value)
+        private static float SanitizeModifierValue(float value, float fallback)
         {
-            if (float.IsNaN(value) || float.IsInfinity(value)) return 0f;
+            if (float.IsNaN(value) || float.IsInfinity(value)) return fallback;
             return DomainMath.Clamp(value, -MaxModifierMagnitude, MaxModifierMagnitude);
+        }
+
+        private static bool TrySanitizeOverrideValue(float value, out float sanitized)
+        {
+            sanitized = 0f;
+            if (float.IsNaN(value) || float.IsInfinity(value)) return false;
+            sanitized = DomainMath.Clamp(value, -MaxModifierMagnitude, MaxModifierMagnitude);
+            return true;
         }
 
         private static float SanitizeFiniteValue(float value, float fallback)

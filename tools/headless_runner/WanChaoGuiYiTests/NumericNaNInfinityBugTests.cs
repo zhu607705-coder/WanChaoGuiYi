@@ -86,5 +86,35 @@ namespace WanChaoGuiYi.Tests
                 "NaN multiplier silently produced tax=" + taxWithNaN +
                 " for a region with taxOutput=100. The engine did not detect or sanitise NaN.");
         }
+
+        [Fact]
+        public void Invalid_Override_Must_Not_Replace_A_Finite_Base_Value()
+        {
+            NumericContext ctx = new NumericContext();
+            ctx.Add(NumericDomain.Economy, NumericStat.TaxIncome, NumericModifierType.Override, float.NaN, "corrupt_event");
+
+            NumericResult result = ctx.Evaluate(NumericDomain.Economy, NumericStat.TaxIncome, 100f);
+
+            output.WriteLine("hasOverride: " + result.hasOverride);
+            output.WriteLine("overrideCount: " + result.overrideCount);
+            output.WriteLine("finalValue: " + result.finalValue);
+
+            Assert.False(result.hasOverride);
+            Assert.Equal(0, result.overrideCount);
+            Assert.Equal(100f, result.finalValue);
+        }
+
+        [Fact]
+        public void DomainMath_Log10_Must_Return_Finite_For_NonPositive_Input()
+        {
+            float zero = DomainMath.Log10(0f);
+            float negative = DomainMath.Log10(-10f);
+
+            output.WriteLine("Log10(0): " + zero);
+            output.WriteLine("Log10(-10): " + negative);
+
+            Assert.False(float.IsNaN(zero) || float.IsInfinity(zero));
+            Assert.False(float.IsNaN(negative) || float.IsInfinity(negative));
+        }
     }
 }
