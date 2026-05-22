@@ -9414,3 +9414,34 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮推送后 GitHub Actions 为最新业务 HEAD 启动过 CI run，但远端 job 长时间保持 `in_progress`，未形成通过/失败结论；本地全量验证已作为当前发布证据。
 - 若后续 CI 继续卡住，应单独诊断 GitHub runner 或 workflow 队列，而不是回滚本轮业务提交。
+
+## 2026-05-22 全量 MVP 收口执行启动
+
+### 意图
+
+- 承接 deep-interview 结论，开始执行“全量保留并完善现有 MVP 半成品”的收口路线。
+- 核心玩法定位为架空帝皇斗蛐蛐，模式为类似 NBA2K 的模拟加可下场混合体验。
+- 玩家下场层级限定为战役指挥：调军、路线、补给、进攻、撤退，战斗仍自动结算。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 当前分支为 `main...origin/main`，工作树干净。
+- GitHub Actions 最新 `main` run `26274912349` 已完成且结论为 `success`。
+- 最近完整本地验证沿用发布收口：`tools\run_all_checks.ps1` 全绿，包含 Domain Core xUnit `81/81 passed`、headless war `16/16 passed`、Vitest `66/66 passed`、Playwright UI `27/27 passed`。
+
+### 本轮完成
+
+- 新增 `docs/mvp-closure-ledger.md`，作为后续 MVP 收口的权威台账。
+- 台账明确：当前 MVP 系统不能被砍掉、隐藏、合并到消失或降级成未来预留；必须保留并完善到可玩、可解释、可验证状态。
+- 台账已覆盖地图、帝皇、模拟观战、战役指挥、自动战斗、扩张治理拖累、王朝周期、财政粮食人口兵力、土地民变、继承、法统、人才、政策、科技、建筑、编年事件、天气风俗装备天文将领、胜利条件、存档、UI 决策、Domain/Web 同步、内容管线和测试债。
+
+### 当前验证
+
+- 文档级验证通过：`git diff --check -- docs\mvp-closure-ledger.md project-development-report.md` 无 whitespace error。
+- 本轮未修改 Web runtime、Domain Core、JSON 数据或测试逻辑，因此未重跑完整构建。
+
+### 下一步
+
+- 按台账 P0 任务进入王朝周期 20-40 回合验收场景设计。
+- 目标是证明强盛王朝能自然进入扩张、过热、危机、崩盘或续命路径，并让 UI 能解释原因、可做行动和行动后变化。
