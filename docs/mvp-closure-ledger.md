@@ -79,3 +79,7 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 4. 强盛王朝能自然进入过热、危机、崩盘或续命路径。
 5. UI 能解释危机原因、可做行动和行动后变化。
 6. `tools/run_all_checks.ps1` 或同等完整门禁通过。
+
+## 已启动的收口工件
+
+- `docs/dynasty-cycle-acceptance-scenarios.md`：定义 20-40 回合王朝周期长线验收场景，作为后续 headless 和 Playwright 实现依据。

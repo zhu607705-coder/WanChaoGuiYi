@@ -9445,3 +9445,29 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 按台账 P0 任务进入王朝周期 20-40 回合验收场景设计。
 - 目标是证明强盛王朝能自然进入扩张、过热、危机、崩盘或续命路径，并让 UI 能解释原因、可做行动和行动后变化。
+
+## 2026-05-22 王朝周期长线验收设计
+
+### 目标
+
+- 承接 `docs/mvp-closure-ledger.md` 的 P0 任务，先定义王朝周期 20-40 回合验收场景。
+- 本轮只新增验收设计文档，不改 Web runtime、Domain Core、JSON 数据或测试代码。
+
+### 已完成
+
+- 新增 `docs/dynasty-cycle-acceptance-scenarios.md`。
+- 场景设计覆盖：
+  - 强盛王朝扩张后过热。
+  - 财政、军队、土地互相挤压。
+  - 继承压力触发王朝危机。
+  - 玩家接管后通过治理、财政、继承或战役指挥尝试续命。
+- 文档明确 headless 负责因果，Web/Playwright 负责玩家理解。
+- 文档重申禁止事项：不做战术战斗、不降级现有 MVP 片段、不用单一数值断言冒充玩家可理解解释。
+
+### 当前验证
+
+- 文档级验证通过：`git diff --check -- docs\dynasty-cycle-acceptance-scenarios.md docs\mvp-closure-ledger.md project-development-report.md` 无 whitespace error。
+
+### 下一步
+
+- 进入实现阶段：优先新增 `DynastyCyclePressureAcceptanceTests`，从“扩张后过热”和“财政军队土地挤压”两个场景开始。
