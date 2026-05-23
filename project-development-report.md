@@ -10108,3 +10108,58 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 Web Playwright 和文档台账，已通过全量门禁，可安全隔离为 scoped commit。
+
+## 2026-05-23 自动化找缺口轮：Web 失败长线独立性复核
+
+### 类型
+
+- 找漏洞/找缺口：只做审查、判断 Web 20-40 回合失败长线是否需要独立 Playwright，并更新下一轮修补切口。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 9]`，工作树干净；最新提交为 `faf1876` Web 20 回合成功长线。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `30/30`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 发现
+
+- 现有失败相关覆盖分成两块：
+  - headless 已有 20 回合资源不足失败路径，能证明无法续命时危机继续恶化。
+  - Web 已有 `shows dynasty rescue as blocked when succession crisis is unaffordable`，能证明导入危机档后按钮禁用、面板/outliner 显示不可续命、状态不被误改。
+- 现有 Web 成功长线 `shows a 20-turn dynasty crisis can be taken over and stabilized into victory` 已证明同局 20 回合危机、接管、三代延续胜利和导入导出保留。
+- 仍缺独立 Web 失败长线：当前没有一个 Playwright 在同一局中推进 `20` 个真实 Web 回合后，把“资源不足或不接管 -> 不可续命 -> 危机未缓解 -> 导出/导入仍保留失败态”串起来。
+- 这个缺口与单步不可续命不同：单步测试证明按钮和字段正确，长线失败测试要证明 20-40 回合自然压力之后，玩家可见失败状态仍能解释原因且不会被胜利路径误覆盖。
+
+### 结论
+
+- 需要独立 Web 20-40 回合失败长线 Playwright。
+- 最小实现建议：复用成功长线种子，但把长线后资源压到金钱 `< 90` 或法统 `< 2`，或使用长线中逐步消耗后再接管。
+- 下一轮修补用例建议命名：`shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable`。
+
+### 下一轮低风险修补建议
+
+- 新增 Playwright 用例，目标文件 `web-strategy-map/tests/strategy-map.spec.ts`。
+- 最小断言：
+  - 导入长线种子，推进 `20` 个真实 `governance_advance_turn`，让 `governanceTurn` 进入 `21-41` 且 outliner 显示“继承危机”。
+  - 接管前或接管后把资源压到不足，确保 `dynastyRescueBlocked === true`、`dynastyRescueBlockReason` 包含“资源不足”。
+  - 点击或尝试触发 `dynasty_stabilize_succession` 后，断言 `successionRisk`、`courtPressure`、`money`、`legitimacy`、`stableSuccessions` 不被误改，`dynastyVictoryAchieved === false`。
+  - outliner/接管面板显示“不可续命”，`dynastyFailureRisk` 包含“继承危机”。
+  - 导出/导入后保留 `governanceTurn`、`successionRisk`、`courtPressure`、`stableSuccessions`、`dynastyRescueBlocked` 语义和失败显示。
+- 验证顺序：先跑 targeted Playwright 红/绿，再跑王朝相关 grep、`npm --prefix web-strategy-map run typecheck`，最后视影响范围跑 `tools\run_all_checks.ps1`。
+
+### 验证
+
+- 本轮只读审查生产代码、Playwright 和台账，未改 Web/Core 运行代码。
+- 只改 `project-development-report.md` 记录复核结论。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 独立 Web 失败长线尚未落地为 Playwright。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮为找缺口文档轮；若 `git diff --check` 通过且只有报告变更，可按审查文档 scoped commit。
