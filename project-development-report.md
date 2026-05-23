@@ -10163,3 +10163,86 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮为找缺口文档轮；若 `git diff --check` 通过且只有报告变更，可按审查文档 scoped commit。
+
+## 2026-05-23 修补轮：Web 20 回合王朝失败长线
+
+### 类型
+
+- 修补问题：从上一轮失败长线复核中选择 P0 切口，用 Playwright 把同一局内的 20 回合危机、资源不足不可续命、危机未缓解和导入导出保留串起来。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 10]`，工作树干净；最新提交为 `849f620` Web 失败长线复核。
+- 最近完整验证为 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `30/30`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 在 `web-strategy-map/tests/strategy-map.spec.ts` 新增 `shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable`。
+- 该用例复用长线种子，推进 `20` 个真实 Web 治理回合后进入 `21-41` 回合窗口，并断言 outliner 显示“继承危机”。
+- 在长线危机之后切到资源不足接管状态，覆盖：
+  - 接管面板显示“已接管 / 不可续命 / 资源不足”。
+  - `dynastyRescueBlocked === true`，`dynastyFailureRisk` 包含“继承危机”。
+  - 尝试触发 `dynasty_stabilize_succession` 后，`successionRisk`、`courtPressure`、`money`、`legitimacy`、`stableSuccessions` 均不被误改。
+  - `dynastyVictoryAchieved === false`，避免失败态被胜利路径误覆盖。
+  - 导出/导入后保留 `governanceTurn`、危机数值、不可续命语义和失败显示。
+- 新增测试一次即通过，说明生产逻辑已支撑 Web 长线失败闭环，本轮主要补齐缺失的回归验收；未改 Web 生产代码。
+- 更新 `docs/mvp-closure-ledger.md`：三代延续 Web 长线从“成功已补、失败待复核”推进为“成功/失败均已补”，当前 P0 转向其他胜利条件运行态演示。
+
+### 验证
+
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable"` 通过：`1/1 passed`。
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "lets players observe, take over, and stabilize dynasty succession|shows dynasty rescue as blocked when succession crisis is unaffordable|shows a 20-turn dynasty crisis can be taken over and stabilized into victory|shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable"` 通过：`4/4 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+- `tools\run_all_checks.ps1` 通过并输出 `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `31/31`、Web build/typecheck 通过。
+- Playwright 全量中的 `regions.json HTTP 404` 来自既有 fatal-error 覆盖用例，是预期拦截路径，不是门禁失败。
+
+### 剩余风险
+
+- 当前 Web 失败长线使用长线后资源不足种子，不是自然经济消耗到资源不足；后续可作为 P1 复核，但 P0 玩家可见失败长线已覆盖。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示，下一轮应转向胜利条件扩展演示。
+
+### 提交策略
+
+- 本轮改动集中在 Web Playwright、MVP 台账和项目报告；已通过 targeted、王朝 grep、typecheck、`git diff --check` 与全量门禁，可安全隔离为 scoped commit。
+
+## 2026-05-23 对话恢复与任务创建修复
+
+### 类型
+
+- 工具链修复：恢复当前对话上下文，并处理 Codex App 创建任务后出现的 ID/状态异常。
+
+### 已恢复上下文
+
+- 当前项目仍在纯代码 Web + headless Domain Core 主线。
+- 当前仓库状态为 `main...origin/main [ahead 10]`，未提交修改集中在 `web-strategy-map/tests/strategy-map.spec.ts`、`docs/mvp-closure-ledger.md` 和本报告。
+- 最新业务进度停在 Web 20 回合王朝失败长线修补轮：targeted Playwright、王朝相关 Playwright grep 和 `npm --prefix web-strategy-map run typecheck` 均已通过；下一步应完成全量门禁并按 Lore 协议 scoped commit。
+
+### 创建任务问题
+
+- 复现性自检发现：用中文任务名创建 heartbeat 时会生成不稳定 ID，例如 `automation`；此前万朝归一任务也落成数字 ID `5`。
+- 临时自检任务虽然请求 `status=PAUSED`，落盘后却变成 `ACTIVE`，说明 heartbeat 创建时不能依赖中文名/临时名和暂停状态作为安全边界。
+- 旧 `5` 任务提示词已落后：仍要求新增 Web 失败长线 Playwright，但该修补轮已完成 targeted 验证。
+
+### 修复
+
+- 删除临时自检任务 `automation`。
+- 删除旧万朝归一数字 ID heartbeat：`5`。
+- 新建稳定 ASCII ID heartbeat：`wanchao-current-thread-loop`。
+- 新任务提示已更新为当前恢复点：Web 失败长线测试已补，下一步先跑剩余全量门禁和 scoped commit，然后转向 `unify_jiuzhou`、`institutional_order` 或 `maxFragmentation` 的运行态演示缺口。
+
+### 验证
+
+- `automation_update create` 成功创建 `wanchao-current-thread-loop`。
+- `automation_update view` 能正常渲染新任务卡片。
+- `automation_update delete` 成功删除临时任务 `automation` 和旧任务 `5`。
+- `C:\Users\123\.codex\automations\wanchao-current-thread-loop\automation.toml` 存在，且 `id = "wanchao-current-thread-loop"`、`kind = "heartbeat"`、`status = "ACTIVE"`、`rrule = "FREQ=MINUTELY;INTERVAL=5"`。
+- automations 目录结构校验确认新任务 TOML 可解析；仍保留两个旧 memory-only 目录和一个旧 schema 任务，未在本轮扩大清理。
+
+### 剩余风险
+
+- `nonqwen-residue-risk-optimizer` 和 `web-strategy-map-9h-feature-loop` 是旧 memory-only 目录，`qwen-ar-autoresearch-loop` 是旧 schema TOML；本轮没有删除，避免误伤历史任务记忆。
+- 若后续再创建任务，优先使用稳定英文/ASCII 名称作为任务名，避免中文名自动生成 `automation` 或数字 ID。

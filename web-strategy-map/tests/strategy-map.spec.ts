@@ -677,6 +677,115 @@ test.describe('code-driven strategy map', () => {
     expect(consoleErrors).toEqual([]);
   });
 
+  test('shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(90_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const longRunSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 1,
+      dynastyControlMode: 'observe',
+      nationState: {
+        ...exported.nationState,
+        food: 4200,
+        money: 700,
+        army: Math.max(exported.nationState.army, 1400),
+        legitimacy: 76,
+        successionRisk: 50,
+        courtPressure: 48,
+        stableSuccessions: 0
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: Math.max(region.risk, 74),
+        legitimacy: Math.min(region.legitimacy, 54),
+        integration: Math.max(region.integration, 50),
+        contribution: Math.max(region.contribution, 55)
+      }))
+    };
+    expect(await importGameState(page, longRunSeed)).toBe(true);
+
+    for (let turn = 0; turn < 20; turn += 1) {
+      await page.locator('[data-action="governance_advance_turn"]').click();
+    }
+
+    const crisis = await expectDebugState(
+      page,
+      (state) =>
+        state.ui.governanceTurn >= 21 &&
+        state.ui.governanceTurn <= 41 &&
+        (state.ui.successionRisk >= 70 || state.ui.courtPressure >= 70) &&
+        state.ui.dynastyPressureSummary.includes('继承危机'),
+      'twenty web governance turns should create an unresolved dynasty crisis'
+    );
+    await expect(page.locator('#outliner-list')).toContainText('继承危机');
+
+    const crisisSnapshot = await exportGameState(page);
+    const unaffordableCrisis: GameExportState = {
+      ...crisisSnapshot,
+      dynastyControlMode: 'takeover',
+      nationState: {
+        ...crisisSnapshot.nationState,
+        money: 40,
+        legitimacy: 1,
+        stableSuccessions: 0
+      }
+    };
+    expect(await importGameState(page, unaffordableCrisis)).toBe(true);
+
+    const panel = page.getByTestId('dynasty-takeover-panel');
+    const stabilizeButton = page.locator('[data-action="dynasty_stabilize_succession"]');
+    await expect(panel).toContainText('已接管');
+    await expect(panel).toContainText('不可续命');
+    await expect(panel).toContainText('资源不足');
+    await expect(stabilizeButton).toBeDisabled();
+    await expect(page.locator('#outliner-list')).toContainText('不可续命');
+
+    const beforeAttempt = await debug(page);
+    expect(beforeAttempt.ui.governanceTurn).toBe(crisis.ui.governanceTurn);
+    expect(beforeAttempt.ui.dynastyRescueBlocked).toBe(true);
+    expect(beforeAttempt.ui.dynastyFailureRisk).toContain('继承危机');
+    expect(beforeAttempt.ui.dynastyVictoryAchieved).toBe(false);
+
+    await stabilizeButton.evaluate((button: HTMLButtonElement) => button.click());
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.governanceTurn === beforeAttempt.ui.governanceTurn &&
+        state.ui.dynastyControlMode === 'takeover' &&
+        state.ui.dynastyRescueBlocked &&
+        state.ui.dynastyRescueBlockReason.includes('资源不足') &&
+        state.ui.dynastyFailureRisk.includes('继承危机') &&
+        state.ui.successionRisk === beforeAttempt.ui.successionRisk &&
+        state.ui.courtPressure === beforeAttempt.ui.courtPressure &&
+        state.ui.money === beforeAttempt.ui.money &&
+        state.ui.legitimacy === beforeAttempt.ui.legitimacy &&
+        state.ui.stableSuccessions === beforeAttempt.ui.stableSuccessions &&
+        !state.ui.dynastyVictoryAchieved,
+      'unaffordable long-run rescue should keep the dynasty crisis unresolved'
+    );
+
+    const saved = await exportGameState(page);
+    expect(saved.governanceTurn).toBe(beforeAttempt.ui.governanceTurn);
+    expect(saved.nationState.successionRisk).toBe(beforeAttempt.ui.successionRisk);
+    expect(saved.nationState.courtPressure).toBe(beforeAttempt.ui.courtPressure);
+    expect(saved.nationState.stableSuccessions).toBe(beforeAttempt.ui.stableSuccessions);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.governanceTurn).toBe(saved.governanceTurn);
+    await expectDebug(page, (state) => state.ui.dynastyRescueBlocked).toBe(true);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(false);
+    await expect(page.getByTestId('dynasty-takeover-panel')).toContainText('不可续命');
+    await expect(page.locator('#outliner-list')).toContainText('继承危机');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
   test('shows a fatal error when required data fails to load', async ({ page }) => {
     test.setTimeout(playwrightTimeout(45_000));
     const pageErrors: string[] = [];

@@ -29,11 +29,11 @@
 | --- | --- | --- | --- | --- |
 | 56 区九州地图 | `regions.json`、`map_region_shapes.json`、Three.js 点击/染色、区域 shape 单测 | 已可玩 | 保持 56 区可点击、可染色、可聚焦；地图仍是斗蛐蛐主舞台 | `check:data-source`、region shape/neighbor 单测、Playwright 地图断言 |
 | 帝皇与势力差异 | 13 位帝皇数据、preferred policies、AI personality、机制描述 | 部分可玩 | 帝皇机制必须实际影响扩张、治理、继承或财政压力，而不只停留在描述 | 帝皇机制数据对齐测试、至少 3 位帝皇差异化模拟验收 |
-| 架空斗蛐蛐模拟 | AI 倾向字段、headless 场景、Web 回合推进、王朝接管面板、Web 20 回合危机到接管胜利长线 | 部分可玩 | 自动推演能产生可读的强弱变化、危机和反转；玩家能观战后选择接管 | Playwright 模拟观战/接管/续命断言、Web 20 回合成功长线、后续失败长线复核 |
+| 架空斗蛐蛐模拟 | AI 倾向字段、headless 场景、Web 回合推进、王朝接管面板、Web 20 回合危机到接管胜利/失败长线 | 部分可玩 | 自动推演能产生可读的强弱变化、危机和反转；玩家能观战后选择接管 | Playwright 模拟观战/接管/续命断言、Web 20 回合成功/失败长线 |
 | 玩家接管和战役指挥 | Web 战争命令、路线、补给、截粮、撤退、战报、27 条 Playwright | 已可玩 | 下场接管必须稳定覆盖调军、路线、补给、进攻、撤退、占后处理 | headless war、Playwright 战役指挥流 |
 | 自动战斗结算 | Domain battle simulation、tie-break、casualty、morale、supply tests | 已可玩 | 保持自动结算，不进入战术战斗；战报解释胜负、伤亡、补给影响 | xUnit battle/morale/supply tests |
 | 扩张后的治理拖累 | occupation status、control stage、contribution caps、pacification queue | 已可玩 | 新占地不能立刻完整贡献；玩家必须处理占领治理成本 | headless occupation/control chain、Web 治理行动断言 |
-| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure、`DynastyCyclePressureAcceptanceTests` 场景 A/B/C/D 与 headless 20 回合成功/失败长线串联、Web 王朝接管入口、资源不足不可续命状态和 Web 20 回合成功长线 | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | Domain C/D、headless 长线、Playwright 接管续命/不可续命断言、Web 20 回合成功长线、后续失败长线复核 |
+| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure、`DynastyCyclePressureAcceptanceTests` 场景 A/B/C/D 与 headless 20 回合成功/失败长线串联、Web 王朝接管入口、资源不足不可续命状态和 Web 20 回合成功/失败长线 | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | Domain C/D、headless 长线、Playwright 接管续命/不可续命断言、Web 20 回合成功/失败长线 |
 | 财政、粮食、人口、兵力 | EconomySystem、DomainEconomySystem、Web nation aggregation tests | 已可玩 | 财政和粮食要参与扩张、军队、治理的真实取舍 | xUnit economy tests、Web aggregation/property tests |
 | 土地兼并和民变 | landStructure、annexationPressure、rebellionRisk、relief/tax pressure scenarios | 部分可玩 | 土地和民变必须成为王朝周期压力的显性后果，而不是只做数值字段 | 治理压力 headless 场景、UI 最大风险断言 |
 | 继承系统 | heir、successionRisk、stableSuccessions、victory condition data、`DomainSuccessionSystem`、Web 立储安宗按钮和存档字段 | 部分可玩 | 帝皇老去或继承不稳必须能触发王朝断裂风险和玩家介入窗口 | 继承危机场景、Web 接管续命断言、三代延续验收 |
@@ -44,7 +44,7 @@
 | 建筑系统 | buildings data、recommendedBuilding、governance project/building markers | 部分可玩 | 建筑应成为区域长期治理和物流取舍，不只是推荐文本 | building project Playwright、data reference tests |
 | 编年事件 | 200 chronicle events、event choices、Unity-free Web turn loop test | 已可玩 | 事件要解释王朝周期压力，不只随机弹窗 | chronicle trigger/choice tests、UI result log |
 | 天气、风俗、装备、天文、将领 | data contracts and JSON/data model support | 部分可玩 | 保留为当前 MVP 表达层，至少要有数据解释和一个可观察影响路径 | data validation、UI summary 或 headless effect smoke |
-| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功长线 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因 | 三代延续 Playwright 进度断言、Web 20 回合成功长线、后续失败长线复核 |
+| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功/失败长线 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因 | 三代延续 Playwright 进度断言、Web 20 回合成功/失败长线、后续其他胜利条件演示 |
 | 存档/导入导出 | Web local slots、schemaVersion、import/export Playwright、王朝压力和接管模式导出/导入断言 | 已可玩 | 存档必须覆盖治理、军队、物流、战报和关键王朝压力状态 | Playwright save/load、corrupt save tests、王朝接管存档断言 |
 | UI 决策清晰度 | outliner、risk summaries、dynasty pressure summary、governance panel、war reports | 部分可玩 | 每回合清楚显示最大风险、原因、可选行动、预计后果、实际变化 | Playwright viewport and decision-surface assertions |
 | Domain/Web 因果同步 | headless report helpers、headless-vs-ui numerics tests | 同步风险 | 重复表达的因果规则必须有 parity 检查，防止 C# 与 TS 漂移 | parity unit tests、headless report schema tests |
@@ -63,8 +63,8 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 复核 Web 20-40 回合失败长线是否需要独立验收 | `web-strategy-map/tests/strategy-map.spec.ts` | headless 已补成功/失败路径；Web 已补成功长线和资源不足不可续命状态，剩余失败长线独立性复核 |
-| P0 | 扩展胜利条件运行态到长线演示 | `victory_conditions.json`、Domain/Web 胜利进度 | 已有 Web 三代延续进度、headless 成功/失败路径、Web 不可续命失败态与 Web 20 回合成功长线；剩余其他胜利条件运行态演示 |
+| P0 | 扩展其他胜利条件运行态到长线演示 | `victory_conditions.json`、Domain/Web 胜利进度 | 三代延续已具备 Web 20 回合成功/失败长线；剩余 `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 运行态演示 |
+| P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
 | P1 | 给数据管线增加内容扩展差异审查清单 | `tools/validate_web_data_source.py`、`docs/data-contract.md` | data-source validation |
@@ -89,11 +89,12 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补“模拟推演 -> 接管王朝 -> 立储安宗”面板、队列日志、资源代价、继承/朝局降压、`stableSuccessions` 增加，以及 `dynastyControlMode` 和王朝压力存档导入导出断言。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补资源不足时的玩家可见不可续命状态，面板和 outliner 会显示资源不足原因，debug 暴露 `dynastyRescueBlocked`、`dynastyRescueBlockReason`、`dynastyFailureRisk`，Playwright 断言按钮禁用且不会误增 `stableSuccessions`。
 - `web-strategy-map/tests/strategy-map.spec.ts`：已补 Web 20 回合成功长线，使用长线种子推进 20 个真实治理回合，断言 outliner 出现继承危机，观战日志解释扩张/民变/低法统来源，接管后连续立储安宗消耗资源、降低风险、达成三代延续，并验证导出/导入保留长线状态。
+- `web-strategy-map/tests/strategy-map.spec.ts`：已补 Web 20 回合失败长线，推进 20 个真实治理回合后进入继承危机，再切到资源不足接管状态，断言不可续命、危机未缓解、未达成胜利，并验证导出/导入保留失败态。
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：Web 已加载 `victory_conditions.json`，从 `three_generation_dynasty` 读取 `stableSuccessions` 与 `minLegitimacy` 阈值，并在 outliner/debug 中显示“三代延续”进度与达成状态。
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：三代延续胜利进度已接入运行态，`stableSuccessions >= 3` 且法统达标时会显示“胜利 / 三代延续达成”。
 
 ## 2026-05-23 缺口复核
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
-- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功长线；剩余需复核是否还要独立 Web 20-40 回合失败长线。`unify_jiuzhou` 和 `institutional_order` 也还没有同等深度的运行态胜利演示。
+- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；下一步应转向其他胜利条件运行态演示，尤其是 `unify_jiuzhou`、`institutional_order` 和 `maxFragmentation`。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。
