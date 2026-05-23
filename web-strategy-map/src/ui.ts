@@ -757,6 +757,8 @@ export class StrategyUi {
     dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
+    unifyJiuZhouProgressSummary: string;
+    unifyJiuZhouVictoryAchieved: boolean;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -840,6 +842,8 @@ export class StrategyUi {
       dynastyFailureRisk: this.dynastyFailureRisk(),
       victoryProgressSummary: this.victoryProgressSummary(),
       dynastyVictoryAchieved: this.dynastyVictoryAchieved(),
+      unifyJiuZhouProgressSummary: this.unifyJiuZhouProgressSummary(),
+      unifyJiuZhouVictoryAchieved: this.unifyJiuZhouVictoryAchieved(),
       governanceQueueLength: this.governanceQueue.length,
       logisticsQueueLength: this.logisticsQueue.length,
       commandQueueLength: this.commandQueue.length,
@@ -3205,6 +3209,10 @@ export class StrategyUi {
   }
 
   private victoryProgressSummary(): string {
+    return `${this.threeGenerationProgressSummary()}；${this.unifyJiuZhouProgressSummary()}`;
+  }
+
+  private threeGenerationProgressSummary(): string {
     const target = this.threeGenerationVictoryTarget();
     const stable = Math.round(this.nationState.stableSuccessions ?? 0);
     const legitimacy = Math.round(this.nationState.legitimacy);
@@ -3220,6 +3228,32 @@ export class StrategyUi {
       stableSuccessions: Math.max(1, condition?.requirements.stableSuccessions ?? 3),
       minLegitimacy: condition?.requirements.minLegitimacy ?? 50
     };
+  }
+
+  private unifyJiuZhouVictoryAchieved(): boolean {
+    const target = this.unifyJiuZhouVictoryTarget();
+    const total = this.dataset.regions.length;
+    return total > 0 && this.playerOwnedRegionCount() >= total && this.nationState.legitimacy >= target.minLegitimacy;
+  }
+
+  private unifyJiuZhouProgressSummary(): string {
+    const target = this.unifyJiuZhouVictoryTarget();
+    const owned = this.playerOwnedRegionCount();
+    const total = this.dataset.regions.length;
+    const legitimacy = Math.round(this.nationState.legitimacy);
+    const label = this.unifyJiuZhouVictoryAchieved() ? '统一九州达成' : '统一九州';
+    return `${label} ${owned}/${total}，法统 ${legitimacy}/${target.minLegitimacy}`;
+  }
+
+  private unifyJiuZhouVictoryTarget(): { minLegitimacy: number } {
+    const condition = this.dataset.victoryConditions.find((item) => item.id === 'unify_jiuzhou');
+    return {
+      minLegitimacy: condition?.requirements.minLegitimacy ?? 55
+    };
+  }
+
+  private playerOwnedRegionCount(): number {
+    return this.dataset.regions.filter((region) => region.owner === 'player').length;
   }
 
   private advanceDynastyPressure(): void {

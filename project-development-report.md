@@ -10306,3 +10306,51 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮是找缺口文档轮；改动仅限报告/台账且 `git diff --check` 通过，可安全隔离为审查文档 scoped commit。
+
+## 2026-05-23 修补轮：Web 统一九州胜利运行态
+
+### 类型
+
+- 修补问题：从上一轮剩余胜利条件复核中选择最低风险 P0，把 `unify_jiuzhou` 从数据条件推进到 Web outliner/debug 可见进度和 Playwright 断言。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 12]`，工作树干净；最新提交为 `d5bb125` 统一九州优先缺口复核。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `31/31`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务；检测到的 Playwright 进程属于其它项目，不影响本仓库。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 按 TDD 先新增 Playwright `shows unify jiuzhou victory when all regions are controlled with enough legitimacy`。
+- RED：targeted Playwright 失败于 `unifyJiuZhouVictoryAchieved` 为 `undefined`，确认 Web 统一九州运行态缺失。
+- GREEN：
+  - `web-strategy-map/src/ui.ts` 从 `victory_conditions.json` 的 `unify_jiuzhou.requirements.minLegitimacy` 读取法统阈值。
+  - 以现有 `RegionViewModel.owner` 计算 `playerOwnedRegions / totalRegions`。
+  - debug state 新增 `unifyJiuZhouProgressSummary` 和 `unifyJiuZhouVictoryAchieved`。
+  - `victoryProgressSummary()` 同时显示“三代延续”和“统一九州”进度；全图归属玩家且法统达标时显示“统一九州达成”。
+  - Playwright 覆盖全图已控但法统 `54/55` 未达成、法统 `55/55` 达成、outliner 显示、导出/导入保留达成状态。
+- 更新 `docs/mvp-closure-ledger.md`：统一九州从“下一修补优先项”推进为“已有 Web 运行态演示”，当前剩余 P0 转向 `institutional_order`、`maxFragmentation` 字段定义或统一九州自然扩张长线复核。
+
+### 验证
+
+- RED：`npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "shows unify jiuzhou victory when all regions are controlled with enough legitimacy"` 失败，原因是 `unifyJiuZhouVictoryAchieved` 为 `undefined`。
+- GREEN：同一 targeted Playwright 通过：`1/1 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `rg -n "unifyJiuZhou|统一九州|victoryProgressSummary|dynastyVictoryAchieved" web-strategy-map\src web-strategy-map\tests` 范围符合预期。
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "lets players observe, take over, and stabilize dynasty succession|shows a 20-turn dynasty crisis can be taken over and stabilized into victory|shows a 20-turn dynasty crisis remains unresolved when rescue is unaffordable|shows unify jiuzhou victory when all regions are controlled with enough legitimacy"` 通过：`4/4 passed`。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+- `tools\run_all_checks.ps1` 通过并输出 `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`、Web build/typecheck 通过。
+- Playwright 全量中的 `regions.json HTTP 404` 仍来自既有 fatal-error 覆盖用例，是预期拦截路径，不是门禁失败。
+- 给统一九州达成判断补 `total > 0` 防御条件后，重新验证 targeted Playwright `1/1 passed`、`npm --prefix web-strategy-map run typecheck` 通过、`git diff --check` 通过。
+
+### 剩余风险
+
+- 统一九州当前是导入态运行演示，不是通过战役自然扩张到全图控制的长线。
+- `institutional_order` 仍缺 `completedCoreReforms`、`treasuryStability` 等运行态字段。
+- `maxFragmentation` 仍缺可解释分裂度指标，尚未纳入三代延续真实达成条件。
+
+### 提交策略
+
+- 本轮改动集中在 Web UI、Playwright 和报告/台账；已通过 targeted、胜利相关 Playwright 子集、typecheck、grep、`git diff --check` 与全量门禁，可安全隔离为 scoped commit。

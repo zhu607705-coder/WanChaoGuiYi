@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 先补 `unify_jiuzhou` Web 运行态演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 三代延续已具备 Web 20 回合成功/失败长线；统一九州可复用 `regions.owner` + `nationState.legitimacy` 做最小达成/未达成断言 |
+| P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
@@ -93,9 +93,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `web-strategy-map/tests/strategy-map.spec.ts`：已补 Web 20 回合失败长线，推进 20 个真实治理回合后进入继承危机，再切到资源不足接管状态，断言不可续命、危机未缓解、未达成胜利，并验证导出/导入保留失败态。
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：Web 已加载 `victory_conditions.json`，从 `three_generation_dynasty` 读取 `stableSuccessions` 与 `minLegitimacy` 阈值，并在 outliner/debug 中显示“三代延续”进度与达成状态。
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：三代延续胜利进度已接入运行态，`stableSuccessions >= 3` 且法统达标时会显示“胜利 / 三代延续达成”。
+- `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：统一九州胜利进度已接入运行态，按 `unify_jiuzhou.minLegitimacy` 与 `regions.owner` 计算 `playerOwnedRegions / totalRegions`，并在 outliner/debug 中显示“统一九州 / 统一九州达成”，Playwright 覆盖法统不足未达成、法统达标达成和导出/导入保留。
 
 ## 2026-05-23 缺口复核
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
-- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；下一步先补 `unify_jiuzhou` Web 运行态演示，因为它已有可复用的区域归属与法统字段。`institutional_order` 和 `maxFragmentation` 需要先定义可解释运行态字段，再进入达成断言。
+- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；`unify_jiuzhou` 已具备 Web 运行态进度和达成断言。下一步应转向 `institutional_order` 与 `maxFragmentation` 的可解释运行态字段定义，或复核统一九州是否需要自然扩张长线。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。

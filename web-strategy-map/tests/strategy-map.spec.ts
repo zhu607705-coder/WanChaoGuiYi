@@ -67,6 +67,8 @@ type DebugState = {
     dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
+    unifyJiuZhouProgressSummary: string;
+    unifyJiuZhouVictoryAchieved: boolean;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -577,6 +579,58 @@ test.describe('code-driven strategy map', () => {
     expect(saved.nationState.successionRisk).toBe(beforeAttempt.ui.successionRisk);
     expect(saved.nationState.courtPressure).toBe(beforeAttempt.ui.courtPressure);
     expect(saved.nationState.stableSuccessions).toBe(beforeAttempt.ui.stableSuccessions);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows unify jiuzhou victory when all regions are controlled with enough legitimacy', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const regionCount = exported.regions.length;
+    const allControlledLowLegitimacy: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      nationState: {
+        ...exported.nationState,
+        legitimacy: 54
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player'
+      }))
+    };
+    expect(await importGameState(page, allControlledLowLegitimacy)).toBe(true);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouProgressSummary).toContain(`统一九州 ${regionCount}/${regionCount}`);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouProgressSummary).toContain('法统 54/55');
+    await expect(page.locator('#outliner-list')).toContainText('统一九州');
+    await expect(page.locator('#outliner-list')).not.toContainText('统一九州达成');
+
+    const allControlledEnoughLegitimacy: GameExportState = {
+      ...allControlledLowLegitimacy,
+      nationState: {
+        ...allControlledLowLegitimacy.nationState,
+        legitimacy: 55
+      }
+    };
+    expect(await importGameState(page, allControlledEnoughLegitimacy)).toBe(true);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouProgressSummary).toContain('统一九州达成');
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('统一九州达成');
+    await expect(page.locator('#outliner-list')).toContainText('统一九州达成');
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.legitimacy).toBe(55);
+    expect(saved.regions.every((region) => region.owner === 'player')).toBe(true);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.unifyJiuZhouProgressSummary).toContain('统一九州达成');
+    await expect(page.locator('#outliner-list')).toContainText('统一九州达成');
 
     expect(consoleErrors).toEqual([]);
   });
