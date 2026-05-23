@@ -21,7 +21,8 @@ import type {
   RegionViewModel,
   SceneMusicCue,
   RouteForecast,
-  UnitDefinition
+  UnitDefinition,
+  VictoryConditionDefinition
 } from './types';
 
 const dataRoot = '/game-data/data';
@@ -51,6 +52,7 @@ export interface StrategyDataset {
   generals: GeneralDefinition[];
   units: UnitDefinition[];
   routeNetworks: RouteNetworkDefinition[];
+  victoryConditions: VictoryConditionDefinition[];
   policies: PolicyDefinition[];
   buildings: BuildingDefinition[];
   chronicleEvents: ChronicleEventDefinition[];
@@ -86,6 +88,7 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     chronicleEventsData,
     unitsData,
     routeNetworksData,
+    victoryConditionsData,
     metadata,
     sceneMusic,
     emperorThemes,
@@ -103,6 +106,7 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     loadCollection<ChronicleEventDefinition>('chronicle_events.json'),
     loadCollection<UnitDefinition>('units.json'),
     loadCollection<RouteNetworkDefinition>('route_networks.json'),
+    loadCollection<VictoryConditionDefinition>('victory_conditions.json'),
     loadJson<MapRenderMetadata>('map_render_metadata.json'),
     loadJson<JsonCollection<SceneMusicCue>>('../audio/scene_music.json'),
     loadJson<JsonCollection<EmperorThemeCue>>('../audio/emperor_themes.json'),
@@ -256,6 +260,7 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     generals,
     units,
     routeNetworks: routeNetworksData.items,
+    victoryConditions: victoryConditionsData.items,
     policies,
     buildings,
     chronicleEvents,

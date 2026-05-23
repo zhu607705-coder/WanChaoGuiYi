@@ -44,7 +44,7 @@
 | 建筑系统 | buildings data、recommendedBuilding、governance project/building markers | 部分可玩 | 建筑应成为区域长期治理和物流取舍，不只是推荐文本 | building project Playwright、data reference tests |
 | 编年事件 | 200 chronicle events、event choices、Unity-free Web turn loop test | 已可玩 | 事件要解释王朝周期压力，不只随机弹窗 | chronicle trigger/choice tests、UI result log |
 | 天气、风俗、装备、天文、将领 | data contracts and JSON/data model support | 部分可玩 | 保留为当前 MVP 表达层，至少要有数据解释和一个可观察影响路径 | data validation、UI summary 或 headless effect smoke |
-| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers | 数据已备 | 一局可从开局推进到胜利/失败，玩家能理解原因 | victory progress test、20-40 回合演示验收 |
+| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度与达成断言 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因 | 三代延续 Playwright 进度断言、后续 20-40 回合演示验收 |
 | 存档/导入导出 | Web local slots、schemaVersion、import/export Playwright、王朝压力和接管模式导出/导入断言 | 已可玩 | 存档必须覆盖治理、军队、物流、战报和关键王朝压力状态 | Playwright save/load、corrupt save tests、王朝接管存档断言 |
 | UI 决策清晰度 | outliner、risk summaries、dynasty pressure summary、governance panel、war reports | 部分可玩 | 每回合清楚显示最大风险、原因、可选行动、预计后果、实际变化 | Playwright viewport and decision-surface assertions |
 | Domain/Web 因果同步 | headless report helpers、headless-vs-ui numerics tests | 同步风险 | 重复表达的因果规则必须有 parity 检查，防止 C# 与 TS 漂移 | parity unit tests、headless report schema tests |
@@ -64,7 +64,7 @@
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
 | P0 | 补 20-40 回合王朝周期长线验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | 至少覆盖三代延续胜利/失败、危机来源解释、接管前后对比 |
-| P0 | 把胜利条件从数据已备推进到运行态检查 | `victory_conditions.json`、Domain/Web 胜利进度 | `stableSuccessions >= 3` 可触发或显示三代延续进度 |
+| P0 | 扩展胜利条件运行态到长线演示 | `victory_conditions.json`、Domain/Web 胜利进度 | 已有 Web 三代延续进度；剩余 20-40 回合胜利/失败演示 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
 | P1 | 给数据管线增加内容扩展差异审查清单 | `tools/validate_web_data_source.py`、`docs/data-contract.md` | data-source validation |
@@ -87,9 +87,11 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `domain-core/src/Domain/Governance/DomainSuccessionSystem.cs` 与 `DynastyCyclePressureAcceptanceTests` 场景 C/D：已覆盖继承危机触发、合法性/朝局/地方稳定外溢，以及玩家立储安宗续命的资源代价。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：outliner 已显示王朝继承压力摘要，Playwright 首屏断言会检查“王朝/继承稳定或承压或危机/可立储安宗”。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补“模拟推演 -> 接管王朝 -> 立储安宗”面板、队列日志、资源代价、继承/朝局降压、`stableSuccessions` 增加，以及 `dynastyControlMode` 和王朝压力存档导入导出断言。
+- `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：Web 已加载 `victory_conditions.json`，从 `three_generation_dynasty` 读取 `stableSuccessions` 与 `minLegitimacy` 阈值，并在 outliner/debug 中显示“三代延续”进度与达成状态。
+- `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：三代延续胜利进度已接入运行态，`stableSuccessions >= 3` 且法统达标时会显示“胜利 / 三代延续达成”。
 
 ## 2026-05-23 缺口复核
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
-- 当前 P0：三代延续胜利/失败还没有 20-40 回合运行态验收；`victory_conditions.json` 有三代延续数据，但运行态搜索只看到定义、Numeric helper 和 `stableSuccessions` 计数，尚未形成可见胜利进度或胜利触发断言。
+- 当前 P0：三代延续已具备 Web 可见胜利进度和达成断言；仍缺 20-40 回合运行态验收，把胜利/失败、危机来源和接管前后对比连成一局。`unify_jiuzhou` 和 `institutional_order` 也还没有同等深度的运行态胜利演示。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。

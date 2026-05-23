@@ -62,6 +62,8 @@ type DebugState = {
     stableSuccessions: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
+    victoryProgressSummary: string;
+    dynastyVictoryAchieved: boolean;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -497,6 +499,26 @@ test.describe('code-driven strategy map', () => {
     await expectDebug(page, (state) => state.ui.courtPressure).toBe(exported.nationState.courtPressure);
     await expectDebug(page, (state) => state.ui.stableSuccessions).toBe(exported.nationState.stableSuccessions);
     await expect(panel).toContainText('已接管');
+
+    const nearVictory: GameExportState = {
+      ...exported,
+      dynastyControlMode: 'takeover',
+      nationState: {
+        ...exported.nationState,
+        money: 1000,
+        legitimacy: 80,
+        successionRisk: 62,
+        courtPressure: 58,
+        stableSuccessions: 2
+      }
+    };
+    expect(await importGameState(page, nearVictory)).toBe(true);
+    await page.locator('[data-action="dynasty_stabilize_succession"]').click();
+    await expectDebug(page, (state) => state.ui.stableSuccessions).toBe(3);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('三代延续达成');
+    await expect(page.locator('#outliner-list')).toContainText('胜利');
+    await expect(page.locator('#outliner-list')).toContainText('三代延续达成');
 
     expect(consoleErrors).toEqual([]);
   });

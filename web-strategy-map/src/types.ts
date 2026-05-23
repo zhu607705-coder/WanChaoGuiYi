@@ -233,6 +233,23 @@ export interface UnitDefinition {
   stats: UnitStats;
 }
 
+export interface VictoryRequirement {
+  controlAllKeyRegions?: boolean;
+  minLegitimacy?: number;
+  stableSuccessions?: number;
+  maxFragmentation?: number;
+  completedCoreReforms?: number;
+  minTreasuryStability?: number;
+  maxAnnexationPressure?: number;
+}
+
+export interface VictoryConditionDefinition {
+  id: string;
+  name: string;
+  description: string;
+  requirements: VictoryRequirement;
+}
+
 export type RouteRoadClass = 'open-road' | 'river-road' | 'hill-road' | 'pass-bottleneck' | 'frontier-track' | 'water-network';
 
 export interface RouteNetworkBlockadeDefinition {

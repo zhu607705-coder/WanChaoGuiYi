@@ -752,6 +752,8 @@ export class StrategyUi {
     stableSuccessions: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
+    victoryProgressSummary: string;
+    dynastyVictoryAchieved: boolean;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -830,6 +832,8 @@ export class StrategyUi {
       ...this.nationState,
       dynastyPressureSummary: this.dynastyPressureSummary(),
       dynastyControlMode: this.dynastyControlMode,
+      victoryProgressSummary: this.victoryProgressSummary(),
+      dynastyVictoryAchieved: this.dynastyVictoryAchieved(),
       governanceQueueLength: this.governanceQueue.length,
       logisticsQueueLength: this.logisticsQueue.length,
       commandQueueLength: this.commandQueue.length,
@@ -3120,6 +3124,7 @@ export class StrategyUi {
     list.innerHTML = [
       outlinerItem('高风险', `${risky[0].definition.name} 民变 ${Math.round(risky[0].risk)}%`, risky[0].definition.id),
       outlinerItem('王朝', this.dynastyPressureSummary(), this.selectedRegion.definition.id),
+      outlinerItem('胜利', this.victoryProgressSummary(), this.selectedRegion.definition.id),
       outlinerItem('行军中', `${route.army.name} → ${route.target.definition.name}`, route.target.definition.id),
       outlinerItem('经营', this.governanceQueue[0] ?? `${this.selectedRegion.recommendedPolicy?.name ?? '安抚'} / ${this.selectedRegion.definition.name}`, this.selectedRegion.definition.id),
       outlinerItem('后勤', nextCommand ? describeWarCommand(nextCommand) : `${route.target.definition.name} 需粮 ${route.occupationCost}`, nextCommand?.targetRegionId ?? route.target.definition.id),
@@ -3146,6 +3151,29 @@ export class StrategyUi {
         successionRisk >= 50 || courtPressure >= 50 ? '继承承压' :
           '继承稳定';
     return `${mode}${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，可立储安宗`;
+  }
+
+  private dynastyVictoryAchieved(): boolean {
+    const target = this.threeGenerationVictoryTarget();
+    return (this.nationState.stableSuccessions ?? 0) >= target.stableSuccessions && this.nationState.legitimacy >= target.minLegitimacy;
+  }
+
+  private victoryProgressSummary(): string {
+    const target = this.threeGenerationVictoryTarget();
+    const stable = Math.round(this.nationState.stableSuccessions ?? 0);
+    const legitimacy = Math.round(this.nationState.legitimacy);
+    if (this.dynastyVictoryAchieved()) {
+      return `三代延续达成：续承 ${stable}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}`;
+    }
+    return `三代延续 ${Math.min(stable, target.stableSuccessions)}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}`;
+  }
+
+  private threeGenerationVictoryTarget(): { stableSuccessions: number; minLegitimacy: number } {
+    const condition = this.dataset.victoryConditions.find((item) => item.id === 'three_generation_dynasty');
+    return {
+      stableSuccessions: Math.max(1, condition?.requirements.stableSuccessions ?? 3),
+      minLegitimacy: condition?.requirements.minLegitimacy ?? 50
+    };
   }
 
   private advanceDynastyPressure(): void {

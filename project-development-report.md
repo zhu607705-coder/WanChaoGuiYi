@@ -9694,3 +9694,105 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮只产生审查文档且验证通过，可安全隔离为纯文档审查 commit，避免下一轮在脏工作树上继续。
+
+## 2026-05-23 自动化修补轮：三代延续胜利进度
+
+### 类型
+
+- 修补问题：从上一轮 P0 缺口中选择低风险切口，把 `victory_conditions.json` 的三代延续从数据已备推进到 Web 运行态进度和触发断言。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 2]`，工作树干净；ahead 2 是已验证的 Web 接管闭环和缺口复核提交。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`，Playwright UI `28/28 passed`。
+- 未发现万朝归一相关 `dotnet`、Playwright、Vite、Python validator 或全量检查冲突任务；仅发现 DeckRogue 相关 Vite/Playwright 进程，未触碰。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### TDD 过程
+
+- RED：先扩展 Playwright `lets players observe, take over, and stabilize dynasty succession`，要求第 3 次 `立储安宗` 后 `dynastyVictoryAchieved === true`、`victoryProgressSummary` 包含“三代延续达成”，outliner 显示“胜利/三代延续达成”。
+- RED 结果：聚焦 UI 测试失败，原因是 `dynastyVictoryAchieved` 为 `undefined`，确认运行态胜利进度缺失。
+- GREEN：新增 Web `victory_conditions.json` 加载类型与数据流；UI 从 `three_generation_dynasty` 读取 `stableSuccessions` 和 `minLegitimacy`，在 debug state 与 outliner 输出三代延续进度和达成状态。
+
+### 已完成
+
+- `web-strategy-map/src/types.ts` 新增 `VictoryConditionDefinition` / `VictoryRequirement`。
+- `web-strategy-map/src/data.ts` 加载 `victory_conditions.json` 并写入 `StrategyDataset.victoryConditions`。
+- `web-strategy-map/src/ui.ts` 新增 `victoryProgressSummary`、`dynastyVictoryAchieved` 和 outliner “胜利”条目。
+- `web-strategy-map/tests/strategy-map.spec.ts` 覆盖 near-victory 导入、第三次立储安宗、三代延续达成、outliner 可见性。
+- 更新 `docs/mvp-closure-ledger.md`，把胜利条件从“数据已备”调整为“部分可玩”，剩余风险聚焦 20-40 回合长线验收。
+
+### 当前验证
+
+- `npm --prefix web-strategy-map run test:ui -- --grep "lets players observe" --reporter=line --workers=1`：
+  - RED：失败于 `dynastyVictoryAchieved` 为 `undefined`。
+  - GREEN：通过，结果 `1/1 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- 待运行：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1`。
+
+### 剩余风险
+
+- 本轮只补三代延续的 Web 运行态进度与触发，不等于完整 20-40 回合王朝周期验收。
+- `unify_jiuzhou` 和 `institutional_order` 仍未形成完整 Web/Domain 胜利进度。
+- 三代延续目前使用 `stableSuccessions` 与法统阈值；`maxFragmentation` 在 Web 侧尚无对应运行态字段。
+
+### 提交策略
+
+- 若全量门禁通过，本轮改动可作为 Web 胜利进度 scoped commit；若全量失败，先诊断修复，不强行提交。
+
+## 2026-05-23 自动化修补轮：胜利条件运行态接入
+
+### 类型
+
+- 修补问题：把 `victory_conditions.json` 的三代延续从数据已备推进到 Web 运行态检查与 outliner 进度显示。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 2]`，工作树只有本轮 Web/测试/文档改动。
+- 最近验证仍是上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]` 的基线；本轮改动后已重新跑聚焦测试、typecheck 和全量门禁。
+- 未发现万朝归一相关冲突进程；DeckRogue 进程与当前任务无关。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### RED
+
+- 扩展 `lets players observe, take over, and stabilize dynasty succession`，让三次 `立储安宗` 之后必须出现 `dynastyVictoryAchieved === true`、`victoryProgressSummary` 包含“三代延续达成”，outliner 显示“胜利 / 三代延续达成”。
+- 首次运行失败，原因是 `dynastyVictoryAchieved` 还不存在，说明胜利进度没有接入运行态。
+
+### GREEN
+
+- `web-strategy-map/src/types.ts` 新增 `VictoryConditionDefinition` / `VictoryRequirement`。
+- `web-strategy-map/src/data.ts` 加载 `victory_conditions.json`，把三代延续的规则带入 Web `StrategyDataset`。
+- `web-strategy-map/src/ui.ts` 新增 `victoryProgressSummary` / `dynastyVictoryAchieved`，并在 outliner 中加 `胜利` 条目。
+- 运行态现在从 `three_generation_dynasty` 读取 `stableSuccessions` 和 `minLegitimacy`，不再硬编码阈值。
+
+### 已完成
+
+- `web-strategy-map/tests/strategy-map.spec.ts` 通过 near-victory 导入和第三次 `立储安宗`，锁住三代延续达成路径。
+- `docs/mvp-closure-ledger.md` 更新为“胜利条件部分可玩”，并把剩余长线风险聚焦到 20-40 回合演示。
+
+### 当前验证
+
+- RED 到 GREEN 的 Playwright 聚焦用例已完成，结果 `1/1 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 通过，结果 `[ALL GREEN]`。
+- 细分结果：
+  - `validate_domain_core.py` OK。
+  - `validate_web_data_source.py` OK。
+  - Domain Core xUnit `85/85 passed`。
+  - headless war `16/16 passed`。
+  - Web typecheck OK。
+  - Vitest `66/66 passed`。
+  - Web build OK。
+  - Playwright UI `28/28 passed`。
+
+### 剩余风险
+
+- 三代延续已从数据推进到运行态，但 20-40 回合长线胜利/失败演示仍未落地。
+- `unify_jiuzhou` 与 `institutional_order` 还只是数据条件，没有同等深度的玩家演示链。
+- `maxFragmentation` 尚未在 Web 侧做成可视化运行态字段。
+
+### 提交策略
+
+- 本轮改动与既有工作树可安全隔离，适合再做一个 scoped commit。
