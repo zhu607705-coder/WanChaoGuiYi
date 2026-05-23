@@ -10010,3 +10010,57 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 Web UI、Playwright 和 MVP 台账，已通过全量门禁，可安全隔离为 scoped commit。
+
+## 2026-05-23 自动化找缺口轮：Web 长线成功路径复核
+
+### 类型
+
+- 找漏洞/找缺口：只做审查、复核下一条低风险切口、更新审查记录。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 7]`，工作树干净；最新提交为 `3489697` Web 资源不足不可续命失败态。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `29/29`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 发现
+
+- 当前 Web 已具备长线成功路径所需的底层动作：
+  - `governance_advance_turn` 会推进治理旬数，并调用 `advanceDynastyPressure()`。
+  - `dynasty_observe` 会以观战模式推进王朝压力并写入“模拟观战”日志。
+  - `dynasty_takeover` 会切到接管模式并写入接管日志。
+  - `dynasty_stabilize_succession` 会消耗金钱和法统，降低继承风险/朝局压力，并在压力降到阈值后增加 `stableSuccessions`。
+  - `victoryProgressSummary()` 与 outliner 已显示三代延续进度，达成时会显示“三代延续达成”。
+- 当前 Playwright 只覆盖单步“模拟观战 -> 接管 -> 立储安宗”、近胜利导入后一次续承、以及资源不足不可续命失败态。
+- 仍缺一个 Web 层同局长线验收：在同一个 Playwright 流中经历 `20-40` 个治理/观战回合，看到危机来源，接管前后指标对比，最后通过三代延续达成胜利。
+- 该缺口可以优先用测试锁住，不必先改生产代码；如果测试发现回合循环无法稳定进入危机，再补最小 UI/debug 支持。
+
+### 下一轮低风险修补建议
+
+- 新增 Playwright 用例，建议命名为 `shows a 20-turn dynasty crisis can be taken over and stabilized into victory`。
+- 最小断言：
+  - 从当前开局或导入一个高资源、低续承的长线种子开始。
+  - 点击 `governance_advance_turn` 或组合 `governance_advance_turn` + `dynasty_observe`，让 `governanceTurn >= 20` 且 `successionRisk` 或 `courtPressure` 进入危机/承压阈值。
+  - 断言 outliner/队列日志包含“王朝”“继承危机”或“继承承压”，并保留危机来源文本。
+  - 点击 `dynasty_takeover`，记录接管前风险、朝局、资源、`stableSuccessions`。
+  - 连续执行足够次数的 `dynasty_stabilize_succession`，断言金钱/法统消耗、风险/朝局下降、`stableSuccessions` 增长到 `3`，`dynastyVictoryAchieved === true`，outliner 显示“三代延续达成”。
+  - 导出/导入后保留 `governanceTurn`、`successionRisk`、`courtPressure`、`stableSuccessions` 和胜利进度。
+- 若自然开局 20 回合难以稳定进入危机，可用导入种子把资源、法统、继承风险和朝局设为“长线第 20 回合前夜”，但必须让测试在 UI 中继续推进至少一个实际回合，并明确记录这是 Web 长线演示的稳定种子。
+
+### 验证
+
+- 本轮只读审查生产代码与测试，未改 Web/Core 运行代码。
+- 只改 `project-development-report.md` 记录审查结论。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- Web 20-40 回合同局成功长线仍未落地为 Playwright。
+- Web 失败长线是否需要独立 20-40 回合演示仍待成功长线补齐后复核。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮为找缺口文档轮，若 `git diff --check` 通过且只有报告变更，可按审查文档 scoped commit；否则暂缓提交并在汇报中说明。
