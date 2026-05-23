@@ -376,6 +376,95 @@ namespace WanChaoGuiYi.Tests
             Assert.True(HasLogContaining(state, "继承续命"));
         }
 
+        [Fact]
+        public void Dynasty_Cycle_Long_Run_Must_Explain_Failure_When_Takeover_Is_Not_Affordable()
+        {
+            FakeDataRepository data;
+            FactionState player;
+            FactionState rival;
+            GameState state = BuildPressureWorld(10, 8, out data, out player, out rival);
+            WorldState world = TestFixtures.BuildWorldState(state, data);
+            GameContext context = TestFixtures.BuildContext(state, data);
+            DomainEconomySystem economy = new DomainEconomySystem(world);
+            DomainSuccessionSystem succession = new DomainSuccessionSystem();
+
+            player.money = 620;
+            player.food = 820;
+            player.legitimacy = 72;
+            player.successionRisk = 48;
+            player.courtFactionPressure = 52;
+            player.stableSuccessions = 0;
+            player.heir = new HeirState
+            {
+                name = "Unaffordable Heir",
+                age = 15,
+                legitimacy = 36,
+                ability = 40
+            };
+
+            RegionState fragileRegion = state.FindRegion("r7");
+            fragileRegion.rebellionRisk = 38;
+            fragileRegion.localPower = 36;
+            fragileRegion.annexationPressure = 24;
+            fragileRegion.localAcceptance = 40;
+
+            SuccessionCrisisPayload firstCrisis = null;
+            int simulatedTurns = 0;
+            for (int turn = 1; turn <= 40; turn++)
+            {
+                economy.ExecuteTurn(context);
+                state.AdvanceHalfYear();
+                simulatedTurns = turn;
+
+                if (turn < 20) continue;
+                firstCrisis = succession.TryTriggerSuccessionCrisis(context, player);
+                if (firstCrisis != null && firstCrisis.triggered) break;
+            }
+
+            Assert.InRange(simulatedTurns, 20, 40);
+            Assert.NotNull(firstCrisis);
+            Assert.True(firstCrisis.triggered, "The long-run setup must first reach a readable succession crisis.");
+
+            int riskBeforeFailedTakeover = player.successionRisk;
+            int courtBeforeFailedTakeover = player.courtFactionPressure;
+            int legitimacyBeforeFailedTakeover = player.legitimacy;
+            int rebellionBeforeFailedTakeover = fragileRegion.rebellionRisk;
+            int stableBeforeFailedTakeover = player.stableSuccessions;
+
+            player.money = DomainSuccessionSystem.StabilizeMoneyCost - 1;
+            SuccessionStabilizationPayload failedTakeover = succession.StabilizeSuccession(context, player);
+
+            output.WriteLine("failure turns: " + simulatedTurns);
+            output.WriteLine("failed takeover reason: " + failedTakeover.reason);
+            output.WriteLine("risk before failed takeover: " + riskBeforeFailedTakeover + " after attempt: " + player.successionRisk);
+            output.WriteLine("court before failed takeover: " + courtBeforeFailedTakeover + " after attempt: " + player.courtFactionPressure);
+
+            Assert.False(failedTakeover.applied, "Unaffordable takeover should not silently stabilize the dynasty.");
+            Assert.Contains("not_enough_resources", failedTakeover.reason);
+            Assert.Equal(riskBeforeFailedTakeover, player.successionRisk);
+            Assert.Equal(courtBeforeFailedTakeover, player.courtFactionPressure);
+            Assert.Equal(legitimacyBeforeFailedTakeover, player.legitimacy);
+            Assert.Equal(stableBeforeFailedTakeover, player.stableSuccessions);
+
+            SuccessionCrisisPayload secondCrisis = succession.TryTriggerSuccessionCrisis(context, player);
+
+            output.WriteLine("risk after unresolved crisis: " + riskBeforeFailedTakeover + " -> " + player.successionRisk);
+            output.WriteLine("court after unresolved crisis: " + courtBeforeFailedTakeover + " -> " + player.courtFactionPressure);
+            output.WriteLine("rebellion after unresolved crisis: " + rebellionBeforeFailedTakeover + " -> " + fragileRegion.rebellionRisk);
+
+            Assert.NotNull(secondCrisis);
+            Assert.True(secondCrisis.triggered, "Unresolved succession pressure should remain a failure path, not disappear after a failed takeover.");
+            Assert.True(player.successionRisk > riskBeforeFailedTakeover,
+                "If the player cannot afford intervention, succession risk should continue worsening.");
+            Assert.True(player.courtFactionPressure > courtBeforeFailedTakeover,
+                "If the player cannot afford intervention, court pressure should continue worsening.");
+            Assert.True(fragileRegion.rebellionRisk > rebellionBeforeFailedTakeover,
+                "Unresolved court crisis should continue spilling into local instability.");
+            Assert.Contains("继承风险", secondCrisis.reason);
+            Assert.True(HasLogContaining(state, "继承危机"));
+            Assert.False(HasLogContaining(state, "继承续命"));
+        }
+
         private static GameState BuildPressureWorld(
             int regionCount,
             int initialPlayerRegions,

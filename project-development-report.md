@@ -9833,7 +9833,7 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮只改报告文档，未改核心或 Web 运行代码。
 - 只读审查命令已确认现有长线要求主要存在于文档和片段测试中，尚无单局串联验收。
-- 待运行：`git diff --check`。
+- `git diff --check` 通过；仅有 Windows 换行提示。
 
 ### 剩余风险
 
@@ -9921,3 +9921,44 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 - 失败路径尚未落地为测试。
 - Web 20-40 回合玩家可见长线仍缺实际 Playwright 演示。
 - 自动化 `5` 的 prompt 已纳入 `f699da7` 和“下一步优先失败路径”，避免后续重复补已完成的 headless 成功路径。
+
+## 2026-05-23 修补轮：headless 长线失败路径
+
+### 类型
+
+- 修补问题：从上一轮缺口复核中选择最低风险切口，补齐“资源不足时无法接管续命，继承危机继续恶化”的 headless 失败路径。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 5]`，工作树干净。
+- 最近验证：`f699da7` 的 headless 成功长线 targeted `1/1 passed`、Domain xUnit `86/86 passed`；最近全量门禁仍为胜利进度轮 `tools\run_all_checks.ps1` `[ALL GREEN]`。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 在 `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs` 新增 `Dynasty_Cycle_Long_Run_Must_Explain_Failure_When_Takeover_Is_Not_Affordable`。
+- 新测试复用现有 `DomainEconomySystem` 和 `DomainSuccessionSystem`，在同一局中覆盖：
+  - `20-40` 回合窗口内继承危机自然出现。
+  - 玩家金钱不足时 `StabilizeSuccession` 返回 `applied == false`。
+  - 失败原因包含 `not_enough_resources`，不会静默当成续命成功。
+  - 失败接管不会降低继承风险、朝局压力、合法性或增加 `stableSuccessions`。
+  - 未解决危机再次触发后，继承风险、朝局压力和地方民变继续恶化，并保留 `继承危机` 日志。
+- 更新 `docs/mvp-closure-ledger.md`：headless 20 回合长线从“成功路径已补”扩展为“成功/失败路径已补”，剩余风险收窄到 Web 玩家可见长线和失败状态展示。
+
+### 验证
+
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~Dynasty_Cycle_Long_Run_Must_Explain_Failure_When_Takeover_Is_Not_Affordable" --nologo` 通过：`1/1 passed`。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --nologo` 通过：`87/87 passed`。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 本轮仍只补 headless 失败路径，Web 20-40 回合玩家可见演示未完成。
+- Web outliner/debug 仍缺明确“失败/崩盘/不可续命”的状态字段和 Playwright 断言。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮测试与文档可安全隔离为 scoped commit；若提交成功，下一轮优先补 Web 20-40 回合玩家可见失败/不可续命状态。
