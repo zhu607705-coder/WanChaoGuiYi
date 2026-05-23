@@ -10354,3 +10354,76 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 Web UI、Playwright 和报告/台账；已通过 targeted、胜利相关 Playwright 子集、typecheck、grep、`git diff --check` 与全量门禁，可安全隔离为 scoped commit。
+
+## 2026-05-24 自动化找缺口轮：横切 MVP 缺口事实审计
+
+### 类型
+
+- 找漏洞/找缺口：针对用户提供的 Week 1-12 横切缺口表做当前仓库事实审计，区分过时 Unity 阶段结论、当前 Web/headless 已补能力和仍然成立的 P0 缺口。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 13]`，工作树干净；最新提交为 `f62f241` Web 统一九州胜利运行态。
+- 最近完整验证为 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 审计证据
+
+- 当前权威代码面限定为 `domain-core/src`、`web-strategy-map/src`、`web-strategy-map/game-data-source`、`tools/headless_runner/WanChaoGuiYiTests`；不以早期 `project-development-report.md` 中 Unity 旧脚本完成记录作为现状证据。
+- 数据计数：`emperors.json=13`、`regions.json=56`、`policies.json=35`、`talents.json=4`、`events.json=3`、`chronicle_events.json=200`、`victory_conditions.json=3`。
+- domain-core 当前 C# 源文件中没有 `EmperorMechanicSystem`、`TalentSystem`、`StrategicAI`、`PolicyAI`、`MilitaryAI`、`VictorySystem`、`LandSystem`、`RebellionSystem`、`LegitimacySystem` 这些独立系统类。
+- domain-core 已有 `DomainSuccessionSystem`，并由 `DynastyCyclePressureAcceptanceTests` 覆盖继承危机、玩家续命、长线胜利进度和资源不足失败路径。
+- Web 已有帝皇 `uniqueMechanic` 展示、`aiPersonality` 类型对齐、`applyEmperorState()` 亲政泛化效果、编年事件触发链、三代延续胜利进度、统一九州胜利进度，以及 Web 20 回合王朝成功/失败长线。
+- Headless xUnit 当前为 `87` 个 `[Fact]`，headless war 验证为 `16` 场景，不再是“战争 4 场景”状态。
+
+### 对用户横切表的修正
+
+| 系统 | 当前判定 | 说明 |
+| --- | --- | --- |
+| 帝皇专属机制 | 半真，仍是 P0 | 数据齐 13 位；Web 有展示和泛化亲政效果；domain-core 缺独立帝皇机制系统和至少 3 位差异化验收。 |
+| 战争 | 表述过时 | 当前 headless war `16/16`，Domain xUnit `87/87`，Web 战争/后勤 Playwright 覆盖多条路径。 |
+| 土地兼并 / 民变 | 半真 | 独立 `LandSystem/RebellionSystem` 不存在；但占领、政策、风险、治理影响已在 Domain/Web 中有公式和测试，玩家手段仍偏薄。 |
+| 合法性 / 法统 | 半真 | 独立 `LegitimacySystem` 不存在；但合法性已参与继承、胜利、治理和 Web 展示，帝皇整合差异不足。 |
+| 继承 | 半真偏真 | 年龄、健康、继承人、太子能力链缺失；但 `DomainSuccessionSystem`、Web 接管续命、成功/失败长线已经补齐基础闭环。 |
+| 人才 | 基本真，P0 | `talents.json` 只有 4 条，缺 `TalentSystem`、招贤政策驱动、任命/代价/收益闭环。 |
+| AI | 基本真，P0 | domain-core 缺战略 AI；Web 只有敌方截粮/压力等局部行为，不等同完整扩张/治理/军事 AI。 |
+| 胜利条件 | 表述过时但仍有缺口 | Web 已判定三代延续和统一九州；domain-core 无完整 `VictorySystem`，制度胜利和 `maxFragmentation` 仍缺运行态。 |
+| 事件 | Web 侧过时，Domain 侧仍薄 | `chronicle_events.json=200` 已接入 Web 触发链并有 Playwright；轻量 `events.json=3` 与 domain-core 事件选择链仍薄。 |
+| UI 打磨 | 半真 | Web 战争/后勤/王朝/胜利 outliner 已明显增强；新手引导和治理解释仍可继续补。 |
+| 20-40 回合演示 | 表述过时但未完全毕业 | Web/headless 已有王朝 20 回合成功/失败长线；完整 AI + 人才 + 制度胜利 + 自然统一的一局仍未达标。 |
+
+### 结论
+
+- 用户表的风险方向有价值，但不能作为当前事实表直接使用；它混入了 Unity 旧脚本阶段和已经由 Web/headless 补过的项目状态。
+- 当前最高价值 P0 不应再重复王朝长线或统一九州导入态胜利，而应转向：
+  - domain-core 帝皇机制差异化最小验收；
+  - TalentSystem 招贤/任命闭环；
+  - StrategicAI/PolicyAI/MilitaryAI 最小战略行为；
+  - `institutional_order` 运行态字段；
+  - `maxFragmentation` 可解释指标。
+
+### 下一轮低风险修补建议
+
+- 优先补 `domain-core` 帝皇机制差异化最小验收，因为 Week 4 MVP 要求“至少 3 位机制有差异化效果”，且该缺口高、边界窄、可 headless 验证。
+- 建议下一轮修补切口：
+  - 新增或扩展 Domain 测试，命名可用 `Emperor_Mechanics_Should_Create_Three_Distinct_Playstyle_Effects`。
+  - 先选择 3 位现有 MVP 核心帝皇，锁定可解释的轻量效果：例如秦始皇偏标准化/整合，刘邦偏人才/地方妥协，汉武帝偏军事/边疆压力。
+  - 最小实现可放在 `domain-core/src/Domain/Governance` 或新建 `domain-core/src/Domain/Emperors`，只消费现有 `EmperorDefinition.stats/uniqueMechanic/aiPersonality`，不引入 Unity 依赖。
+  - 验证顺序：targeted xUnit 红/绿、`python tools/validate_domain_core.py`、必要时 `tools\run_all_checks.ps1`。
+
+### 验证
+
+- 本轮只读审查当前权威代码、数据和测试，不改 Web/Core 运行代码。
+- 已更新 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，记录横切表纠偏和下一轮最小修补建议。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 还未实际实现 domain-core 帝皇机制差异化系统。
+- TalentSystem、StrategicAI、制度胜利和 `maxFragmentation` 仍未进入运行态闭环。
+
+### 提交策略
+
+- 本轮是找缺口文档轮；改动仅限报告/台账且 `git diff --check` 通过，可安全隔离为审查文档 scoped commit。
