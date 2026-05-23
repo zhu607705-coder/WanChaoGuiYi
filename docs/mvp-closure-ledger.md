@@ -29,7 +29,7 @@
 | --- | --- | --- | --- | --- |
 | 56 区九州地图 | `regions.json`、`map_region_shapes.json`、Three.js 点击/染色、区域 shape 单测 | 已可玩 | 保持 56 区可点击、可染色、可聚焦；地图仍是斗蛐蛐主舞台 | `check:data-source`、region shape/neighbor 单测、Playwright 地图断言 |
 | 帝皇与势力差异 | 13 位帝皇数据、preferred policies、AI personality、机制描述、`DomainEmperorMechanicSystem` 三类纯 C# 效果、秦始皇/刘邦/汉武帝差异化 xUnit | 部分可玩 | 帝皇机制必须继续接入更完整的扩张、治理、继承或财政压力闭环，而不只停留在描述 | 帝皇机制数据对齐测试、至少 3 位帝皇差异化模拟验收、后续应用到回合流的 headless 验收 |
-| 架空斗蛐蛐模拟 | AI 倾向字段、headless 场景、Web 回合推进、王朝接管面板、Web 20 回合危机到接管胜利/失败长线 | 部分可玩 | 自动推演能产生可读的强弱变化、危机和反转；玩家能观战后选择接管 | Playwright 模拟观战/接管/续命断言、Web 20 回合成功/失败长线 |
+| 架空斗蛐蛐模拟 | AI 倾向字段、`DomainStrategicAiSystem` 可解释意图、headless 场景、Web 回合推进、王朝接管面板、Web 20 回合危机到接管胜利/失败长线 | 部分可玩 | 自动推演能产生可读的强弱变化、危机和反转；玩家能观战后选择接管 | StrategicAI 意图 xUnit、Playwright 模拟观战/接管/续命断言、Web 20 回合成功/失败长线 |
 | 玩家接管和战役指挥 | Web 战争命令、路线、补给、截粮、撤退、战报、27 条 Playwright | 已可玩 | 下场接管必须稳定覆盖调军、路线、补给、进攻、撤退、占后处理 | headless war、Playwright 战役指挥流 |
 | 自动战斗结算 | Domain battle simulation、tie-break、casualty、morale、supply tests | 已可玩 | 保持自动结算，不进入战术战斗；战报解释胜负、伤亡、补给影响 | xUnit battle/morale/supply tests |
 | 扩张后的治理拖累 | occupation status、control stage、contribution caps、pacification queue | 已可玩 | 新占地不能立刻完整贡献；玩家必须处理占领治理成本 | headless occupation/control chain、Web 治理行动断言 |
@@ -65,7 +65,7 @@
 | --- | --- | --- | --- |
 | P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
-| P0 | 补 StrategicAI 的最小可解释意图断言 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 下一修补轮只新增纯 C# 意图选择：高扩张且资源足选 `expand`，高治理压力选 `stabilize`，资源不足选 `recover`；不直接执行回合或改 Web |
+| P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
 | P1 | 扩展 TalentSystem 多角色和 Web 可见入口 | `domain-core/src/Domain/Talents`、`web-strategy-map/src/ui.ts`、`tools/headless_runner/WanChaoGuiYiTests` | 已有清丈能吏 headless 最小证明；后续再补宿将、理财重臣、边疆使臣和玩家可见招贤/任命入口 |
 | P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
@@ -97,6 +97,7 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：Web 已加载 `victory_conditions.json`，从 `three_generation_dynasty` 读取 `stableSuccessions` 与 `minLegitimacy` 阈值，并在 outliner/debug 中显示“三代延续”进度与达成状态。
 - `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：三代延续胜利进度已接入运行态，`stableSuccessions >= 3` 且法统达标时会显示“胜利 / 三代延续达成”。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：统一九州胜利进度已接入运行态，按 `unify_jiuzhou.minLegitimacy` 与 `regions.owner` 计算 `playerOwnedRegions / totalRegions`，并在 outliner/debug 中显示“统一九州 / 统一九州达成”，Playwright 覆盖法统不足未达成、法统达标达成和导出/导入保留。
+- `domain-core/src/Domain/Ai/DomainStrategicAiSystem.cs` 与 `tools/headless_runner/WanChaoGuiYiTests/StrategicAiIntentTests.cs`：已补 StrategicAI 最小可解释意图，覆盖高扩张资源足选 `expand`、高治理压力选 `stabilize`、资源不足选 `recover`，并断言不改变地图所有权。
 
 ## 2026-05-23 缺口复核
 
@@ -109,3 +110,8 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 当前 P0 首选：StrategicAI 最小可解释意图。只证明 AI 能基于现有皇帝 `aiPersonality`、派系资源、地区压力和相邻敌区选择 `expand` / `stabilize` / `recover`，先不执行命令、不改 Web。
 - 暂缓项：`institutional_order` 需要先定义 `completedCoreReforms` 与 `minTreasuryStability` 的运行态来源；`maxFragmentation` 需要先定义分裂度指标口径；TalentSystem 多角色/Web 入口降为下一批 P1。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。
+
+## 2026-05-24 StrategicAI 最小修补
+
+- 已完成项：domain-core 新增只读 StrategicAI 意图选择，能解释扩张、治理整顿和资源休整三类意图，不执行攻击、治理命令或地图归属变更。
+- 当前 P0 转向：`institutional_order` 的运行态字段来源与 `maxFragmentation` 指标口径仍需复核；TalentSystem 多角色/Web 入口和 StrategicAI 命令建议均降为 P1 后续扩展。

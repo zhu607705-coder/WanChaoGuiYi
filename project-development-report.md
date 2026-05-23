@@ -10543,6 +10543,65 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
 
+## 2026-05-24 自动化修补轮：StrategicAI 最小可解释意图证明
+
+### 类型
+
+- 修补问题：从上一轮 `b2eb6d9` 复核中选择 StrategicAI 最小 P0 切口，补纯 C# domain-core 意图选择证明。
+
+### 目标
+
+- 不重复王朝长线、Web 统一九州、横切审计、帝皇机制 parity、TalentSystem 最小证明或 StrategicAI 缺口复核。
+- 使用 TDD 新增 `Strategic_Ai_Should_Select_Explainable_Intent_From_Personality_And_Pressure`。
+- 只让 AI 返回 `expand` / `stabilize` / `recover` 可解释意图，不执行攻击、不执行治理命令、不改 Web、不改变地图所有权。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 18]`，本轮开始时工作树干净；最新提交为 `b2eb6d9` StrategicAI 意图缺口复核。
+- 最近相关验证为上一修补轮 `1ccbb7d`：targeted xUnit `1/1`、`python tools/validate_domain_core.py`、完整 `WanChaoGuiYiTests` `89/89`、`tools\verify_headless_war.ps1` `16/16`。
+- 最近完整门禁仍是 `7e73ed2` 后的 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `88/88`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 进程复核：存在 `E:\deckrogue\deckrogue` 的 Playwright/Electron smoke 进程，属于无关项目；按命令行过滤未发现当前万朝归一 dotnet/Playwright/Vite/data/full-gate 冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### TDD 记录
+
+- RED：先新增 `StrategicAiIntentTests.cs` 和测试 csproj include 后运行 targeted `dotnet test`，失败原因为缺少 `DomainStrategicAiSystem` 与 `StrategicAiIntentPayload`，确认测试锁定当前缺口。
+- GREEN：新增最小 `DomainStrategicAiSystem` 后 targeted `dotnet test --filter FullyQualifiedName~Strategic_Ai_Should_Select_Explainable_Intent_From_Personality_And_Pressure` 通过 `1/1`。
+
+### 改动
+
+- 新增 `domain-core/src/Domain/Ai/DomainStrategicAiSystem.cs`：
+  - `SelectIntent(GameState, FactionState, EmperorDefinition, IDataRepository)` 返回 `StrategicAiIntentPayload`。
+  - 依据皇帝 `aiPersonality`、派系金钱/粮食、己方地区治理压力和相邻非己方地区选择意图。
+  - 资源压力高时返回 `recover`，治理压力高时返回 `stabilize`，扩张倾向和边境目标充分时返回 `expand`。
+  - 不调用 `ChangeRegionOwner`、不发布命令、不改变 `RegionState.ownerFactionId`。
+- 新增 `tools/headless_runner/WanChaoGuiYiTests/StrategicAiIntentTests.cs`：
+  - 断言高扩张/资源足/有邻敌地区选择 `expand` 且目标为 `frontier_gate`。
+  - 断言高叛乱、地方势力、兼并压力时优先 `stabilize`。
+  - 断言低金钱/低粮食时选择 `recover`。
+  - 断言目标地区仍归 `faction_rival`，锁住本轮无副作用边界。
+- 更新 `WanChaoGuiYiTests.csproj` 和 `WanChaoGuiYiHeadless.csproj`，把新 domain-core AI 系统链接进 test/headless 编译面。
+- 更新 `docs/mvp-closure-ledger.md`，将 StrategicAI 最小意图证明记为已启动收口工件，并把后续 AI 命令建议降为 P1。
+
+### 验证
+
+- RED：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter FullyQualifiedName~Strategic_Ai_Should_Select_Explainable_Intent_From_Personality_And_Pressure` 失败，错误为缺少 `DomainStrategicAiSystem` 与 `StrategicAiIntentPayload`。
+- GREEN：同一 targeted `dotnet test` 通过 `1/1`。
+- `python tools\validate_domain_core.py` 通过。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj` 通过 `90/90`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过：数据源校验通过、domain-core 校验通过、headless war `16/16`。
+
+### 剩余风险
+
+- StrategicAI 目前只产出意图 payload，尚未生成可执行命令建议，也未接入 Web 自动推演 UI。
+- `institutional_order` 的 `completedCoreReforms` / `minTreasuryStability` 来源和 `maxFragmentation` 指标口径仍是下一批 P0 复核重点。
+- TalentSystem 多角色收益与 Web 招贤/任命入口仍未完成。
+
+### 提交策略
+
+- 本轮改动集中在 domain-core、headless/test csproj、xUnit 和报告/台账；验证通过后可安全隔离为 scoped Lore commit。
+
 ## 2026-05-24 自动化修补轮：TalentSystem 最小 headless 验收
 
 ### 类型

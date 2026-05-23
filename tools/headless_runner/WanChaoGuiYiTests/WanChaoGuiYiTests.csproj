@@ -80,6 +80,7 @@
     <Compile Include="DynastyCyclePressureAcceptanceTests.cs" />
     <Compile Include="EmperorMechanicParityTests.cs" />
     <Compile Include="TalentSystemParityTests.cs" />
+    <Compile Include="StrategicAiIntentTests.cs" />
     <Compile Include="TestSupport.cs" />
 
     <!-- Reused production sources from domain-core -->
@@ -96,6 +97,7 @@
     <Compile Include="../../../domain-core/src/Domain/Core/StrategyCausalRules.cs" Link="Game/StrategyCausalRules.cs" />
     <Compile Include="../../../domain-core/src/Domain/Core/StrategyMapRulebook.cs" Link="Game/StrategyMapRulebook.cs" />
     <Compile Include="../../../domain-core/src/Domain/Economy/DomainEconomySystem.cs" Link="Game/DomainEconomySystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Ai/DomainStrategicAiSystem.cs" Link="Game/DomainStrategicAiSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Emperors/DomainEmperorMechanicSystem.cs" Link="Game/DomainEmperorMechanicSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Governance/DomainGovernanceImpactSystem.cs" Link="Game/DomainGovernanceImpactSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Governance/DomainSuccessionSystem.cs" Link="Game/DomainSuccessionSystem.cs" />
