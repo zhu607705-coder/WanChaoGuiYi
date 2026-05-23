@@ -79,6 +79,7 @@
     <Compile Include="PerformanceBaselineBugTests.cs" />
     <Compile Include="DynastyCyclePressureAcceptanceTests.cs" />
     <Compile Include="EmperorMechanicParityTests.cs" />
+    <Compile Include="TalentSystemParityTests.cs" />
     <Compile Include="TestSupport.cs" />
 
     <!-- Reused production sources from domain-core -->
@@ -102,6 +103,7 @@
     <Compile Include="../../../domain-core/src/Domain/Map/MapCommandService.cs" Link="Game/MapCommandService.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/MapGraphData.cs" Link="Game/MapGraphData.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/MapQueryService.cs" Link="Game/MapQueryService.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Talents/DomainTalentSystem.cs" Link="Game/DomainTalentSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Military/DomainArmyMovementSystem.cs" Link="Game/DomainArmyMovementSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Military/DomainBattleSimulationSystem.cs" Link="Game/DomainBattleSimulationSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Military/DomainEngagementCleanup.cs" Link="Game/DomainEngagementCleanup.cs" />

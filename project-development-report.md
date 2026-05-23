@@ -10542,3 +10542,59 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
+
+## 2026-05-24 自动化修补轮：TalentSystem 最小 headless 验收
+
+### 类型
+
+- 修补问题：从上一轮 P0 复核中选择 `TalentSystem` 最小切口，补“招贤 -> 任命 -> 收益和政治代价”的纯 C# headless 证明。
+
+### 目标
+
+- 不重复帝皇机制 parity、Web 王朝长线、统一九州或横切审计。
+- 按 TDD 新增 `Talent_System_Should_Recruit_And_Appoint_Talent_With_Political_Cost`。
+- 证明真实 `talents.json` 中的 `land_reform_official` 可以被招贤加入 `FactionState.talentIds`，重复招贤不会累加，任命到地区后降低兼并压力并提高朝局压力。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 16]`，本轮开始时工作树干净；最新提交为 `8528eb0` Talent flow 缺口复核。
+- 最近完整验证为 `7e73ed2` 后的 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `88/88`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 未发现万朝归一相关 `dotnet`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 改动
+
+- 新增 `domain-core/src/Domain/Talents/DomainTalentSystem.cs`：
+  - `RecruitTalent(FactionState, TalentDefinition)`：把人才 id 加入 `faction.talentIds`，并以 `already_recruited` 防重复。
+  - `ApplyTalentToRegion(FactionState, RegionState, TalentDefinition)`：要求人才已招募，应用 `talent.effects.annexationPressure` 到地区 `annexationPressure`，并把 `factionPressure + eliteAnger + courtSuspicion` 汇总为 `courtFactionPressure` 政治代价。
+  - 返回 `TalentRecruitmentPayload` 与 `TalentAppointmentPayload`，让 headless 断言能解释前后变化和失败原因。
+- 新增 `tools/headless_runner/WanChaoGuiYiTests/TalentSystemParityTests.cs`：
+  - 从真实 `web-strategy-map/game-data-source/data/talents.json` 读取 `land_reform_official`。
+  - 断言首招成功、重复招贤不重复、兼并压力 `42 -> 36`、朝局压力增加 `5`、解释包含“清丈能吏”。
+- 更新 `WanChaoGuiYiTests.csproj` 与 `WanChaoGuiYiHeadless.csproj`，把新 domain-core 系统链接进测试和 headless 运行器。
+- 更新 `docs/mvp-closure-ledger.md`，将人才系统从“数据已备”推进为“部分可玩”，后续风险转为多角色和 Web 可见入口。
+
+### TDD 记录
+
+- RED：先新增测试后运行 targeted `dotnet test`，失败原因为缺少 `DomainTalentSystem`、`TalentRecruitmentPayload`、`TalentAppointmentPayload`，确认测试锁定当前缺口。
+- GREEN：新增最小系统后 targeted `dotnet test --filter FullyQualifiedName~Talent_System_Should_Recruit_And_Appoint_Talent_With_Political_Cost` 通过 `1/1`。
+
+### 验证
+
+- `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj --filter FullyQualifiedName~Talent_System_Should_Recruit_And_Appoint_Talent_With_Political_Cost` 通过 `1/1`。
+- `python tools/validate_domain_core.py` 通过。
+- `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj` 通过 `89/89`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过，headless war `16/16`。
+- `rg -n "DomainTalentSystem|TalentRecruitmentPayload|TalentAppointmentPayload|land_reform_official|Talent_System_Should_Recruit" domain-core tools/headless_runner` 范围符合预期。
+- 未运行全量 `tools\run_all_checks.ps1`：本轮只改 domain-core/headless 测试与 headless csproj，已跑对应完整 xUnit、domain-core 校验和 headless war。
+
+### 剩余风险
+
+- 目前只覆盖 `land_reform_official` 的地区任命；宿将、理财重臣、边疆使臣尚未形成运行态收益。
+- 尚无 Web 可见招贤/任命入口，玩家侧仍不能直接操作人才。
+- StrategicAI、`institutional_order` 运行态字段和 `maxFragmentation` 指标仍未进入可玩闭环。
+
+### 提交策略
+
+- 本轮改动集中在 domain-core、headless 测试项目和报告/台账；验证通过后可安全隔离为 scoped Lore commit。
