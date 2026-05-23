@@ -65,7 +65,7 @@
 | --- | --- | --- | --- |
 | P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
-| P0 | 定义 StrategicAI 的最小可玩断言 | `domain-core/src`、`web-strategy-map/src`、`tools/headless_runner/WanChaoGuiYiTests` | Web 有敌方截粮/压力等局部行为；domain-core 尚无完整扩张/治理/军事决策系统，需先定义低风险 headless 决策断言 |
+| P0 | 补 StrategicAI 的最小可解释意图断言 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 下一修补轮只新增纯 C# 意图选择：高扩张且资源足选 `expand`，高治理压力选 `stabilize`，资源不足选 `recover`；不直接执行回合或改 Web |
 | P1 | 扩展 TalentSystem 多角色和 Web 可见入口 | `domain-core/src/Domain/Talents`、`web-strategy-map/src/ui.ts`、`tools/headless_runner/WanChaoGuiYiTests` | 已有清丈能吏 headless 最小证明；后续再补宿将、理财重臣、边疆使臣和玩家可见招贤/任命入口 |
 | P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
@@ -102,4 +102,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
 - 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；`unify_jiuzhou` 已具备 Web 运行态进度和达成断言。下一步应转向 `institutional_order` 与 `maxFragmentation` 的可解释运行态字段定义，或复核统一九州是否需要自然扩张长线。
+
+## 2026-05-24 TalentSystem 后缺口复核
+
+- 已完成项：domain-core 帝皇机制三类效果、TalentSystem 清丈能吏招贤/任命与政治代价均已有 headless 证明，不再作为下一轮重复目标。
+- 当前 P0 首选：StrategicAI 最小可解释意图。只证明 AI 能基于现有皇帝 `aiPersonality`、派系资源、地区压力和相邻敌区选择 `expand` / `stabilize` / `recover`，先不执行命令、不改 Web。
+- 暂缓项：`institutional_order` 需要先定义 `completedCoreReforms` 与 `minTreasuryStability` 的运行态来源；`maxFragmentation` 需要先定义分裂度指标口径；TalentSystem 多角色/Web 入口降为下一批 P1。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。

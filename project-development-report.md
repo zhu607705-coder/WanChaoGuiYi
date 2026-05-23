@@ -10598,3 +10598,75 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 domain-core、headless 测试项目和报告/台账；验证通过后可安全隔离为 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：TalentSystem 后下一 P0 修补切口复核
+
+### 类型
+
+- 找漏洞/找缺口：上一轮已完成 `DomainTalentSystem` 最小 headless 证明，本轮只做事实复核和下一修补切口定位，不改运行代码。
+
+### 目标
+
+- 不重复王朝长线、Web 统一九州、横切审计、帝皇机制 parity 或 TalentSystem 清丈能吏最小证明。
+- 比较 StrategicAI、`institutional_order`、`maxFragmentation` 和 TalentSystem 扩展四个候选，选出下一轮最窄且最能补 MVP P0 的修补目标。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 17]`，本轮开始时工作树干净；最新提交为 `1ccbb7d` TalentSystem 最小 headless 证明。
+- 最近本轮相关验证为 `1ccbb7d`：targeted xUnit `1/1`、`python tools/validate_domain_core.py`、完整 `WanChaoGuiYiTests` `89/89`、`tools\verify_headless_war.ps1` `16/16`。
+- 最近完整门禁仍是 `7e73ed2` 后的 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `88/88`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 进程复核：通用 `node/powershell` 进程很多，但按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|playwright|vite|run_all_checks|validate_domain_core|validate_web_data_source|verify_headless_war` 后只命中本次查询命令，未发现冲突中的本项目 dotnet/Playwright/Vite/data/full-gate 任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 候选复核
+
+- StrategicAI：
+  - 现有证据：`EmperorDefinition.aiPersonality`、`NumericFormulas.CalculateAiExpansionWeight/CalculateAiDiplomacyWeight/CalculateAiPolicyWeight()`、Web/MapCommandService 的敌对截粮目标选择已经存在。
+  - 缺口：domain-core 仍没有独立 `StrategicAI` 或可测试的“本回合意图选择”系统；AI 势力仍难以用 headless 断言解释为何扩张、治理、截粮或保守。
+  - 最小可修：新增纯 C# `DomainStrategicAiSystem`，只返回 `StrategicAiIntentPayload`，不直接改状态；用现有皇帝 `aiPersonality`、派系资源、地区压力和相邻敌方地区计算扩张/治理/休整意图。
+- `institutional_order`：
+  - 现有证据：`victory_conditions.json` 已定义 `completedCoreReforms:4`、`minLegitimacy:70`、`minTreasuryStability:65`、`maxAnnexationPressure:45`；`FactionState.completedReformIds` 已存在。
+  - 缺口：`completedCoreReforms` 还没有稳定运行态推进；`minTreasuryStability` 没有明确从 `FactionState` 或经济系统派生；直接做 Web 达成容易硬编码。
+  - 结论：适合下一轮之后定义 `DomainVictorySystem` 或制度研究流，不作为马上修补首选。
+- `maxFragmentation`：
+  - 现有证据：`three_generation_dynasty` 数据包含 `maxFragmentation:10`，王朝长线和 Web 三代进度已覆盖稳定继承与法统。
+  - 缺口：Web 当前三代胜利只判断 `stableSuccessions` 与 `minLegitimacy`，未解释分裂度来源；domain-core 也没有独立 fragmentation 指标。
+  - 结论：这是胜利条件完整性风险，但指标口径需先定义，例如非玩家割据区占比、高风险地区数或地方势力均值，不宜在下一修补轮临时塞 UI。
+- TalentSystem 扩展：
+  - 现有证据：`talents.json` 共有宿将、理财重臣、清丈能吏、边疆使臣；当前 `DomainTalentSystem` 已覆盖招贤、防重复、清丈能吏任命和政治代价。
+  - 缺口：其余三类人才仍无运行态收益，Web 也没有招贤/任命入口。
+  - 结论：扩展很窄，但刚完成一轮 TalentSystem；若连续补人才，会推迟 Week 10 AI P0。
+
+### 结论
+
+- 下一修补轮首选 StrategicAI 最小 domain-core 断言。
+- 修补边界必须收窄为“只产出可解释 AI 意图”，不做完整自动回合、不改 Web、不让 AI 直接改地图所有权。
+- 建议测试名：`Strategic_Ai_Should_Select_Explainable_Intent_From_Personality_And_Pressure`。
+
+### 下一轮低风险修补建议
+
+- 走 TDD，新增 xUnit 覆盖 3 个最小场景：
+  - 高扩张/资源充足/有相邻敌区：选择 `expand`，输出目标地区和扩张原因。
+  - 高叛乱或低法统/无力扩张：选择 `stabilize`，输出治理压力原因。
+  - 资源不足且压力不高：选择 `recover`，输出休整原因。
+- 最小实现建议：
+  - 新建 `domain-core/src/Domain/Ai/DomainStrategicAiSystem.cs`。
+  - 输入保持纯对象：`GameState`、`FactionState`、`EmperorDefinition`、可选 `IDataRepository`。
+  - 输出 `StrategicAiIntentPayload`：`intentId`、`targetRegionId`、`score`、`reason`、`expansionWeight`、`governancePressure`、`resourcePressure`。
+  - 从 `FactionState.regionIds` 与 `RegionDefinition.neighbors` 选相邻非己方地区作为扩张目标；不要在这一轮执行进攻或治理命令。
+- 验证顺序：targeted `dotnet test` 红/绿、`python tools/validate_domain_core.py`、完整 `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj`；若只动 domain-core/test，可暂不跑 Playwright。
+
+### 验证
+
+- 本轮只读审查 `victory_conditions.json`、`talents.json`、`GameState`、`DataModels`、`DomainTalentSystem`、`MapCommandService`、Web 胜利摘要和 MVP 台账。
+- 未改 Web/Core 运行代码；仅更新 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`。
+
+### 剩余风险
+
+- StrategicAI 尚未实现，下一轮仍需 TDD 修补。
+- `institutional_order` 的财政稳定口径、`maxFragmentation` 的分裂度指标、TalentSystem 多角色和 Web 可见入口仍未完成。
+
+### 提交策略
+
+- 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
