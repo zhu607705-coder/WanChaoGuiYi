@@ -62,6 +62,9 @@ type DebugState = {
     stableSuccessions: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
+    dynastyRescueBlocked: boolean;
+    dynastyRescueBlockReason: string;
+    dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
     governanceQueueLength: number;
@@ -519,6 +522,59 @@ test.describe('code-driven strategy map', () => {
     await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('三代延续达成');
     await expect(page.locator('#outliner-list')).toContainText('胜利');
     await expect(page.locator('#outliner-list')).toContainText('三代延续达成');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows dynasty rescue as blocked when succession crisis is unaffordable', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const blockedCrisis: GameExportState = {
+      ...exported,
+      dynastyControlMode: 'takeover',
+      nationState: {
+        ...exported.nationState,
+        money: 40,
+        legitimacy: 1,
+        successionRisk: 84,
+        courtPressure: 82,
+        stableSuccessions: 1
+      }
+    };
+    expect(await importGameState(page, blockedCrisis)).toBe(true);
+
+    const panel = page.getByTestId('dynasty-takeover-panel');
+    const stabilizeButton = page.locator('[data-action="dynasty_stabilize_succession"]');
+    await expect(panel).toContainText('已接管');
+    await expect(panel).toContainText('不可续命');
+    await expect(panel).toContainText('资源不足');
+    await expect(stabilizeButton).toBeDisabled();
+    await expect(page.locator('#outliner-list')).toContainText('不可续命');
+
+    const beforeAttempt = await debug(page);
+    await stabilizeButton.evaluate((button: HTMLButtonElement) => button.click());
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.dynastyControlMode === 'takeover' &&
+        state.ui.dynastyRescueBlocked &&
+        state.ui.dynastyRescueBlockReason.includes('资源不足') &&
+        state.ui.dynastyFailureRisk.includes('继承危机') &&
+        state.ui.successionRisk === beforeAttempt.ui.successionRisk &&
+        state.ui.courtPressure === beforeAttempt.ui.courtPressure &&
+        state.ui.money === beforeAttempt.ui.money &&
+        state.ui.legitimacy === beforeAttempt.ui.legitimacy &&
+        state.ui.stableSuccessions === beforeAttempt.ui.stableSuccessions,
+      'unaffordable succession rescue should stay blocked without changing dynasty state'
+    );
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.successionRisk).toBe(beforeAttempt.ui.successionRisk);
+    expect(saved.nationState.courtPressure).toBe(beforeAttempt.ui.courtPressure);
+    expect(saved.nationState.stableSuccessions).toBe(beforeAttempt.ui.stableSuccessions);
 
     expect(consoleErrors).toEqual([]);
   });

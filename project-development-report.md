@@ -9962,3 +9962,51 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮测试与文档可安全隔离为 scoped commit；若提交成功，下一轮优先补 Web 20-40 回合玩家可见失败/不可续命状态。
+
+## 2026-05-23 修补轮：Web 不可续命失败态
+
+### 类型
+
+- 修补问题：从已完成的 headless 资源不足失败路径继续往 Web 显示层收口，让玩家在接管面板、outliner 和 debug 中看到“资源不足不可续命”。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 6]`，工作树干净；ahead 6 包含 Web 接管闭环、胜利进度、headless 成功/失败长线等已提交收口。
+- 最近报告显示当前 P0 已收窄为 Web 20-40 回合玩家可见失败/不可续命状态，以及后续 Web 长线胜败演示。
+- 最近验证：headless 失败路径 targeted `1/1 passed`、Domain xUnit `87/87 passed`；最近完整门禁仍为此前 `tools\run_all_checks.ps1` `[ALL GREEN]`。
+- 进程检查未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 采用 TDD：先新增 Playwright 失败态断言并确认红灯，失败点为接管面板缺少“不可续命/资源不足”玩家可见文案。
+- 在 `web-strategy-map/src/ui.ts` 增加统一的王朝续命资源判断：
+  - `dynastyRescueBlocked`：接管后金钱或法统不足时为 true。
+  - `dynastyRescueBlockReason`：暴露资源不足明细，例如金钱和法统阈值。
+  - `dynastyFailureRisk`：把继承危机和不可续命后果串成 debug 文本。
+- 接管面板与 outliner 在资源不足时显示“不可续命：资源不足”，并说明继承危机会继续恶化。
+- `stabilizeDynastySuccession` 复用同一资源不足原因，避免按钮、日志和 debug 漂移。
+- 新增 Playwright 用例 `shows dynasty rescue as blocked when succession crisis is unaffordable`：
+  - 导入已接管但金钱/法统不足的继承危机档。
+  - 断言按钮禁用、面板/outliner 显示不可续命和资源不足。
+  - 尝试触发按钮后，断言继承风险、朝局、金钱、法统和 `stableSuccessions` 均不被误改。
+  - 导出存档仍保留未缓解的继承危机状态。
+- 更新 `docs/mvp-closure-ledger.md`：当前 P0 从“Web 失败状态展示缺失”推进为“Web 已补资源不足不可续命失败态，剩余 Web 20-40 回合玩家可见长线”。
+
+### 验证
+
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "shows dynasty rescue as blocked when succession crisis is unaffordable"` 先红后绿：最终 `1/1 passed`。
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "lets players observe, take over, and stabilize dynasty succession|shows dynasty rescue as blocked when succession crisis is unaffordable"` 通过：`2/2 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 通过：`[ALL GREEN]`，包括 Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `29/29`、Web build/typecheck。
+
+### 剩余风险
+
+- 本轮补的是 Web 资源不足不可续命失败态，不等于完整 Web 20-40 回合长线演示。
+- 下一轮优先补 Web 20-40 回合玩家可见成功长线，把危机来源、接管前后指标、胜利进度和失败提示连成同一局。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮改动集中在 Web UI、Playwright 和 MVP 台账，已通过全量门禁，可安全隔离为 scoped commit。

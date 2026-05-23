@@ -752,6 +752,9 @@ export class StrategyUi {
     stableSuccessions: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
+    dynastyRescueBlocked: boolean;
+    dynastyRescueBlockReason: string;
+    dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
     governanceQueueLength: number;
@@ -832,6 +835,9 @@ export class StrategyUi {
       ...this.nationState,
       dynastyPressureSummary: this.dynastyPressureSummary(),
       dynastyControlMode: this.dynastyControlMode,
+      dynastyRescueBlocked: this.dynastyRescueBlocked(),
+      dynastyRescueBlockReason: this.dynastyRescueBlockReason(),
+      dynastyFailureRisk: this.dynastyFailureRisk(),
       victoryProgressSummary: this.victoryProgressSummary(),
       dynastyVictoryAchieved: this.dynastyVictoryAchieved(),
       governanceQueueLength: this.governanceQueue.length,
@@ -1981,7 +1987,11 @@ export class StrategyUi {
     const court = Math.round(this.nationState.courtPressure ?? 0);
     const stable = Math.round(this.nationState.stableSuccessions ?? 0);
     const status = this.dynastyControlMode === 'takeover' ? '已接管' : '模拟观战';
-    const canStabilize = this.dynastyControlMode === 'takeover' && this.nationState.money >= 90 && this.nationState.legitimacy >= 2;
+    const canStabilize = this.canStabilizeDynastySuccession();
+    const blockReason = this.dynastyRescueBlockReason();
+    const rescueLine = blockReason
+      ? `不可续命：${blockReason}，继承危机将继续恶化。`
+      : '代价：金钱 -90 / 法统 -2；收益：继承 -30 / 朝局 -22。';
     return `
       <section class="decision-card" data-testid="dynasty-takeover-panel">
         <div class="band-title">王朝接管</div>
@@ -1997,7 +2007,7 @@ export class StrategyUi {
             <span>继承</span><b>立储安宗</b>
           </button>
         </div>
-        <div class="preview-line risk">代价：金钱 -90 / 法统 -2；收益：继承 -30 / 朝局 -22。</div>
+        <div class="preview-line risk">${escapeHtml(rescueLine)}</div>
       </section>
     `;
   }
@@ -3150,7 +3160,43 @@ export class StrategyUi {
       successionRisk >= 70 || courtPressure >= 70 ? '继承危机' :
         successionRisk >= 50 || courtPressure >= 50 ? '继承承压' :
           '继承稳定';
-    return `${mode}${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，可立储安宗`;
+    const blockReason = this.dynastyRescueBlockReason();
+    const rescueState = blockReason ? `不可续命：${blockReason}` : '可立储安宗';
+    return `${mode}${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，${rescueState}`;
+  }
+
+  private canStabilizeDynastySuccession(): boolean {
+    return this.dynastyControlMode === 'takeover' && this.nationState.money >= 90 && this.nationState.legitimacy >= 2;
+  }
+
+  private dynastyRescueBlocked(): boolean {
+    return this.dynastyRescueBlockReason().length > 0;
+  }
+
+  private dynastyRescueBlockReason(): string {
+    if (this.dynastyControlMode !== 'takeover') return '';
+    const missing: string[] = [];
+    if (this.nationState.money < 90) {
+      missing.push(`金钱 ${Math.round(this.nationState.money)}/90`);
+    }
+    if (this.nationState.legitimacy < 2) {
+      missing.push(`法统 ${Math.round(this.nationState.legitimacy)}/2`);
+    }
+    return missing.length > 0 ? `资源不足（${missing.join('，')}）` : '';
+  }
+
+  private dynastyFailureRisk(): string {
+    const successionRisk = Math.round(this.nationState.successionRisk ?? 0);
+    const courtPressure = Math.round(this.nationState.courtPressure ?? 0);
+    const blockReason = this.dynastyRescueBlockReason();
+    const crisisLabel = successionRisk >= 70 || courtPressure >= 70 ? '继承危机' : '继承承压';
+    if (blockReason) {
+      return `${crisisLabel}：${blockReason}，不可续命，危机将继续恶化`;
+    }
+    if (successionRisk >= 70 || courtPressure >= 70) {
+      return '继承危机：可立储安宗缓解';
+    }
+    return '暂无继承崩盘风险';
   }
 
   private dynastyVictoryAchieved(): boolean {
@@ -3205,8 +3251,9 @@ export class StrategyUi {
       return;
     }
 
-    if (this.nationState.money < 90 || this.nationState.legitimacy < 2) {
-      this.enqueueGovernance('立储安宗：资源不足，需保留金钱 90 与法统 2');
+    const blockReason = this.dynastyRescueBlockReason();
+    if (blockReason) {
+      this.enqueueGovernance(`立储安宗：${blockReason}，需保留金钱 90 与法统 2`);
       return;
     }
 
