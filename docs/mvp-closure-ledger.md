@@ -44,7 +44,7 @@
 | 建筑系统 | buildings data、recommendedBuilding、governance project/building markers | 部分可玩 | 建筑应成为区域长期治理和物流取舍，不只是推荐文本 | building project Playwright、data reference tests |
 | 编年事件 | 200 chronicle events、event choices、Unity-free Web turn loop test | 已可玩 | 事件要解释王朝周期压力，不只随机弹窗 | chronicle trigger/choice tests、UI result log |
 | 天气、风俗、装备、天文、将领 | data contracts and JSON/data model support | 部分可玩 | 保留为当前 MVP 表达层，至少要有数据解释和一个可观察影响路径 | data validation、UI summary 或 headless effect smoke |
-| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功/失败长线 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因 | 三代延续 Playwright 进度断言、Web 20 回合成功/失败长线、后续其他胜利条件演示 |
+| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功/失败长线；`maxFragmentation` 数据仍未被胜利判断消费 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因；三代延续必须受分裂度约束 | 三代延续 Playwright 进度断言、Web 20 回合成功/失败长线、后续 `maxFragmentation` headless 胜利门 |
 | 存档/导入导出 | Web local slots、schemaVersion、import/export Playwright、王朝压力和接管模式导出/导入断言 | 已可玩 | 存档必须覆盖治理、军队、物流、战报和关键王朝压力状态 | Playwright save/load、corrupt save tests、王朝接管存档断言 |
 | UI 决策清晰度 | outliner、risk summaries、dynasty pressure summary、governance panel、war reports | 部分可玩 | 每回合清楚显示最大风险、原因、可选行动、预计后果、实际变化 | Playwright viewport and decision-surface assertions |
 | Domain/Web 因果同步 | headless report helpers、headless-vs-ui numerics tests | 同步风险 | 重复表达的因果规则必须有 parity 检查，防止 C# 与 TS 漂移 | parity unit tests、headless report schema tests |
@@ -64,7 +64,8 @@
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
 | P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
-| P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
+| P0 | 补三代延续 `maxFragmentation` 的 domain-core 胜利门 | `domain-core/src/Domain/Victory`、`tools/headless_runner/WanChaoGuiYiTests` | `three_generation_dynasty` 已声明 `maxFragmentation:10`，但当前 Web/helper 只看续承和法统；下一修补轮先定义分裂度指标并阻止高分裂误判胜利 |
+| P1 | 复核 `institutional_order` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态来源；暂不先做 UI 达成 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
 | P1 | 扩展 TalentSystem 多角色和 Web 可见入口 | `domain-core/src/Domain/Talents`、`web-strategy-map/src/ui.ts`、`tools/headless_runner/WanChaoGuiYiTests` | 已有清丈能吏 headless 最小证明；后续再补宿将、理财重臣、边疆使臣和玩家可见招贤/任命入口 |
 | P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
@@ -115,3 +116,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 
 - 已完成项：domain-core 新增只读 StrategicAI 意图选择，能解释扩张、治理整顿和资源休整三类意图，不执行攻击、治理命令或地图归属变更。
 - 当前 P0 转向：`institutional_order` 的运行态字段来源与 `maxFragmentation` 指标口径仍需复核；TalentSystem 多角色/Web 入口和 StrategicAI 命令建议均降为 P1 后续扩展。
+
+## 2026-05-24 StrategicAI 后缺口复核
+
+- 已完成项：StrategicAI 最小意图、TalentSystem 清丈能吏、帝皇机制 parity、Web 王朝长线和 Web 统一九州均不再作为下一修补目标。
+- 当前 P0 首选：三代延续 `maxFragmentation` 的 domain-core 胜利门。证据是 `victory_conditions.json` 已声明 `maxFragmentation:10`，但 Web `dynastyVictoryAchieved()` 和 headless helper 只检查 `stableSuccessions` 与 `minLegitimacy`。
+- 建议下一修补轮只新增纯 C# `DomainVictorySystem` 与 xUnit：稳定三代且分裂度低时通过；同样续承/法统但高叛乱、地方势力、兼并或低整合时失败，并输出分裂度原因。`institutional_order`、Talent 多角色/Web 入口、StrategicAI 命令建议均排到后续 P1。
