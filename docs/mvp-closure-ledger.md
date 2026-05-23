@@ -65,7 +65,8 @@
 | --- | --- | --- | --- |
 | P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
-| P0 | 定义 TalentSystem / StrategicAI 的最小可玩断言 | `domain-core/src`、`web-strategy-map/src`、`tools/headless_runner/WanChaoGuiYiTests` | 人才只有 4 条数据且无招贤闭环；战略 AI 尚无完整扩张/治理/军事决策系统 |
+| P0 | 补 TalentSystem 招贤/任命最小 headless 验收 | `domain-core/src/Domain/Talents`、`tools/headless_runner/WanChaoGuiYiTests` | `TalentDefinition`、`FactionState.talentIds`、`NumericStat.TalentGain` 已存在；下一步先证明招贤会加入人才、任命会产生收益并带政治代价 |
+| P0 | 定义 StrategicAI 的最小可玩断言 | `domain-core/src`、`web-strategy-map/src`、`tools/headless_runner/WanChaoGuiYiTests` | Web 有敌方截粮/压力等局部行为；domain-core 尚无完整扩张/治理/军事决策系统，需先定义低风险 headless 决策断言 |
 | P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |

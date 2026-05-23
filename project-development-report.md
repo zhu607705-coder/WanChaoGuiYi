@@ -10487,3 +10487,58 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 domain-core、headless 测试项目和报告/台账；全量门禁通过，工作树改动可安全隔离为 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：帝皇机制后续 P0 复核
+
+### 类型
+
+- 找漏洞/找缺口：上一轮已完成 `DomainEmperorMechanicSystem` 三位帝皇差异化最小验收，本轮只复核剩余 P0，确定下一轮低风险修补切口。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 15]`，本轮开始时工作树干净；最新提交为 `7e73ed2` domain-core 帝皇机制差异化。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `88/88`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 未发现万朝归一相关 `dotnet`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 复核证据
+
+- 帝皇机制缺口已从“domain-core 无系统”推进为 `DomainEmperorMechanicSystem` + `EmperorMechanicParityTests`，但仍未接入回合流；作为 P1 后续应用，不再是下一修补首选。
+- Talent 侧已有数据和挂点：
+  - `talents.json` 只有 4 条：宿将、理财重臣、清丈能吏、边疆使臣。
+  - `TalentDefinition`、`PoliticalCost`、`FactionState.talentIds`、`NumericStat.TalentGain` 和 `NumericFormulas.CalculateResearchPoints()` 已存在。
+  - `policies.json` 已有 `recruit_talent`、`talent_absorption`、`talent_edict`、`talent_court` 等招贤相关政策效果。
+  - 缺口是没有纯 C# `TalentSystem`，也没有“招贤 -> 加入人才 -> 任命产生收益和政治代价”的 headless 断言。
+- StrategicAI 仍是 P0，但当前 evidence 显示 Web 侧已有敌方截粮、意图记忆和目标选择；domain-core 要补完整 AI 决策比 TalentSystem 更宽。
+- `institutional_order` 与 `maxFragmentation` 仍缺运行态字段；`VictoryRequirement` 已有 `completedCoreReforms`、`maxFragmentation`、`minTreasuryStability`、`maxAnnexationPressure`，但需要先定义字段来源，不适合下一轮直接达成 UI。
+
+### 结论
+
+- 下一修补轮首选 `TalentSystem` 最小 headless 验收，理由是现有字段最多、切口窄、能直接补 Week 9 P0，并能为后续 AI/制度胜利提供人事挂点。
+- 不建议下一轮直接做 StrategicAI 或制度胜利，因为两者都需要更大范围的决策/运行态字段设计。
+
+### 下一轮低风险修补建议
+
+- 走 TDD，新增 xUnit，建议名：`Talent_System_Should_Recruit_And_Appoint_Talent_With_Political_Cost`。
+- 最小实现建议：
+  - 新建 `domain-core/src/Domain/Talents/DomainTalentSystem.cs`。
+  - `RecruitTalent(FactionState faction, TalentDefinition talent)`：避免重复加入 `talent.id`，记录 `talentIds`，按 `politicalCost.factionPressure` 或 `courtSuspicion/eliteAnger` 增加 `courtFactionPressure`。
+  - `ApplyTalentToRegion(FactionState faction, RegionState region, TalentDefinition talent)`：先支持 `land_reform_official`，把 `effects.annexationPressure` 应用于 `region.annexationPressure`，同时让政治代价可见。
+  - 可补 `fiscal_minister` 或 `veteran_general` 的轻量收益，但第一轮保持 1-2 个角色即可。
+- 验证顺序：targeted `dotnet test` 红/绿、`python tools/validate_domain_core.py`、完整 `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj`；若只动 domain-core/test，可暂不跑 Playwright，全量门禁视改动范围决定。
+
+### 验证
+
+- 本轮只读审查 `talents.json`、`policies.json`、Domain 数据模型、NumericSystem、Web UI 与 MVP 台账。
+- 未改 Web/Core 运行代码；仅更新 `project-development-report.md` 和 `docs/mvp-closure-ledger.md`。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- TalentSystem 尚未实现，下一轮仍需 TDD 修补。
+- StrategicAI、`institutional_order` 运行态字段、`maxFragmentation` 指标仍未进入可玩闭环。
+
+### 提交策略
+
+- 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
