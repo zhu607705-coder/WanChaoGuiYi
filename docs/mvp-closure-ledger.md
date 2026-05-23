@@ -33,7 +33,7 @@
 | 玩家接管和战役指挥 | Web 战争命令、路线、补给、截粮、撤退、战报、27 条 Playwright | 已可玩 | 下场接管必须稳定覆盖调军、路线、补给、进攻、撤退、占后处理 | headless war、Playwright 战役指挥流 |
 | 自动战斗结算 | Domain battle simulation、tie-break、casualty、morale、supply tests | 已可玩 | 保持自动结算，不进入战术战斗；战报解释胜负、伤亡、补给影响 | xUnit battle/morale/supply tests |
 | 扩张后的治理拖累 | occupation status、control stage、contribution caps、pacification queue | 已可玩 | 新占地不能立刻完整贡献；玩家必须处理占领治理成本 | headless occupation/control chain、Web 治理行动断言 |
-| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure、`DynastyCyclePressureAcceptanceTests` 场景 A/B/C/D、Web 王朝接管入口 | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | Domain C/D、Playwright 接管续命断言、后续 20-40 回合王朝周期 headless/Web 验收 |
+| 王朝周期压力 | successionRisk、stableSuccessions、legitimacy、expansion succession pressure、`DynastyCyclePressureAcceptanceTests` 场景 A/B/C/D 与 headless 20 回合长线串联、Web 王朝接管入口 | 部分可玩 | 扩张、继承、财政、土地、军队必须连成强盛王朝过热到危机的压力链 | Domain C/D、headless 长线、Playwright 接管续命断言、后续 Web 20-40 回合验收 |
 | 财政、粮食、人口、兵力 | EconomySystem、DomainEconomySystem、Web nation aggregation tests | 已可玩 | 财政和粮食要参与扩张、军队、治理的真实取舍 | xUnit economy tests、Web aggregation/property tests |
 | 土地兼并和民变 | landStructure、annexationPressure、rebellionRisk、relief/tax pressure scenarios | 部分可玩 | 土地和民变必须成为王朝周期压力的显性后果，而不是只做数值字段 | 治理压力 headless 场景、UI 最大风险断言 |
 | 继承系统 | heir、successionRisk、stableSuccessions、victory condition data、`DomainSuccessionSystem`、Web 立储安宗按钮和存档字段 | 部分可玩 | 帝皇老去或继承不稳必须能触发王朝断裂风险和玩家介入窗口 | 继承危机场景、Web 接管续命断言、三代延续验收 |
@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 补 20-40 回合王朝周期长线验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | 至少覆盖三代延续胜利/失败、危机来源解释、接管前后对比 |
+| P0 | 补 20-40 回合王朝周期长线验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | headless 已补危机/接管/胜利进度串联；剩余 Web 长线和失败路径演示 |
 | P0 | 扩展胜利条件运行态到长线演示 | `victory_conditions.json`、Domain/Web 胜利进度 | 已有 Web 三代延续进度；剩余 20-40 回合胜利/失败演示 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
@@ -83,7 +83,7 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 ## 已启动的收口工件
 
 - `docs/dynasty-cycle-acceptance-scenarios.md`：定义 20-40 回合王朝周期长线验收场景，作为后续 headless 和 Playwright 实现依据。
-- `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs`：已覆盖场景 A“扩张后过热”和场景 B“财政军队土地挤压”，验证资源收益、治理/军队成本、地方压力、继承压力和解释日志同时出现。
+- `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs`：已覆盖场景 A“扩张后过热”和场景 B“财政军队土地挤压”，验证资源收益、治理/军队成本、地方压力、继承压力和解释日志同时出现；已新增 headless 20 回合长线串联，覆盖继承危机、接管前后压力对比、资源代价和三代延续胜利进度。
 - `domain-core/src/Domain/Governance/DomainSuccessionSystem.cs` 与 `DynastyCyclePressureAcceptanceTests` 场景 C/D：已覆盖继承危机触发、合法性/朝局/地方稳定外溢，以及玩家立储安宗续命的资源代价。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：outliner 已显示王朝继承压力摘要，Playwright 首屏断言会检查“王朝/继承稳定或承压或危机/可立储安宗”。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补“模拟推演 -> 接管王朝 -> 立储安宗”面板、队列日志、资源代价、继承/朝局降压、`stableSuccessions` 增加，以及 `dynastyControlMode` 和王朝压力存档导入导出断言。
@@ -93,5 +93,5 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 ## 2026-05-23 缺口复核
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
-- 当前 P0：三代延续已具备 Web 可见胜利进度和达成断言；仍缺 20-40 回合运行态验收，把胜利/失败、危机来源和接管前后对比连成一局。`unify_jiuzhou` 和 `institutional_order` 也还没有同等深度的运行态胜利演示。
+- 当前 P0：三代延续已具备 Web 可见胜利进度和达成断言，headless 已补 20 回合危机/接管/胜利进度串联；仍缺 Web 20-40 回合玩家可见长线和失败路径演示。`unify_jiuzhou` 和 `institutional_order` 也还没有同等深度的运行态胜利演示。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。

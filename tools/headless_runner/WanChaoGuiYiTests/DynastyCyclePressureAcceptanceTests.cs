@@ -272,6 +272,110 @@ namespace WanChaoGuiYi.Tests
             Assert.True(HasLogContaining(state, "继承续命"));
         }
 
+        [Fact]
+        public void Dynasty_Cycle_Long_Run_Must_Link_Crisis_Takeover_And_Victory_Progress()
+        {
+            FakeDataRepository data;
+            FactionState player;
+            FactionState rival;
+            GameState state = BuildPressureWorld(10, 8, out data, out player, out rival);
+            WorldState world = TestFixtures.BuildWorldState(state, data);
+            GameContext context = TestFixtures.BuildContext(state, data);
+            DomainEconomySystem economy = new DomainEconomySystem(world);
+            DomainSuccessionSystem succession = new DomainSuccessionSystem();
+
+            VictoryConditionDefinition threeGeneration = new VictoryConditionDefinition
+            {
+                id = "three_generation_dynasty",
+                name = "Three Generation Dynasty",
+                requirements = new VictoryRequirement
+                {
+                    minLegitimacy = 55,
+                    stableSuccessions = 3
+                }
+            };
+            data.VictoryConditionMap[threeGeneration.id] = threeGeneration;
+
+            player.money = 900;
+            player.food = 900;
+            player.legitimacy = 76;
+            player.successionRisk = 46;
+            player.courtFactionPressure = 50;
+            player.stableSuccessions = 0;
+            player.heir = new HeirState
+            {
+                name = "Long Run Heir",
+                age = 17,
+                legitimacy = 48,
+                ability = 46
+            };
+
+            RegionState fragileRegion = state.FindRegion("r7");
+            fragileRegion.rebellionRisk = 36;
+            fragileRegion.localPower = 34;
+            fragileRegion.annexationPressure = 22;
+            fragileRegion.localAcceptance = 42;
+
+            int startingRisk = player.successionRisk;
+            int startingLegitimacy = player.legitimacy;
+            int startingMoney = player.money;
+            int simulatedTurns = 0;
+
+            SuccessionCrisisPayload crisis = null;
+            for (int turn = 1; turn <= 40; turn++)
+            {
+                economy.ExecuteTurn(context);
+                state.AdvanceHalfYear();
+                simulatedTurns = turn;
+
+                if (turn < 20) continue;
+                crisis = succession.TryTriggerSuccessionCrisis(context, player);
+                if (crisis != null && crisis.triggered) break;
+            }
+
+            output.WriteLine("long-run turns: " + simulatedTurns);
+            output.WriteLine("risk start/crisis: " + startingRisk + " -> " + player.successionRisk);
+            output.WriteLine("legitimacy start/crisis: " + startingLegitimacy + " -> " + player.legitimacy);
+
+            Assert.InRange(simulatedTurns, 20, 40);
+            Assert.NotNull(crisis);
+            Assert.True(crisis.triggered, "A 20-40 turn dynasty-cycle run must reach a readable succession crisis.");
+            Assert.True(player.successionRisk > startingRisk, "Long-run expansion pressure should raise succession risk before takeover.");
+            Assert.True(player.legitimacy < startingLegitimacy, "The crisis should put victory legitimacy at risk.");
+            Assert.False(MeetsThreeGenerationVictory(player, threeGeneration),
+                "The dynasty should not already satisfy the three-generation victory before player takeover.");
+            Assert.Contains("继承风险", crisis.reason);
+            Assert.True(HasLogContaining(state, "继承危机"));
+
+            int riskBeforeTakeover = player.successionRisk;
+            int courtBeforeTakeover = player.courtFactionPressure;
+            int moneyBeforeTakeover = player.money;
+            int legitimacyBeforeTakeover = player.legitimacy;
+            int stableBeforeTakeover = player.stableSuccessions;
+
+            SuccessionStabilizationPayload firstIntervention = succession.StabilizeSuccession(context, player);
+            Assert.True(firstIntervention.applied, "Player takeover should be able to answer the long-run crisis.");
+            Assert.True(player.successionRisk < riskBeforeTakeover);
+            Assert.True(player.courtFactionPressure < courtBeforeTakeover);
+            Assert.True(player.money < moneyBeforeTakeover);
+            Assert.True(player.legitimacy < legitimacyBeforeTakeover);
+            Assert.True(player.stableSuccessions > stableBeforeTakeover);
+
+            SuccessionStabilizationPayload secondIntervention = succession.StabilizeSuccession(context, player);
+            SuccessionStabilizationPayload thirdIntervention = succession.StabilizeSuccession(context, player);
+
+            output.WriteLine("takeover risk: " + riskBeforeTakeover + " -> " + player.successionRisk);
+            output.WriteLine("takeover court: " + courtBeforeTakeover + " -> " + player.courtFactionPressure);
+            output.WriteLine("takeover money: " + moneyBeforeTakeover + " -> " + player.money + " (start=" + startingMoney + ")");
+            output.WriteLine("stable successions: " + stableBeforeTakeover + " -> " + player.stableSuccessions);
+
+            Assert.True(secondIntervention.applied);
+            Assert.True(thirdIntervention.applied);
+            Assert.True(MeetsThreeGenerationVictory(player, threeGeneration),
+                "Repeated player succession stabilization should turn the long-run crisis into visible three-generation victory progress.");
+            Assert.True(HasLogContaining(state, "继承续命"));
+        }
+
         private static GameState BuildPressureWorld(
             int regionCount,
             int initialPlayerRegions,
@@ -362,6 +466,17 @@ namespace WanChaoGuiYi.Tests
             });
 
             return state;
+        }
+
+        private static bool MeetsThreeGenerationVictory(FactionState faction, VictoryConditionDefinition condition)
+        {
+            if (faction == null || condition == null || condition.requirements == null) return false;
+            VictoryRequirement requirements = condition.requirements;
+            bool stableEnough = requirements.stableSuccessions <= 0 ||
+                                faction.stableSuccessions >= requirements.stableSuccessions;
+            bool legitimacyEnough = requirements.minLegitimacy <= 0 ||
+                                    faction.legitimacy >= requirements.minLegitimacy;
+            return stableEnough && legitimacyEnough;
         }
 
         private static bool HasLogContaining(GameState state, string token)

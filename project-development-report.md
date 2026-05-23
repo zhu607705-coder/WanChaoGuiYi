@@ -9796,3 +9796,86 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动与既有工作树可安全隔离，适合再做一个 scoped commit。
+
+## 2026-05-23 自动化找缺口轮：20-40 回合长线验收切口
+
+### 类型
+
+- 找漏洞/找缺口：只做审查与定位，不改核心或 Web 运行代码。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 3]`，工作树干净；ahead 3 为已验证的 Web 接管闭环、缺口复核、胜利进度提交。
+- 最近完整验证记录为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain Core xUnit `85/85`、headless war `16/16`、Vitest `66/66`、Playwright UI `28/28`。
+- 进程检查未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务；只看到本轮只读检查命令自身。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 发现
+
+- `docs/mvp-closure-ledger.md` 与 `docs/dynasty-cycle-acceptance-scenarios.md` 已明确 P0：补 `20-40` 回合王朝周期长线验收。
+- `DynastyCyclePressureAcceptanceTests` 已覆盖 A/B/C/D 机制片段：扩张过热、财政军队土地挤压、继承危机、玩家立储续命。
+- Web Playwright 已覆盖“模拟观战 -> 接管王朝 -> 立储安宗 -> 三代延续胜利进度”。
+- 缺口仍在“同一局长线串联”：当前没有一个 headless 或 Web 场景把 `20-40` 回合推进、胜利/失败判断、危机来源解释、接管前后指标对比放在同一个验收里。
+
+### 下一轮低风险修补建议
+
+- 优先新增一个 headless 长线验收测试，建议命名为 `Dynasty_Cycle_Long_Run_Must_Link_Crisis_Takeover_And_Victory_Progress`。
+- 最小范围：复用 `BuildPressureWorld`、`DomainEconomySystem`、`DomainSuccessionSystem`，先让 AI/系统推进到继承危机，再执行一次玩家接管续命，最后断言：
+  - 总回合窗口在 `20-40` 内。
+  - 危机前后有 `successionRisk`、`courtFactionPressure`、`legitimacy` 或地方风险的可解释变化。
+  - 接管动作降低继承/朝局压力，但消耗金钱和合法性。
+  - `stableSuccessions` 或胜利进度进入可读的下一阶段。
+  - turn log 包含危机来源和接管结果文本。
+- 这比先扩 Web 长测风险更低：Domain 测试更快、更稳定，能先锁住因果链，再由后续 Playwright 做玩家可见层。
+
+### 验证
+
+- 本轮只改报告文档，未改核心或 Web 运行代码。
+- 只读审查命令已确认现有长线要求主要存在于文档和片段测试中，尚无单局串联验收。
+- 待运行：`git diff --check`。
+
+### 剩余风险
+
+- 审查轮不提交代码修补，长线验收仍未落地。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍缺同等运行态演示；本轮未扩大到这些 P1/P0 次级缺口。
+
+## 2026-05-23 自动化修补轮：20 回合王朝周期 headless 长线验收
+
+### 类型
+
+- 修补问题：从上一轮 P0 缺口中选择低风险切口，先用 headless 测试把 20-40 回合王朝周期的危机、接管和胜利进度串成同一局。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 3]`，工作树只有上一轮审查报告未提交；无生产代码脏改动。
+- 最近完整验证仍为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`；本轮改动前已确认没有万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 在 `tools/headless_runner/WanChaoGuiYiTests/DynastyCyclePressureAcceptanceTests.cs` 新增 `Dynasty_Cycle_Long_Run_Must_Link_Crisis_Takeover_And_Victory_Progress`。
+- 该测试复用现有 `DomainEconomySystem` 与 `DomainSuccessionSystem`，在同一局中覆盖：
+  - `20` 回合窗口内由扩张压力累积到继承危机。
+  - 危机原因包含 `继承风险`，turn log 包含 `继承危机`。
+  - 玩家接管后执行 `立储安宗`，继承风险和朝局压力下降。
+  - 接管消耗金钱和合法性，避免把续命做成免费按钮。
+  - 连续稳定继承后满足三代延续胜利进度阈值。
+- 更新 `docs/mvp-closure-ledger.md`：把 P0 从“headless/Web 均缺长线”调整为“headless 最小长线已补，剩余 Web 玩家可见长线和失败路径演示”。
+
+### 验证
+
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~Dynasty_Cycle_Long_Run_Must_Link_Crisis_Takeover_And_Victory_Progress" --nologo` 通过：`1/1 passed`。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --nologo` 通过：`86/86 passed`。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 本轮只补 headless 最小长线串联，不等于 Web 20-40 回合玩家可见演示完成。
+- 失败路径仍需后续验收：例如不接管或资源不足时，继承危机持续恶化并清楚解释失败来源。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮测试与文档改动可安全隔离为 scoped commit；若提交成功，下一轮继续从 Web 长线或失败路径演示切入。
