@@ -10246,3 +10246,63 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - `nonqwen-residue-risk-optimizer` 和 `web-strategy-map-9h-feature-loop` 是旧 memory-only 目录，`qwen-ar-autoresearch-loop` 是旧 schema TOML；本轮没有删除，避免误伤历史任务记忆。
 - 若后续再创建任务，优先使用稳定英文/ASCII 名称作为任务名，避免中文名自动生成 `automation` 或数字 ID。
+
+## 2026-05-23 自动化找缺口轮：其他胜利条件运行态复核
+
+### 类型
+
+- 找漏洞/找缺口：只读复核 `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 的运行态证据，更新下一轮低风险修补切口。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 11]`，工作树干净；最新提交为 `4856c57` Web 20 回合王朝失败长线。
+- 最近完整验证为上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `31/31`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 发现
+
+- `victory_conditions.json` 当前有三类胜利：`unify_jiuzhou`、`three_generation_dynasty`、`institutional_order`。
+- Web 已加载 `victory_conditions.json`，但 `ui.ts` 只把 `three_generation_dynasty` 接入 `victoryProgressSummary()` 与 `dynastyVictoryAchieved()`；outliner 目前只显示“三代延续”进度。
+- `unify_jiuzhou` 所需字段已经存在于 Web 运行态：
+  - 区域归属：`RegionViewModel.owner`，导出/导入保留 `regions[].owner`。
+  - 法统：`nationState.legitimacy`，导出/导入保留。
+  - 地图总量：当前 Web 数据为 `56` 区。
+- `institutional_order` 仍缺关键运行态字段：
+  - `completedCoreReforms` 没有进入 `nationState`、debug state 或存档。
+  - `minTreasuryStability` 没有 Web 聚合指标；政策/科技数据里有 treasury/税制相关字段，但运行态尚未沉淀为胜利进度。
+  - `maxAnnexationPressure` 可从地区风险或未来兼并字段映射，但当前 Web `RegionViewModel` 没有独立 `annexationPressure`。
+- `maxFragmentation` 已存在于数据契约，但 Web 和 Domain 当前三代延续判断都只看 `stableSuccessions` 与 `minLegitimacy`，尚无“分裂度/割据度”指标。这个缺口需要先定义指标，否则直接补 UI 达成容易变成假进度。
+
+### 结论
+
+- 下一轮低风险修补应优先做 `unify_jiuzhou`，因为它不需要新资源系统或新长期状态，只需把已存在的区域归属和法统阈值接入 Web 胜利进度。
+- `institutional_order` 暂不作为下一修补首选；先需要设计 `completedCoreReforms` 和 `treasuryStability` 的运行态来源。
+- `maxFragmentation` 是三代延续剩余真实性缺口；应在后续定义“敌对/边疆未控区占比、地方割据压力或继承危机分裂度”的最小指标，再纳入达成条件。
+
+### 下一轮低风险修补建议
+
+- 新增 Web `unify_jiuzhou` 运行态进度，目标文件 `web-strategy-map/src/ui.ts` 和 `web-strategy-map/tests/strategy-map.spec.ts`。
+- 最小实现建议：
+  - 从 `victory_conditions.json` 读取 `unify_jiuzhou.requirements.minLegitimacy`。
+  - 计算 `playerOwnedRegions / totalRegions`，若全图归属 `player` 且法统达标，则 outliner 胜利摘要显示“统一九州达成”。
+  - debug state 暴露可断言字段，或扩展 `victoryProgressSummary` 使 Playwright 能断言统一九州进度和三代延续并存。
+  - Playwright 用例通过导入存档把全部 `regions[].owner` 设为 `player`，先断言法统不足时未达成，再把 `legitimacy >= 55` 后断言“统一九州达成”，并验证导出/导入保留达成状态。
+- 建议用例名：`shows unify jiuzhou victory when all regions are controlled with enough legitimacy`。
+- 验证顺序：targeted Playwright 红/绿、胜利相关 grep、`npm --prefix web-strategy-map run typecheck`；若改动只限 Web UI/测试，再跑王朝/胜利相关 Playwright 子集，必要时全量 `tools\run_all_checks.ps1`。
+
+### 验证
+
+- 本轮只读审查 `victory_conditions.json`、Web UI/测试、Domain victory 数据模型和 MVP 台账。
+- 未改 Web/Core 运行代码；只更新 `project-development-report.md` 与 `docs/mvp-closure-ledger.md` 记录复核结论。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- `unify_jiuzhou` 尚未形成 Web 运行态断言。
+- `institutional_order` 和 `maxFragmentation` 仍缺明确运行态指标，后续修补前需要先定义字段来源和 UI 解释口径。
+
+### 提交策略
+
+- 本轮是找缺口文档轮；改动仅限报告/台账且 `git diff --check` 通过，可安全隔离为审查文档 scoped commit。

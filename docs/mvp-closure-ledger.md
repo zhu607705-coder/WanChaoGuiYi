@@ -63,7 +63,8 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 扩展其他胜利条件运行态到长线演示 | `victory_conditions.json`、Domain/Web 胜利进度 | 三代延续已具备 Web 20 回合成功/失败长线；剩余 `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 运行态演示 |
+| P0 | 先补 `unify_jiuzhou` Web 运行态演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 三代延续已具备 Web 20 回合成功/失败长线；统一九州可复用 `regions.owner` + `nationState.legitimacy` 做最小达成/未达成断言 |
+| P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
@@ -96,5 +97,5 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 ## 2026-05-23 缺口复核
 
 - 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
-- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；下一步应转向其他胜利条件运行态演示，尤其是 `unify_jiuzhou`、`institutional_order` 和 `maxFragmentation`。
+- 当前 P0：三代延续已具备 Web 可见胜利进度、达成断言、headless 20 回合成功/失败长线、Web 资源不足不可续命失败态和 Web 20 回合成功/失败长线；下一步先补 `unify_jiuzhou` Web 运行态演示，因为它已有可复用的区域归属与法统字段。`institutional_order` 和 `maxFragmentation` 需要先定义可解释运行态字段，再进入达成断言。
 - 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。
