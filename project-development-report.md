@@ -10064,3 +10064,47 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮为找缺口文档轮，若 `git diff --check` 通过且只有报告变更，可按审查文档 scoped commit；否则暂缓提交并在汇报中说明。
+
+## 2026-05-23 修补轮：Web 20 回合王朝成功长线
+
+### 类型
+
+- 修补问题：从上一轮 Web 长线成功路径复核中选择 P0 切口，用 Playwright 把同一局内的 20 回合危机、接管、三代延续胜利和导入导出保留串起来。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 8]`，工作树干净；最新提交为 `6241b26` Web 长线成功路径复核。
+- 最近完整验证为 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `29/29`、Web build/typecheck 通过。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 已完成
+
+- 在 `web-strategy-map/tests/strategy-map.spec.ts` 新增 `shows a 20-turn dynasty crisis can be taken over and stabilized into victory`。
+- 该用例使用长线前夜种子，但继续推进 `20` 个真实 Web 治理回合，满足 20-40 回合窗口。
+- 同一局断言覆盖：
+  - `governanceTurn` 进入 `21-41` 范围。
+  - `successionRisk` 或 `courtPressure` 进入危机阈值，outliner 显示“王朝 / 继承危机”。
+  - 观战日志保留危机来源：“扩张、民变和低法统继续积累王朝压力”。
+  - 玩家接管后，连续执行“立储安宗”，消耗金钱和法统，降低继承风险和朝局压力。
+  - `stableSuccessions >= 3` 后 `dynastyVictoryAchieved === true`，胜利进度显示“三代延续达成”。
+  - 导出/导入后保留 `governanceTurn`、`successionRisk`、`courtPressure`、`stableSuccessions` 和胜利状态。
+- 新增测试一次即通过，说明生产逻辑已支撑 Web 长线成功闭环，本轮主要是补齐缺失的回归验收；未改 Web 生产代码。
+- 更新 `docs/mvp-closure-ledger.md`：Web 20 回合成功长线从“剩余 P0”推进为“已补”，当前剩余 P0 收窄到是否需要独立 Web 失败长线复核。
+
+### 验证
+
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "shows a 20-turn dynasty crisis can be taken over and stabilized into victory"` 通过：`1/1 passed`。
+- `npm --prefix web-strategy-map run test:ui -- --reporter=line --workers=1 -g "lets players observe, take over, and stabilize dynasty succession|shows dynasty rescue as blocked when succession crisis is unaffordable|shows a 20-turn dynasty crisis can be taken over and stabilized into victory"` 通过：`3/3 passed`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 通过：`[ALL GREEN]`，包括 Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `30/30`、Web build/typecheck。
+
+### 剩余风险
+
+- Web 20-40 回合失败长线是否需要独立 Playwright 仍待复核；当前已有 headless 失败路径和 Web 不可续命失败态，但还没有同局 20 回合失败 UI 长测。
+- `unify_jiuzhou`、`institutional_order`、`maxFragmentation` 仍未获得同等运行态演示。
+
+### 提交策略
+
+- 本轮改动集中在 Web Playwright 和文档台账，已通过全量门禁，可安全隔离为 scoped commit。

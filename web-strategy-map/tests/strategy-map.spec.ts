@@ -123,6 +123,7 @@ type DebugState = {
     selectedLegitimacy: number;
     governanceFocus: string;
     governanceMicroSummary: string;
+    governanceTurn: number;
     warTurn: number;
     latestInterceptionAlert: string;
     nextCommandSummary: string;
@@ -284,6 +285,7 @@ type WarLogisticsExportState = {
 type GameExportState = {
   schemaVersion: number;
   mode: 'governance' | 'war';
+  governanceTurn: number;
   dynastyControlMode?: 'observe' | 'takeover';
   selectedRegionId: string;
   selectedEmperorId: string;
@@ -575,6 +577,102 @@ test.describe('code-driven strategy map', () => {
     expect(saved.nationState.successionRisk).toBe(beforeAttempt.ui.successionRisk);
     expect(saved.nationState.courtPressure).toBe(beforeAttempt.ui.courtPressure);
     expect(saved.nationState.stableSuccessions).toBe(beforeAttempt.ui.stableSuccessions);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows a 20-turn dynasty crisis can be taken over and stabilized into victory', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(90_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const longRunSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 1,
+      dynastyControlMode: 'observe',
+      nationState: {
+        ...exported.nationState,
+        food: 5000,
+        money: 1200,
+        army: Math.max(exported.nationState.army, 1600),
+        legitimacy: 82,
+        successionRisk: 48,
+        courtPressure: 46,
+        stableSuccessions: 0
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: Math.max(region.risk, 72),
+        legitimacy: Math.min(region.legitimacy, 58),
+        integration: Math.max(region.integration, 55),
+        contribution: Math.max(region.contribution, 60)
+      }))
+    };
+    expect(await importGameState(page, longRunSeed)).toBe(true);
+
+    for (let turn = 0; turn < 20; turn += 1) {
+      await page.locator('[data-action="governance_advance_turn"]').click();
+    }
+
+    const crisis = await expectDebugState(
+      page,
+      (state) =>
+        state.ui.governanceTurn >= 21 &&
+        state.ui.governanceTurn <= 41 &&
+        (state.ui.successionRisk >= 70 || state.ui.courtPressure >= 70) &&
+        state.ui.dynastyPressureSummary.includes('继承危机'),
+      'twenty web governance turns should surface a dynasty crisis'
+    );
+    await expect(page.locator('#outliner-list')).toContainText('王朝');
+    await expect(page.locator('#outliner-list')).toContainText('继承危机');
+
+    await page.locator('[data-action="dynasty_observe"]').click();
+    await expect(page.getByTestId('governance-queue')).toContainText('模拟观战');
+    await expect(page.getByTestId('governance-queue')).toContainText('扩张、民变和低法统');
+
+    await page.locator('[data-action="dynasty_takeover"]').click();
+    await expectDebug(page, (state) => state.ui.dynastyControlMode).toBe('takeover');
+    const beforeRescue = await debug(page);
+    expect(beforeRescue.ui.successionRisk).toBeGreaterThanOrEqual(crisis.ui.successionRisk);
+    expect(beforeRescue.ui.courtPressure).toBeGreaterThanOrEqual(crisis.ui.courtPressure);
+
+    for (let action = 0; action < 5; action += 1) {
+      if ((await debug(page)).ui.dynastyVictoryAchieved) break;
+      await page.locator('[data-action="dynasty_stabilize_succession"]').click();
+    }
+
+    const victory = await expectDebugState(
+      page,
+      (state) =>
+        state.ui.dynastyControlMode === 'takeover' &&
+        state.ui.governanceTurn >= 21 &&
+        state.ui.stableSuccessions >= 3 &&
+        state.ui.dynastyVictoryAchieved &&
+        state.ui.successionRisk < beforeRescue.ui.successionRisk &&
+        state.ui.courtPressure < beforeRescue.ui.courtPressure &&
+        state.ui.money < beforeRescue.ui.money &&
+        state.ui.legitimacy < beforeRescue.ui.legitimacy &&
+        state.ui.victoryProgressSummary.includes('三代延续达成'),
+      'taken-over dynasty should spend resources and convert a long-run crisis into victory'
+    );
+    await expect(page.getByTestId('governance-queue')).toContainText('继承续命');
+    await expect(page.locator('#outliner-list')).toContainText('三代延续达成');
+
+    const saved = await exportGameState(page);
+    expect(saved.governanceTurn).toBe(victory.ui.governanceTurn);
+    expect(saved.nationState.successionRisk).toBe(victory.ui.successionRisk);
+    expect(saved.nationState.courtPressure).toBe(victory.ui.courtPressure);
+    expect(saved.nationState.stableSuccessions).toBe(victory.ui.stableSuccessions);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.governanceTurn).toBe(saved.governanceTurn);
+    await expectDebug(page, (state) => state.ui.stableSuccessions).toBe(saved.nationState.stableSuccessions);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(true);
+    await expect(page.locator('#outliner-list')).toContainText('三代延续达成');
 
     expect(consoleErrors).toEqual([]);
   });
