@@ -63,8 +63,8 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 补齐王朝周期继承危机和玩家接管续命验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | 已有 xUnit 场景 C/D；Web UI 接管断言已补 |
-| P0 | 盘点现有 Web 是否有“接管王朝/恢复模拟”入口 | `web-strategy-map/src/ui.ts`、Playwright | 已补王朝接管面板和 Playwright targeted test |
+| P0 | 补 20-40 回合王朝周期长线验收 | `tools/headless_runner/WanChaoGuiYiTests`、Web Playwright | 至少覆盖三代延续胜利/失败、危机来源解释、接管前后对比 |
+| P0 | 把胜利条件从数据已备推进到运行态检查 | `victory_conditions.json`、Domain/Web 胜利进度 | `stableSuccessions >= 3` 可触发或显示三代延续进度 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |
 | P1 | 给数据管线增加内容扩展差异审查清单 | `tools/validate_web_data_source.py`、`docs/data-contract.md` | data-source validation |
@@ -87,3 +87,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `domain-core/src/Domain/Governance/DomainSuccessionSystem.cs` 与 `DynastyCyclePressureAcceptanceTests` 场景 C/D：已覆盖继承危机触发、合法性/朝局/地方稳定外溢，以及玩家立储安宗续命的资源代价。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：outliner 已显示王朝继承压力摘要，Playwright 首屏断言会检查“王朝/继承稳定或承压或危机/可立储安宗”。
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补“模拟推演 -> 接管王朝 -> 立储安宗”面板、队列日志、资源代价、继承/朝局降压、`stableSuccessions` 增加，以及 `dynastyControlMode` 和王朝压力存档导入导出断言。
+
+## 2026-05-23 缺口复核
+
+- 已完成项：Domain 场景 C/D 与 Web 接管入口不再列为下一步 P0，避免后续自动化重复只做旧缺口。
+- 当前 P0：三代延续胜利/失败还没有 20-40 回合运行态验收；`victory_conditions.json` 有三代延续数据，但运行态搜索只看到定义、Numeric helper 和 `stableSuccessions` 计数，尚未形成可见胜利进度或胜利触发断言。
+- 当前 P1：人才和科技仍主要是数据/定义层；`CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，后续应逐项转成真实测试。

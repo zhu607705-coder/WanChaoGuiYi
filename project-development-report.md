@@ -9652,3 +9652,45 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 `web-strategy-map/src/types.ts`、`web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/mvp-closure-ledger.md` 和本报告，可安全作为 Web 接管闭环 scoped commit。
+
+## 2026-05-23 自动化找缺口轮：P0 收口复核
+
+### 类型
+
+- 找漏洞/找缺口：上一轮已完成 Web 王朝接管闭环，本轮只审查剩余 MVP 缺口并更新审查记录。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 1]`，工作树干净；ahead 1 是上一轮已验证提交 `2e6699e`。
+- 最近完整验证仍是上一轮 `tools\run_all_checks.ps1` `[ALL GREEN]`，Playwright UI `28/28 passed`。
+- 未发现本项目 `dotnet`、Playwright、Vite、Python validator 或全量检查冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 本轮发现
+
+- `docs/mvp-closure-ledger.md` 的“下一步可执行任务”仍把已经完成的 Domain C/D 与 Web 接管入口留在 P0，存在后续自动化重复做旧任务的风险。
+- 搜索 `stableSuccessions`、`VictoryCondition`、`victory_conditions` 后确认：三代延续目前已有数据字段、Domain/Web 计数和 Web 存档断言，但尚未形成 20-40 回合胜利/失败长线验收或可见胜利进度触发。
+- `talents.json`、`technologies.json` 仍主要处在数据/定义层；本轮只记录缺口，不展开实现。
+- `CoverageGap_TODO_Placeholders.cs` 仍保留军队生命周期、经济溢出、存档迁移等 TODO 占位，符合台账中“测试质量债”的 P1 后续。
+
+### 已更新
+
+- 更新 `docs/mvp-closure-ledger.md`：
+  - 将已完成的 Web 接管入口和 Domain C/D 从下一步 P0 中移出。
+  - 新 P0 聚焦到 `20-40` 回合王朝周期长线验收，以及把 `victory_conditions.json` 的三代延续推进到运行态胜利进度/触发。
+  - 增加 `2026-05-23 缺口复核` 小节，记录当前 P0/P1 缺口。
+
+### 验证
+
+- 本轮只改审查文档和本报告，未改核心或 Web 运行代码。
+- `git diff --check` 通过，无 whitespace error；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 本地 `main` 仍 ahead `origin/main` 1 个已验证提交；本轮不推送。
+- 下一轮修补可优先选择低风险切口：为三代延续胜利进度增加最小 headless 或 Web 断言，避免直接扩展大系统。
+
+### 提交策略
+
+- 本轮只产生审查文档且验证通过，可安全隔离为纯文档审查 commit，避免下一轮在脏工作树上继续。
