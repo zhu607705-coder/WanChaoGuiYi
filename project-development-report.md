@@ -9879,3 +9879,45 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮测试与文档改动可安全隔离为 scoped commit；若提交成功，下一轮继续从 Web 长线或失败路径演示切入。
+
+## 2026-05-23 自动化找缺口轮：长线失败路径复核
+
+### 类型
+
+- 找漏洞/找缺口：只做审查、定位下一条低风险切口、更新审查记录。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 4]`，工作树干净；ahead 4 包含最新 headless 长线提交 `f699da7`。
+- 最近验证：上一轮新增长线测试 targeted `1/1 passed`，Domain xUnit `86/86 passed`，`git diff --check` 通过；最近全量门禁仍为胜利进度轮 `tools\run_all_checks.ps1` `[ALL GREEN]`。
+- 未发现万朝归一相关 `dotnet test`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 发现
+
+- `f699da7` 已补 headless 20 回合危机、接管、资源代价和三代延续胜利进度串联；当前自动化 prompt 中的“优先补 20-40 回合长线验收”已部分过期。
+- `docs/mvp-closure-ledger.md` 现已把 P0 缩窄为：剩余 Web 20-40 回合玩家可见长线，以及失败路径演示。
+- 代码检索确认 Web 侧已有 `dynastyVictoryAchieved` 和 `victoryProgressSummary`，但缺“失败/崩盘/不接管后果”对应 debug 字段、outliner 文案或 Playwright 断言。
+- Headless 侧当前长线测试只覆盖玩家成功续命；还没有“不接管或资源不足时，继承危机持续恶化并解释失败来源”的同局断言。
+
+### 下一轮低风险修补建议
+
+- 优先补 headless 失败路径，而不是先做 Web 40 回合长测。
+- 建议新增 `Dynasty_Cycle_Long_Run_Must_Explain_Failure_When_Takeover_Is_Not_Affordable`：
+  - 复用 `BuildPressureWorld`、`DomainEconomySystem`、`DomainSuccessionSystem`。
+  - 在 20-40 回合内制造继承危机后，将玩家金钱或合法性压到不足以 `StabilizeSuccession`。
+  - 断言 `StabilizeSuccession` 返回 `applied == false`，reason 为资源不足。
+  - 再推进若干回合或再次触发危机，断言继承/朝局/地方风险未被缓解且日志保留危机来源。
+- 这条测试能补“胜利/失败”中的失败半边，而且仍在 headless 层，验证快、风险低；后续 Web 再把失败状态可视化到 outliner 和接管面板。
+
+### 验证
+
+- 本轮只改报告文档，未改核心或 Web 运行代码。
+- `git diff --check` 通过；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- 失败路径尚未落地为测试。
+- Web 20-40 回合玩家可见长线仍缺实际 Playwright 演示。
+- 自动化 `5` 的 prompt 已纳入 `f699da7` 和“下一步优先失败路径”，避免后续重复补已完成的 headless 成功路径。
