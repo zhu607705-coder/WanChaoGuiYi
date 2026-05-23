@@ -28,7 +28,7 @@
 | 系统 | 当前证据 | 状态 | 必须保留并完善的收口目标 | 验证门 |
 | --- | --- | --- | --- | --- |
 | 56 区九州地图 | `regions.json`、`map_region_shapes.json`、Three.js 点击/染色、区域 shape 单测 | 已可玩 | 保持 56 区可点击、可染色、可聚焦；地图仍是斗蛐蛐主舞台 | `check:data-source`、region shape/neighbor 单测、Playwright 地图断言 |
-| 帝皇与势力差异 | 13 位帝皇数据、preferred policies、AI personality、机制描述 | 部分可玩 | 帝皇机制必须实际影响扩张、治理、继承或财政压力，而不只停留在描述 | 帝皇机制数据对齐测试、至少 3 位帝皇差异化模拟验收 |
+| 帝皇与势力差异 | 13 位帝皇数据、preferred policies、AI personality、机制描述、`DomainEmperorMechanicSystem` 三类纯 C# 效果、秦始皇/刘邦/汉武帝差异化 xUnit | 部分可玩 | 帝皇机制必须继续接入更完整的扩张、治理、继承或财政压力闭环，而不只停留在描述 | 帝皇机制数据对齐测试、至少 3 位帝皇差异化模拟验收、后续应用到回合流的 headless 验收 |
 | 架空斗蛐蛐模拟 | AI 倾向字段、headless 场景、Web 回合推进、王朝接管面板、Web 20 回合危机到接管胜利/失败长线 | 部分可玩 | 自动推演能产生可读的强弱变化、危机和反转；玩家能观战后选择接管 | Playwright 模拟观战/接管/续命断言、Web 20 回合成功/失败长线 |
 | 玩家接管和战役指挥 | Web 战争命令、路线、补给、截粮、撤退、战报、27 条 Playwright | 已可玩 | 下场接管必须稳定覆盖调军、路线、补给、进攻、撤退、占后处理 | headless war、Playwright 战役指挥流 |
 | 自动战斗结算 | Domain battle simulation、tie-break、casualty、morale、supply tests | 已可玩 | 保持自动结算，不进入战术战斗；战报解释胜负、伤亡、补给影响 | xUnit battle/morale/supply tests |
@@ -65,8 +65,8 @@
 | --- | --- | --- | --- |
 | P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P0 | 复核 `institutional_order` 与 `maxFragmentation` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态；分裂度仍缺可解释指标，暂不先做 UI 达成 |
-| P0 | 补 domain-core 帝皇机制差异化最小验收 | `domain-core/src`、`tools/headless_runner/WanChaoGuiYiTests` | 13 位帝皇数据齐备，Web 有 stats/uniqueMechanic 展示和亲政泛化效果；domain-core 仍缺等价 `EmperorMechanicSystem`，下一步先锁 3 位帝皇差异化效果 |
 | P0 | 定义 TalentSystem / StrategicAI 的最小可玩断言 | `domain-core/src`、`web-strategy-map/src`、`tools/headless_runner/WanChaoGuiYiTests` | 人才只有 4 条数据且无招贤闭环；战略 AI 尚无完整扩张/治理/军事决策系统 |
+| P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
 | P1 | 把 Web 20 回合失败长线推广到更自然的资源耗尽路径 | `web-strategy-map/tests/strategy-map.spec.ts` | 当前失败长线使用长线后资源不足种子；后续可复核自然消耗版 |
 | P1 | 把 `CoverageGap_TODO_Placeholders.cs` 中最高优先级 TODO 转成真实测试 | `tools/headless_runner/WanChaoGuiYiTests` | `dotnet test` targeted |
 | P1 | 为王朝周期压力增加 UI 最大风险解释断言 | `web-strategy-map/tests/strategy-map.spec.ts` | Playwright targeted |

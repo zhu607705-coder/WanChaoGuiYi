@@ -10427,3 +10427,63 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮是找缺口文档轮；改动仅限报告/台账且 `git diff --check` 通过，可安全隔离为审查文档 scoped commit。
+
+## 2026-05-24 自动化修补轮：domain-core 帝皇机制差异化最小验收
+
+### 类型
+
+- 修补问题：从横切 MVP 缺口审计中选择最高价值小切口，补 domain-core 侧帝皇专属机制的纯代码差异化验收。
+
+### 目标
+
+- 不重复王朝长线、Web 接管、统一九州或横切审计。
+- 以 TDD 新增一个最小 xUnit，证明至少 3 位现有 MVP 帝皇能从 `EmperorDefinition` 数据生成不同、可解释、非 Unity 的玩法效果。
+- 首批锁定：
+  - `qin_shi_huang`：标准化 / 整合 / 中央集权，带继承风险压力。
+  - `liu_bang`：人才吸纳 / 功臣联盟 / 地方妥协，带继承隐患。
+  - `han_wu_di`：军事 / 边疆远征，带财政压力。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 14]`，本轮开始时工作树干净；最新提交为 `ca744a8` 横切 MVP 缺口事实审计。
+- 最近完整验证来自 `f62f241` 后的 `tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `87/87`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 未发现万朝归一相关 `dotnet`、Playwright、Vite、数据校验或全量门禁冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目。
+
+### 改动
+
+- 新增 `domain-core/src/Domain/Emperors/DomainEmperorMechanicSystem.cs`：
+  - `BuildPlaystyleEffect(EmperorDefinition)` 只消费现有帝皇数据字段：`globalMechanicTag`、`preferredPolicies`、`uniqueMechanic`、`stats`、`aiPersonality`。
+  - 输出 `EmperorMechanicEffect`，包含 `primaryEffectId`、`effectTags`、解释文本和轻量数值 delta。
+  - 首批支持 `imperial_standardization`、`coalition_absorption`、`frontier_expedition` 三类效果，并保留均衡 fallback。
+- 新增 `tools/headless_runner/WanChaoGuiYiTests/EmperorMechanicParityTests.cs`：
+  - 测试名为 `Emperor_Mechanics_Should_Create_Three_Distinct_Playstyle_Effects`。
+  - 从真实 `web-strategy-map/game-data-source/data/emperors.json` 读取秦始皇、刘邦、汉武帝。
+  - 断言三者主效果不同，且分别具备可解释标签、正向收益和对应代价。
+- 更新 `WanChaoGuiYiTests.csproj` 与 `WanChaoGuiYiHeadless.csproj`，把新 domain-core 系统链接进 headless 测试和运行器。
+- 更新 `docs/mvp-closure-ledger.md`，将帝皇机制从“domain-core 缺等价系统”推进为“3 位差异化最小验收已补”，后续风险转为回合流应用。
+
+### TDD 记录
+
+- RED：先加入测试后运行 targeted `dotnet test`，失败原因为缺少 `DomainEmperorMechanicSystem` 与 `EmperorMechanicEffect` 类型，确认测试锁定当前缺口。
+- GREEN：新增最小系统后 targeted `dotnet test --filter FullyQualifiedName~Emperor_Mechanics_Should_Create_Three_Distinct_Playstyle_Effects` 通过 `1/1`。
+
+### 验证
+
+- `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj --filter FullyQualifiedName~Emperor_Mechanics_Should_Create_Three_Distinct_Playstyle_Effects` 通过 `1/1`。
+- `python tools/validate_domain_core.py` 通过。
+- `dotnet test tools/headless_runner/WanChaoGuiYiTests/WanChaoGuiYiTests.csproj` 通过 `88/88`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过，headless war `16/16`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` `[ALL GREEN]`：Domain xUnit `88/88`、headless war `16/16`、Vitest `66/66`、Playwright `32/32`。
+- 全量 Playwright 末尾的 `regions.json HTTP 404` 仍是既有 fatal-error 用例预期日志，不是失败。
+
+### 剩余风险
+
+- 本轮只把帝皇机制从“描述”推进到 domain-core 可解释效果对象，尚未把效果实际接入回合结算、经济、治理、战争或继承系统。
+- 目前仅锁 3 位 MVP 帝皇；其余 10 位仍需要后续补专属效果分类或验收。
+- TalentSystem、StrategicAI、`institutional_order` 运行态字段和 `maxFragmentation` 指标仍是下一批高价值缺口。
+
+### 提交策略
+
+- 本轮改动集中在 domain-core、headless 测试项目和报告/台账；全量门禁通过，工作树改动可安全隔离为 scoped Lore commit。

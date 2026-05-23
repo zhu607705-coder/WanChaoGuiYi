@@ -24,6 +24,7 @@
     <Compile Include="../../../domain-core/src/Domain/Core/StrategyCausalRules.cs" Link="Game/StrategyCausalRules.cs" />
     <Compile Include="../../../domain-core/src/Domain/Core/StrategyMapRulebook.cs" Link="Game/StrategyMapRulebook.cs" />
     <Compile Include="../../../domain-core/src/Domain/Economy/DomainEconomySystem.cs" Link="Game/DomainEconomySystem.cs" />
+    <Compile Include="../../../domain-core/src/Domain/Emperors/DomainEmperorMechanicSystem.cs" Link="Game/DomainEmperorMechanicSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Governance/DomainGovernanceImpactSystem.cs" Link="Game/DomainGovernanceImpactSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Governance/DomainSuccessionSystem.cs" Link="Game/DomainSuccessionSystem.cs" />
     <Compile Include="../../../domain-core/src/Domain/Map/IMapGraphData.cs" Link="Game/IMapGraphData.cs" />
