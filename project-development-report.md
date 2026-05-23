@@ -9601,3 +9601,54 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动与既有工作树可安全隔离，准备按 Lore Commit Protocol 提交。
+
+## 2026-05-23 自动化修补轮：Web 王朝接管闭环
+
+### 类型
+
+- 修补问题：补齐剩余 P0 中 Web 侧“模拟观战 -> 接管王朝 -> 继承续命/立储安宗”专门入口和 Playwright UI 接管断言。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- 开始时 `git status --short --branch` 显示 `main...origin/main`，仅有交接中的 Web UI 改动；上一轮继承危机收口 commit 已在本地与 `origin/main` 对齐。
+- 读取最近 `project-development-report.md` 和 `docs/mvp-closure-ledger.md` 后确认剩余 P0 是 Web 接管入口与 UI 断言，不重复做 Domain C/D。
+- 进程检查发现一个短暂 `git push origin main` 残留，复核后已结束；未发现本项目 `dotnet`、Playwright、Vite 或全量检查冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器，不触碰无关项目，不新增依赖。
+
+### 已完成
+
+- 扩展 Web `UiAction`，新增 `dynasty_observe`、`dynasty_takeover`、`dynasty_stabilize_succession`。
+- 在治理面板新增 `王朝接管` 卡片：
+  - `模拟推演` 会保持观战并推进王朝压力。
+  - `接管王朝` 会切换到玩家接管模式并写入治理队列。
+  - `立储安宗` 仅在接管且资源足够时可用，消耗金钱 90 与法统 2，降低继承风险 30 与朝局压力 22，并在压回阈值后增加 `stableSuccessions`。
+- `dynastyPressureSummary()` 已显示观战/接管前缀，使 outliner 能体现当前控制状态。
+- Web 存档导出/导入新增 `dynastyControlMode`，并继续保留 `successionRisk`、`courtPressure`、`stableSuccessions`。
+- 新增 Playwright 用例 `lets players observe, take over, and stabilize dynasty succession`，覆盖入口文字、观战日志、接管状态、续命代价/收益、`stableSuccessions` 增加和导出导入恢复。
+- 更新 `docs/mvp-closure-ledger.md`，把 Web 接管入口和存档断言记录为已补，剩余长线风险下沉到 20-40 回合王朝周期验收。
+
+### 当前验证
+
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- 聚焦 UI：`npm --prefix web-strategy-map run test:ui -- --grep "lets players observe" --reporter=line --workers=1` 通过，结果 `1/1 passed`。
+- 全量门禁：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\run_all_checks.ps1` 通过，结果 `[ALL GREEN]`。
+- 全量细分：
+  - `validate_domain_core.py` OK。
+  - `validate_web_data_source.py` OK，统计 `data=16 audioJson=4 regions=56 chronicleEvents=200 mp3=270 archiveMp3=79 artPng=112`。
+  - Domain Core xUnit `85/85 passed`。
+  - headless war `16/16 passed`。
+  - Web typecheck OK。
+  - Vitest `66/66 passed`。
+  - Web build OK。
+  - Playwright UI `28/28 passed`。
+- `git diff --check` 无 whitespace error；仅有 Windows 换行提示。
+
+### 剩余风险
+
+- Web 接管与续命闭环已可见、可操作、可存档；三代延续胜利/失败仍需要独立 20-40 回合 headless/Web 长线验收。
+- 当前王朝接管 UI 是轻量决策入口，尚未把所有财政、土地兼并、人才和事件因素做成完整玩家解释面板。
+
+### 提交策略
+
+- 本轮改动集中在 `web-strategy-map/src/types.ts`、`web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`docs/mvp-closure-ledger.md` 和本报告，可安全作为 Web 接管闭环 scoped commit。

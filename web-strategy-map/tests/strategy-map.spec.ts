@@ -61,6 +61,7 @@ type DebugState = {
     courtPressure: number;
     stableSuccessions: number;
     dynastyPressureSummary: string;
+    dynastyControlMode: 'observe' | 'takeover';
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -278,6 +279,7 @@ type WarLogisticsExportState = {
 type GameExportState = {
   schemaVersion: number;
   mode: 'governance' | 'war';
+  dynastyControlMode?: 'observe' | 'takeover';
   selectedRegionId: string;
   selectedEmperorId: string;
   sidebarCollapsed: boolean;
@@ -442,6 +444,60 @@ test.describe('code-driven strategy map', () => {
     await expectDebugState(page, (state) => !state.sidebarCollapsed, 'sidebar should expand');
 
     expect(await labelOverlapCount(page)).toBe(0);
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('lets players observe, take over, and stabilize dynasty succession', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const panel = page.getByTestId('dynasty-takeover-panel');
+    await expect(panel).toContainText('模拟推演');
+    await expect(panel).toContainText('接管王朝');
+    await expect(panel).toContainText('立储安宗');
+
+    const initial = await debug(page);
+    await expectDebug(page, (state) => state.ui.dynastyControlMode).toBe('observe');
+    await page.locator('[data-action="dynasty_observe"]').click();
+    await expectDebug(page, (state) => state.ui.governanceQueueLength).toBeGreaterThan(initial.ui.governanceQueueLength);
+    await expect(page.getByTestId('governance-queue')).toContainText('模拟观战');
+
+    await page.locator('[data-action="dynasty_takeover"]').click();
+    await expectDebug(page, (state) => state.ui.dynastyControlMode).toBe('takeover');
+    await expect(panel).toContainText('已接管');
+    await expect(page.getByTestId('governance-queue')).toContainText('接管王朝');
+
+    const beforeStabilize = await debug(page);
+    await page.locator('[data-action="dynasty_stabilize_succession"]').click();
+    await expectDebugState(
+      page,
+      (state) =>
+        state.ui.dynastyControlMode === 'takeover' &&
+        state.ui.successionRisk < beforeStabilize.ui.successionRisk &&
+        state.ui.courtPressure < beforeStabilize.ui.courtPressure &&
+        state.ui.money === beforeStabilize.ui.money - 90 &&
+        state.ui.legitimacy === beforeStabilize.ui.legitimacy - 2 &&
+        state.ui.stableSuccessions === beforeStabilize.ui.stableSuccessions + 1,
+      'stabilizing succession should spend resources and reduce dynasty pressure'
+    );
+    await expect(page.getByTestId('governance-queue')).toContainText('继承续命');
+
+    const stabilized = await debug(page);
+    const exported = await exportGameState(page);
+    expect(exported.dynastyControlMode).toBe('takeover');
+    expect(exported.nationState.successionRisk).toBe(stabilized.ui.successionRisk);
+    expect(exported.nationState.courtPressure).toBe(stabilized.ui.courtPressure);
+    expect(exported.nationState.stableSuccessions).toBe(stabilized.ui.stableSuccessions);
+
+    await openApp(page);
+    expect(await importGameState(page, exported)).toBe(true);
+    await expectDebug(page, (state) => state.ui.dynastyControlMode).toBe('takeover');
+    await expectDebug(page, (state) => state.ui.successionRisk).toBe(exported.nationState.successionRisk);
+    await expectDebug(page, (state) => state.ui.courtPressure).toBe(exported.nationState.courtPressure);
+    await expectDebug(page, (state) => state.ui.stableSuccessions).toBe(exported.nationState.stableSuccessions);
+    await expect(panel).toContainText('已接管');
+
     expect(consoleErrors).toEqual([]);
   });
 

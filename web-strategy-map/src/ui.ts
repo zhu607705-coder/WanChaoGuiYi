@@ -404,6 +404,7 @@ interface GameExportState {
   schemaVersion: 1;
   mode: GameMode;
   governanceTurn: number;
+  dynastyControlMode?: 'observe' | 'takeover';
   selectedRegionId: string;
   selectedEmperorId: string;
   sidebarCollapsed: boolean;
@@ -652,6 +653,7 @@ export class StrategyUi {
   private sidebarCollapsed = false;
   private routePickMode: 'target' | 'waypoint' = 'target';
   private warTab: 'route' | 'army' | 'logistics' | 'report' = 'route';
+  private dynastyControlMode: 'observe' | 'takeover' = 'observe';
   private readonly nationState: StrategyDataset['nation'];
   private armyOrder = {
     stance: '稳进',
@@ -749,6 +751,7 @@ export class StrategyUi {
     courtPressure: number;
     stableSuccessions: number;
     dynastyPressureSummary: string;
+    dynastyControlMode: 'observe' | 'takeover';
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -826,6 +829,7 @@ export class StrategyUi {
     return {
       ...this.nationState,
       dynastyPressureSummary: this.dynastyPressureSummary(),
+      dynastyControlMode: this.dynastyControlMode,
       governanceQueueLength: this.governanceQueue.length,
       logisticsQueueLength: this.logisticsQueue.length,
       commandQueueLength: this.commandQueue.length,
@@ -1017,6 +1021,7 @@ export class StrategyUi {
       schemaVersion: GAME_STATE_SCHEMA_VERSION,
       mode: this.mode,
       governanceTurn: this.currentGovernanceTurn,
+      dynastyControlMode: this.dynastyControlMode,
       selectedRegionId: this.selectedRegion.definition.id,
       selectedEmperorId: this.selectedEmperor.id,
       sidebarCollapsed: this.sidebarCollapsed,
@@ -1083,6 +1088,7 @@ export class StrategyUi {
     const restoredMode = snapshot.mode;
     const restoredWarTab = snapshot.warTab ?? 'route';
     this.currentGovernanceTurn = Math.max(1, Math.floor(snapshot.governanceTurn ?? 1));
+    this.dynastyControlMode = snapshot.dynastyControlMode ?? 'observe';
     Object.assign(this.nationState, snapshot.nationState);
     this.mode = restoredMode;
     this.sidebarCollapsed = Boolean(snapshot.sidebarCollapsed);
@@ -1822,6 +1828,7 @@ export class StrategyUi {
         ${metric('法统', `${Math.round(region.legitimacy)}%`)}
       </section>
       ${this.renderChroniclePanel()}
+      ${this.renderDynastyTakeoverPanel()}
       <section class="decision-card" data-testid="governance-actions">
         <div class="band-title">治理操作</div>
         <div class="command-tile-grid">
@@ -1961,6 +1968,32 @@ export class StrategyUi {
         <div class="queue-lines">
           ${lines.length === 0 ? '<div>暂无编年记录</div>' : lines.map((event) => `<div>${escapeHtml(describeChronicleRuntimeEvent(event))}</div>`).join('')}
         </div>
+      </section>
+    `;
+  }
+
+  private renderDynastyTakeoverPanel(): string {
+    const risk = Math.round(this.nationState.successionRisk ?? 0);
+    const court = Math.round(this.nationState.courtPressure ?? 0);
+    const stable = Math.round(this.nationState.stableSuccessions ?? 0);
+    const status = this.dynastyControlMode === 'takeover' ? '已接管' : '模拟观战';
+    const canStabilize = this.dynastyControlMode === 'takeover' && this.nationState.money >= 90 && this.nationState.legitimacy >= 2;
+    return `
+      <section class="decision-card" data-testid="dynasty-takeover-panel">
+        <div class="band-title">王朝接管</div>
+        <div class="preview-line">${status}：继承 ${risk}% / 朝局 ${court}% / 续承 ${stable}</div>
+        <div class="command-tile-grid">
+          <button class="command-tile" type="button" data-action="dynasty_observe">
+            <span>观战</span><b>模拟推演</b>
+          </button>
+          <button class="command-tile primary" type="button" data-action="dynasty_takeover">
+            <span>接管</span><b>接管王朝</b>
+          </button>
+          <button class="command-tile warning" type="button" data-action="dynasty_stabilize_succession"${canStabilize ? '' : ' disabled'}>
+            <span>继承</span><b>立储安宗</b>
+          </button>
+        </div>
+        <div class="preview-line risk">代价：金钱 -90 / 法统 -2；收益：继承 -30 / 朝局 -22。</div>
       </section>
     `;
   }
@@ -3107,11 +3140,12 @@ export class StrategyUi {
     const successionRisk = Math.round(this.nationState.successionRisk ?? 0);
     const courtPressure = Math.round(this.nationState.courtPressure ?? 0);
     const stable = Math.round(this.nationState.stableSuccessions ?? 0);
+    const mode = this.dynastyControlMode === 'takeover' ? '接管' : '观战';
     const label =
       successionRisk >= 70 || courtPressure >= 70 ? '继承危机' :
         successionRisk >= 50 || courtPressure >= 50 ? '继承承压' :
           '继承稳定';
-    return `${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，可立储安宗`;
+    return `${mode}${label} ${successionRisk}% / 朝局 ${courtPressure}%，续承 ${stable}，可立储安宗`;
   }
 
   private advanceDynastyPressure(): void {
@@ -3124,6 +3158,45 @@ export class StrategyUi {
 
     this.nationState.successionRisk = clamp((this.nationState.successionRisk ?? 0) + riskDelta, 0, 100);
     this.nationState.courtPressure = clamp((this.nationState.courtPressure ?? 0) + courtDelta, 0, 100);
+  }
+
+  private observeDynastyTurn(): void {
+    this.dynastyControlMode = 'observe';
+    this.advanceDynastyPressure();
+    this.enqueueGovernance(`模拟观战：${this.dynastyPressureSummary()}，扩张、民变和低法统继续积累王朝压力`);
+  }
+
+  private takeoverDynasty(): void {
+    this.dynastyControlMode = 'takeover';
+    this.enqueueGovernance(`接管王朝：${this.dynastyPressureSummary()}，朝议转入玩家处置`);
+  }
+
+  private stabilizeDynastySuccession(): void {
+    if (this.dynastyControlMode !== 'takeover') {
+      this.takeoverDynasty();
+      return;
+    }
+
+    if (this.nationState.money < 90 || this.nationState.legitimacy < 2) {
+      this.enqueueGovernance('立储安宗：资源不足，需保留金钱 90 与法统 2');
+      return;
+    }
+
+    const moneyBefore = this.nationState.money;
+    const legitimacyBefore = this.nationState.legitimacy;
+    const riskBefore = this.nationState.successionRisk ?? 0;
+    const courtBefore = this.nationState.courtPressure ?? 0;
+    this.nationState.money = Math.max(0, this.nationState.money - 90);
+    this.nationState.legitimacy = clamp(this.nationState.legitimacy - 2, 0, 100);
+    this.nationState.successionRisk = clamp(riskBefore - 30, 0, 100);
+    this.nationState.courtPressure = clamp(courtBefore - 22, 0, 100);
+    if (this.nationState.successionRisk <= 70 && this.nationState.courtPressure <= 75) {
+      this.nationState.stableSuccessions = Math.max(0, this.nationState.stableSuccessions ?? 0) + 1;
+    }
+
+    this.enqueueGovernance(
+      `继承续命：立储安宗，金钱 ${moneyBefore}→${this.nationState.money}，法统 ${legitimacyBefore}→${this.nationState.legitimacy}，继承 ${riskBefore}→${this.nationState.successionRisk}，朝局 ${courtBefore}→${this.nationState.courtPressure}`
+    );
   }
 
   private createActiveRouteForecast(targetCandidate: RegionViewModel): RouteForecast {
@@ -3537,6 +3610,15 @@ export class StrategyUi {
         break;
       case 'governance_labor_stability':
         this.applyGovernanceLabor(region, 'stability');
+        break;
+      case 'dynasty_observe':
+        this.observeDynastyTurn();
+        break;
+      case 'dynasty_takeover':
+        this.takeoverDynasty();
+        break;
+      case 'dynasty_stabilize_succession':
+        this.stabilizeDynastySuccession();
         break;
       case 'governance_advance_turn':
         this.advanceGovernanceTurn();
