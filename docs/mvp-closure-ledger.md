@@ -63,9 +63,9 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
+| P0 | 补三代延续 Web 分裂度可见门 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | headless 已消费 `maxFragmentation`；Web 三代达成仍只看续承和法统，下一修补应读 `maxFragmentation`，用玩家可见 `risk` / 低 `integration` 阻止高分裂误报达成，并验证导出/导入保留 |
 | P0 | 复核 `institutional_order` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态来源；暂不先做 UI 达成 |
-| P1 | 复核三代延续 Web/Domain 胜利口径漂移 | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | headless 已消费 `maxFragmentation`；Web 三代达成仍主要看续承和法统，后续需先复核是否做 parity 或 Web 分裂度展示 |
+| P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
 | P1 | 扩展 TalentSystem 多角色和 Web 可见入口 | `domain-core/src/Domain/Talents`、`web-strategy-map/src/ui.ts`、`tools/headless_runner/WanChaoGuiYiTests` | 已有清丈能吏 headless 最小证明；后续再补宿将、理财重臣、边疆使臣和玩家可见招贤/任命入口 |
 | P1 | 扩展 domain-core 帝皇机制到回合流应用 | `domain-core/src/Domain/Emperors`、`tools/headless_runner/WanChaoGuiYiTests` | 已有 3 位帝皇差异化效果对象和 full gate；后续再把效果接入经济、治理、战争或继承回合结算 |
@@ -129,3 +129,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成项：纯 C# `DomainVictorySystem` 只评估 `three_generation_dynasty`，以己方地区 `rebellionRisk`、`localPower`、`annexationPressure`、`100 - integration` 的平均压力计算 `fragmentationScore`，并消费数据里的 `maxFragmentation`。
 - 验证：targeted xUnit `1/1`、完整 `WanChaoGuiYiTests` `91/91`、`python tools/validate_domain_core.py`、`tools\verify_headless_war.ps1` `16/16`。
 - 剩余风险：本轮按边界未做 Web/UI/存档；Web 三代达成口径仍需后续复核是否与 Domain 分裂度门做 parity。`institutional_order` 的运行态字段仍是下一批 P0 事实复核目标。
+
+## 2026-05-24 Web/Domain parity 与制度胜利字段复核
+
+- 已完成复核：Web `dynastyVictoryAchieved()` 仍只检查 `stableSuccessions` 和 `minLegitimacy`；Domain `DomainVictorySystem` 已检查 `maxFragmentation`。这会让 Web 在高风险/低整合状态下仍可能显示“三代延续达成”。
+- `institutional_order` 证据：`VictoryRequirement.completedCoreReforms`、`minTreasuryStability`、`maxAnnexationPressure` 已在 TS/C# 类型中存在，`FactionState.completedReformIds` 也存在；但 Web `nationState` 还没有 completed reforms / treasury stability，技术和事件里的 `treasuryStability` 仍未形成稳定运行态累计来源。
+- 下一修补首选：先补 Web 三代分裂度可见门，使用 `victory_conditions.json.maxFragmentation` 和玩家可见 `risk` / 低 `integration` 形成最小阻断与 Playwright 导入断言；之后再做 `institutional_order` 字段来源。

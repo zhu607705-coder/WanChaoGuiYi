@@ -10850,3 +10850,66 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 domain-core、新 xUnit、两个 headless csproj 和收口文档；验证通过后将执行 `git diff --check` 并做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：Web/Domain parity 与 institutional_order 字段来源复核
+
+### 类型
+
+- 找漏洞/找缺口：上一轮已完成三代延续 `maxFragmentation` domain-core 胜利门，本轮只做事实复核、文档更新和下一修补切口定位。
+
+### 目标
+
+- 回应当前选中文本：先复核 Web/Domain parity 是否应优先，或是否转向 `institutional_order` 运行态字段来源。
+- 不重复 Domain `maxFragmentation` TDD 修补，不做 Web/UI 运行代码，不触碰 Unity/Tuanjie 或无关项目。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 21]`，本轮开始时工作树干净；最新提交为 `6839cdd`。
+- 最近报告确认上一修补轮验证：targeted xUnit `1/1`、`python tools\validate_domain_core.py`、完整 `WanChaoGuiYiTests` `91/91`、`tools\verify_headless_war.ps1` `16/16`。
+- 进程复核：只发现 Roslyn `VBCSCompiler.exe` 常驻编译服务和本次 PowerShell 查询；未发现当前项目 Playwright/Vite/data/full-gate 或正在运行的 WanChaoGuiYi dotnet test 冲突任务。
+- 路线边界保持：纯代码 Web + headless Domain Core；不使用 Unity/Tuanjie 编辑器。
+
+### 事实复核
+
+- Web/Domain 三代胜利口径：
+  - Domain：`DomainVictorySystem.EvaluateThreeGenerationDynasty()` 已检查 `stableSuccessions`、`minLegitimacy` 和 `maxFragmentation`，分裂度来自己方地区 `rebellionRisk`、`localPower`、`annexationPressure`、低 `integration`。
+  - Web：`dynastyVictoryAchieved()` 仍只检查 `stableSuccessions` 与 `minLegitimacy`；`threeGenerationVictoryTarget()` 也未读取 `maxFragmentation`。
+  - Web 可用字段：`RegionViewModel` 只有玩家可见 `risk`、`integration`、`legitimacy`、`contribution`，没有 Domain 的 `localPower` / `annexationPressure` 明细；因此下一修补应叫“Web 可见分裂度门”，不要宣称精确共享同一公式。
+- `institutional_order` 字段来源：
+  - 数据与类型已有 `completedCoreReforms`、`minTreasuryStability`、`maxAnnexationPressure`。
+  - Domain 已有 `FactionState.completedReformIds`；`RegionState.annexationPressure` 可作为土地压力来源。
+  - 缺口仍是 `treasuryStability` 运行态来源：TS/C# `EffectSet` 和部分 technology/chronicle 数据有 `treasuryStability`，但 Web `nationState` 未保存，Domain `FactionState` 也未累计；直接做制度胜利达成会硬编码。
+
+### 结论
+
+- 下一修补轮首选 Web 三代分裂度可见门，而不是立即做 `institutional_order`。
+- 理由：Web 现在存在玩家可见 false positive 风险，即高风险/低整合状态仍可显示“三代延续达成”；这是刚完成 Domain 胜利门后的同步风险。
+- `institutional_order` 仍是下一批 P0，但应先定义 `treasuryStability` 从财政/粮食储备、税收稳定或技术/事件效果如何累计，不宜直接跳 UI 达成。
+
+### 下一轮低风险修补建议
+
+- 走 TDD / Playwright-first，新增最小用例，建议名：`blocks three-generation victory in the Web when fragmentation exceeds the data limit`。
+- 测试导入同一局两段状态：
+  - `stableSuccessions >= 3`、法统达标、玩家区低风险/高整合：Web 显示“三代延续达成”。
+  - 同样续承和法统达标，但玩家区高 `risk`、低 `integration`，且超过 `maxFragmentation:10`：Web 不显示达成，debug 暴露 `dynastyFragmentationScore > dynastyMaxFragmentation`，摘要包含“分裂度”。
+- 实现边界：
+  - `threeGenerationVictoryTarget()` 增加 `maxFragmentation`。
+  - 新增 Web-only `dynastyFragmentationScore()`，只用玩家可见 `risk` 和低 `integration`，避免伪装成 Domain 完全同公式。
+  - 导出/导入不加新字段，依赖已有 region `risk` / `integration` 保留状态。
+- 验证建议：targeted Playwright 红/绿、`rg` 检查三代胜利口径、`npm --prefix web-strategy-map run typecheck`；若触及更多 UI 流再跑相关 Playwright 子集或 `tools/run_all_checks.ps1`。
+
+### 验证
+
+- 本轮只读审查 `web-strategy-map/src/ui.ts`、`web-strategy-map/src/types.ts`、`web-strategy-map/src/data.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`domain-core/src/Domain/Victory/DomainVictorySystem.cs`、`victory_conditions.json`、`DataModels.cs`、`GameState.cs`、`policies.json`、`technologies.json`。
+- 未改运行代码；仅更新 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`。
+
+### 剩余风险
+
+- Web 三代胜利仍未实际接入分裂度；下一修补轮需实现并验证。
+- `institutional_order` 的 `treasuryStability` 运行态来源仍未定义。
+- Domain `DynastyCyclePressureAcceptanceTests.MeetsThreeGenerationVictory()` 私有 helper 仍只看续承和法统；后续若继续作为胜利判断，应替换为 `DomainVictorySystem` 或明确只作进度 helper。
+
+### 提交策略
+
+- 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
