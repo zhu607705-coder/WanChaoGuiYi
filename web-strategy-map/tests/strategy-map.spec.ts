@@ -60,6 +60,8 @@ type DebugState = {
     successionRisk: number;
     courtPressure: number;
     stableSuccessions: number;
+    completedCoreReforms: number;
+    treasuryStability: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
     dynastyRescueBlocked: boolean;
@@ -311,6 +313,8 @@ type GameExportState = {
     successionRisk: number;
     courtPressure: number;
     stableSuccessions: number;
+    completedCoreReforms: number;
+    treasuryStability: number;
   };
   regions: Array<{
     id: string;
@@ -701,6 +705,44 @@ test.describe('code-driven strategy map', () => {
     expect(await importGameState(page, achievedSave)).toBe(true);
     await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(true);
     await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('三代延续达成');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('preserves institutional order fields through Web debug export import', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    expect(exported.nationState.completedCoreReforms).toBe(0);
+    expect(exported.nationState.treasuryStability).toBe(50);
+
+    const institutionalState: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      nationState: {
+        ...exported.nationState,
+        completedCoreReforms: 3,
+        treasuryStability: 68
+      }
+    };
+    expect(await importGameState(page, institutionalState)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(3);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(68);
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.completedCoreReforms).toBe(3);
+    expect(saved.nationState.treasuryStability).toBe(68);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(3);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(68);
+
+    const restored = await exportGameState(page);
+    expect(restored.nationState.completedCoreReforms).toBe(3);
+    expect(restored.nationState.treasuryStability).toBe(68);
 
     expect(consoleErrors).toEqual([]);
   });

@@ -72,6 +72,8 @@ export interface StrategyDataset {
     successionRisk: number;
     courtPressure: number;
     stableSuccessions: number;
+    completedCoreReforms: number;
+    treasuryStability: number;
   };
 }
 
@@ -247,7 +249,9 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     legitimacy,
     successionRisk,
     courtPressure,
-    stableSuccessions: 0
+    stableSuccessions: 0,
+    completedCoreReforms: 0,
+    treasuryStability: 50
   };
 
   return {

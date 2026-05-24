@@ -750,6 +750,8 @@ export class StrategyUi {
     successionRisk: number;
     courtPressure: number;
     stableSuccessions: number;
+    completedCoreReforms: number;
+    treasuryStability: number;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
     dynastyRescueBlocked: boolean;

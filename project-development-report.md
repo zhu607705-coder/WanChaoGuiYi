@@ -11255,3 +11255,67 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 若仅有报告/台账文档变更且 `git diff --check` 通过，提交隔离文档 Lore commit。
+
+## 2026-05-24 自动化修补轮：institutional_order Web 字段载体 proof
+
+意图理解 🟢
+
+- Why：Domain 已能评估制度胜利字段，但 Web 运行态还没有 `completedCoreReforms` / `treasuryStability` 的可保存载体，制度胜利无法继续走向可见闭环。
+- Context：本轮是修补问题，只补 Web debug/export/import 字段保留，不做制度胜利 UI、财政稳定累计、改革推进、Domain 命令执行或 Unity/Tuanjie。
+- What：TDD 新增 Playwright，证明制度字段默认存在，并在导入、debug、导出、再导入后保持稳定。
+
+### 类型
+
+- 修补问题：Web `institutional_order` 字段 carrier/debug/export/import proof。
+
+### 目标
+
+- 新增 Playwright：`preserves institutional order fields through Web debug export import`。
+- 初始 export 应含 `completedCoreReforms:0` 与 `treasuryStability:50`。
+- 导入 `completedCoreReforms:3`、`treasuryStability:68` 后，debug、export、再次导入后的 debug/export 都必须保留相同值。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 28]`，本轮开始时工作树干净。
+- 最新提交为 `f0624441 Aim institutional order at Web carrier proof`；报告尾段和台账尾段均指向 Web carrier proof。
+- 最近相关验证：`f624a04` 的 targeted institutional_order xUnit `2/2`、`validate_domain_core.py`、完整 `WanChaoGuiYiTests 93/93`、`verify_headless_war.ps1 16/16`。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+- `npx` 可用；本仓库既有 Playwright 测试采用 `npm --prefix web-strategy-map run test:ui`。
+
+### 变更
+
+- `web-strategy-map/src/data.ts`
+  - `StrategyDataset.nation` 增加 `completedCoreReforms` 与 `treasuryStability`。
+  - `loadStrategyDataset()` 初始 nation state 设 `completedCoreReforms:0`、`treasuryStability:50`。
+- `web-strategy-map/src/ui.ts`
+  - `getDebugState()` 返回类型增加两个制度字段；运行时继续依赖既有 `...this.nationState`。
+- `web-strategy-map/tests/strategy-map.spec.ts`
+  - 扩展 `DebugState` 与 `GameExportState.nationState` 测试类型。
+  - 新增 Playwright 覆盖默认值、导入、debug、导出和再导入保留。
+
+### 验证
+
+- RED：targeted Playwright 失败，`exported.nationState.completedCoreReforms` 为 `undefined`，预期 `0`。
+- GREEN：
+  - `npm --prefix web-strategy-map run test:ui -- --grep "preserves institutional order fields through Web debug export import" --workers=1 --reporter=line` 通过：`1/1`。
+  - `rg -n "completedCoreReforms|treasuryStability|nationState" web-strategy-map\src web-strategy-map\tests\strategy-map.spec.ts` 已复核字段落点。
+  - `npm --prefix web-strategy-map run typecheck` 通过。
+  - `npm --prefix web-strategy-map run test:ui -- --grep "(shows unify jiuzhou victory|blocks three-generation victory|preserves institutional order fields)" --workers=1 --reporter=line` 通过：`3/3`。
+
+### 剩余风险
+
+- Web 仍未展示 `institutional_order` 进度，也未判定“制度胜利达成”。
+- `treasuryStability` 仍未从技术、政策、事件或经济系统正式累计。
+- `completedReformIds` / `completedCoreReforms` 仍缺政策、研究或事件推进路径。
+- Domain 制度胜利测试仍未直接消费 repository 中真实 `victory_conditions.json` 阈值。
+
+### 下一轮低风险建议
+
+- 下一轮应为找漏洞/找缺口。
+- 建议比较四条后续线：Web 制度胜利进度/outliner、财政稳定累计、改革推进路径、repository-driven 阈值测试。
+- 当前不要直接扩成完整制度胜利闭环；先审出最小可红绿切片。
+
+### 提交策略
+
+- 改动范围限于 Web data/ui/test 与报告/台账；`git diff --check` 和验证通过后做 scoped Lore commit。
