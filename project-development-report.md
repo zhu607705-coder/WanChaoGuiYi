@@ -10801,3 +10801,52 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
+
+## 2026-05-24 自动化修补轮：三代延续 maxFragmentation domain-core 胜利门
+
+### 类型
+
+- 修补问题：按上一轮缺口复核执行纯 C# `DomainVictorySystem` 最小切片。
+
+### 目标
+
+- 只评估 `three_generation_dynasty`。
+- 消费 `victory_conditions.json` / `VictoryRequirement` 中已存在但未进入 headless 胜利判定的 `maxFragmentation:10`。
+- 不做 Web/UI、存档、`institutional_order`、StrategicAI 命令建议或 Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 20]`，本轮开始时工作树干净；最新提交为 `0e7364a`。
+- 最近报告确认上一轮已把 `maxFragmentation` 定为下一修补切口。
+- 最近验证：`e81a407` 后 targeted xUnit、`validate_domain_core.py`、完整 `WanChaoGuiYiTests 90/90`、`verify_headless_war.ps1 16/16`；`7e73ed2` 后 full gate 仍为最近完整门禁记录。
+- 进程复核：按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|playwright|vite|dotnet|run_all_checks|verify_headless|validate_domain_core` 后只命中本次查询命令，未发现当前项目 dotnet/Playwright/Vite/data/full-gate 冲突任务。
+
+### 改动
+
+- TDD RED：新增 `VictorySystemFragmentationTests.Victory_System_Should_Block_Three_Generation_When_Fragmentation_Too_High`，先确认缺少 `DomainVictorySystem` / `VictoryEvaluationPayload` 导致编译失败。
+- GREEN：新增 `domain-core/src/Domain/Victory/DomainVictorySystem.cs`。
+  - 输出 `VictoryEvaluationPayload`：`victoryId`、`achieved`、`fragmentationScore`、`maxFragmentation`、`reason`。
+  - `EvaluateThreeGenerationDynasty()` 先检查平稳继承与法统，再以 `maxFragmentation` 阻断高分裂胜利。
+  - 分裂度口径先锁定为己方地区 `rebellionRisk`、`localPower`、`annexationPressure`、`100 - integration` 的平均压力。
+- 将新系统 link 到 `WanChaoGuiYiTests.csproj` 与 `WanChaoGuiYiHeadless.csproj`。
+- 更新 `docs/mvp-closure-ledger.md`：`maxFragmentation` 从待补变为 headless 已补，并保留 Web/Domain 口径漂移风险。
+
+### 验证
+
+- RED：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter FullyQualifiedName~Victory_System_Should_Block_Three_Generation_When_Fragmentation_Too_High` 失败于缺少 `DomainVictorySystem` / `VictoryEvaluationPayload`。
+- GREEN targeted：同一命令通过 `1/1`。
+- `python tools\validate_domain_core.py` 通过。
+- `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj` 通过 `91/91`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过，headless war `16/16`。
+- `rg -n "maxFragmentation|DomainVictorySystem|VictoryEvaluationPayload|three_generation_dynasty|institutional_order" docs\mvp-closure-ledger.md project-development-report.md domain-core/src tools/headless_runner` 确认新胜利门、测试和台账引用存在。
+
+### 剩余风险
+
+- 本轮按边界未做 Web/UI/存档；Web 三代达成仍需后续事实复核是否接入分裂度展示或 parity 断言。
+- `institutional_order` 的 `completedCoreReforms`、`minTreasuryStability` 来源仍未定义。
+- TalentSystem 多角色/Web 入口与 StrategicAI 命令建议仍是后续 P1。
+
+### 提交策略
+
+- 本轮改动集中在 domain-core、新 xUnit、两个 headless csproj 和收口文档；验证通过后将执行 `git diff --check` 并做 scoped Lore commit。
