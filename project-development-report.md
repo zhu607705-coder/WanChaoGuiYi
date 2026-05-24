@@ -11089,3 +11089,72 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 Domain Core、headless xUnit、测试 csproj 和报告/台账；验证通过后执行 `git diff --check` 并做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order 下一修补线复核
+
+意图理解 🟢
+
+- Why：`9920627` 已证明 Domain 能暴露制度胜利字段来源，下一步需要从 Web 可见性、财政稳定累计、改革推进语义和数据阈值读取中选出最窄修补。
+- Context：本轮是找漏洞/找缺口，只读复核，不改运行代码，不重复 `institutional_order` 字段来源 proof。
+- What：更新报告和台账，把下一修补候选收窄到可 TDD 红绿的小切片。
+
+### 类型
+
+- 找漏洞/找缺口：复核 `institutional_order` 在 `9920627` 后的下一条最小修补线。
+
+### 目标
+
+- 比较四类后续路径：
+  - Web `nationState` / debug / export 可见性。
+  - `treasuryStability` 从技术、政策、事件或经济运行态累计。
+  - `completedReformIds` 推进和重复 ID 语义。
+  - `DomainVictorySystem` 是否应直接消费 `victory_conditions.json` / repository 数据。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 25]`，本轮开始时工作树干净；最新提交为 `9920627 Prove institutional order has runtime field sources`。
+- 最近报告确认 `9920627` 已通过 targeted xUnit 红绿、`validate_domain_core.py`、完整 `WanChaoGuiYiTests 92/92`、`verify_headless_war.ps1 16/16`。
+- 进程复核：按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|run_all_checks|playwright|vite|dotnet|validate_domain_core|validate_web_data_source|verify_headless` 后只命中本次查询命令，未发现冲突任务。
+
+### 发现
+
+- Web 可见性：
+  - `StrategyDataset.nation` 当前只有 `food`、`money`、`army`、`legitimacy`、`successionRisk`、`courtPressure`、`stableSuccessions`。
+  - Web `getDebugState()` 会 spread `nationState`，`exportGameState()` / `importGameState()` 也复制 `nationState`；因此若新增 `completedCoreReforms` / `treasuryStability` 载体，debug 与导出/导入路径可低风险复用。
+  - 但 Web 数据源没有独立 `nation.json`，初始 `nation` 在 `src/data.ts` 聚合生成；直接做 Web 制度胜利 UI 仍会扩大范围。
+- `treasuryStability` 累计：
+  - `technologies.json` 有 `treasuryStability: 3`，`chronicle_events.json` 有少量 `treasuryStability` / 大量 `treasuryPressure`，政策里 `fiscal_order` 有 `taxEfficiency` 和 `money`，但没有 `treasuryStability`。
+  - Web `applyGovernancePolicy()` 当前只改区域整合、法统、风险、贡献和 nation 法统；不消费 `treasuryStability` / `treasuryPressure`。
+  - Domain 也只有 `FactionState.treasuryStability` 字段与手动测试种子，尚无技术/政策/事件累计系统；做正式累计会打开较大机制面。
+- `completedReformIds` 推进和重复语义：
+  - Domain `DomainVictorySystem.CountCompletedCoreReforms()` 当前直接返回 `completedReformIds.Count`。
+  - 这意味着重复 ID 可以误满足 `completedCoreReforms:4`，是当前最小、可红绿验证的制度胜利假阳性风险。
+  - Web 没有 `completedReformIds`；旧 Unity 报告中曾有政策记录改革 ID 的说法，但当前纯代码 Web/Domain 主线没有稳定推进链。
+- 数据阈值读取：
+  - `NonUnityJsonDataRepository` 已能加载 `victory_conditions.json` 到 `VictoryConditions`，`IDataRepository` 也暴露该字典。
+  - `9920627` 的新 xUnit 仍手写 `institutional_order` 阈值；这有 drift 风险，但新增 repository 读取测试大概率是绿灯，不像重复 ID 语义能形成修补红灯。
+
+### 下一轮低风险修补建议
+
+- 首选：修补 Domain `completedReformIds` 重复计数语义。
+- 建议测试名：`Institutional_Order_Should_Count_Unique_Core_Reforms_Only`。
+- 预期红灯：构造 `completedReformIds = ["central_reform", "central_reform", "fiscal_order", "fiscal_order"]`，法统、财政稳定、兼并压力均达标，但制度胜利不应达成，payload 的 `completedCoreReforms` 应为唯一 ID 数。
+- 最小实现：`DomainVictorySystem.CountCompletedCoreReforms()` 改为非空唯一 ID 计数，保持 payload 字段不变。
+- 验证建议：targeted xUnit 红绿、`python tools\validate_domain_core.py`、完整 `WanChaoGuiYiTests`；若未触及 headless runner 共享行为，可不跑 Web/Playwright。
+- 暂缓项：Web 制度胜利显示、Web `nationState` 字段载体、财政稳定正式累计、政策/科技/事件推进链和 repository-driven 阈值集成测试。
+
+### 验证
+
+- 本轮只读复核 `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts`、`web-strategy-map/src/types.ts`、`policies.json`、`technologies.json`、`chronicle_events.json`、`DomainVictorySystem.cs`、`NonUnityJsonDataRepository.cs`、`IDataRepository.cs`、`VictorySystemInstitutionalOrderTests.cs`。
+- 未改运行代码；文档更新后只需 `git diff --check`。
+
+### 剩余风险
+
+- 即使唯一计数修补完成，改革推进路径仍未接入纯代码 Web/headless 回合流。
+- `treasuryStability` 仍缺正式累计公式。
+- Web 仍不可展示或保存制度胜利字段；后续可在重复语义修补后做最小 Web carrier/debug/export proof。
+
+### 提交策略
+
+- 本轮为隔离文档轮；若 `git diff --check` 通过且改动仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，可做 scoped Lore commit。
