@@ -11211,3 +11211,47 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮为隔离文档轮；若 `git diff --check` 通过且改动仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，可做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order 最新恢复点修正
+
+意图理解 🟢
+
+- Why：`f624a04` 已完成制度胜利唯一改革 ID 修补，报告尾部需要恢复到当前事实，避免后续自动化继续读取旧 P0。
+- Context：本轮是找漏洞/找缺口，只读复核；未改运行代码。长报告存在重复“提交策略”段，本段使用文件尾部锚点作为当前恢复点。
+- What：下一修补轮首选 Web `institutional_order` 字段载体 proof：给 `nationState` 增加 `completedCoreReforms` 与 `treasuryStability`，验证 debug/export/import 保留。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 27]`，工作树在本轮文档更新前干净。
+- 最新提交为 `f624a04 Prevent duplicate reforms from claiming institutional order`；最近验证为 targeted xUnit `2/2`、`validate_domain_core.py`、完整 `WanChaoGuiYiTests 93/93`、`verify_headless_war.ps1 16/16`。
+- 精确进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 发现
+
+- Web `StrategyDataset.nation` 和 Playwright `GameExportState.nationState` 还没有 `completedCoreReforms` / `treasuryStability`。
+- Web `getDebugState()`、`exportGameState()`、`importGameState()` 已经通过 spread / assign 复制 `nationState`，因此 carrier proof 是最小可验证切片。
+- `treasuryStability` 正式累计仍较大：技术和事件已有数据效果，但 Web 政策执行和 Domain 经济结算尚未消费到该字段。
+- repository-driven `victory_conditions.json` 阈值测试可做防漂移，但优先级低于 Web 运行态载体。
+- 改革推进路径仍缺政策/研究/事件到 `completedReformIds` 的稳定链，不适合下一轮直接扩大。
+
+### 下一轮低风险修补建议
+
+- 首选测试：Playwright `preserves institutional order fields through Web debug export import`。
+- 最小实现：给 Web nation state 增加 `completedCoreReforms:0`、`treasuryStability:50` 默认值；扩展测试类型；导入一个包含制度字段的 snapshot，断言 debug 与 export 保留。
+- 暂不做：制度胜利 outliner/UI 达成、财政稳定累计、改革推进、Domain 命令执行或 Unity/Tuanjie。
+
+### 验证
+
+- 只读复核了 Web data/types/ui/test、相关 JSON、Domain victory/state/data repository 和 institutional_order xUnit。
+- 本轮文档变更后执行 `git diff --check`。
+
+### 剩余风险
+
+- 制度胜利仍未在 Web 达成面板显示。
+- 财政稳定累计和改革推进仍是制度胜利成熟闭环的后续关键缺口。
+- 后续以本报告尾段和台账尾段为恢复点。
+
+### 提交策略
+
+- 若仅有报告/台账文档变更且 `git diff --check` 通过，提交隔离文档 Lore commit。

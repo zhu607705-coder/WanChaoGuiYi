@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 复核 `institutional_order` 下一条最小修补线 | `domain-core/src/Domain/Victory`、`web-strategy-map/src`、`web-strategy-map/game-data-source` | 重复改革 ID 假阳性已修补；下一步比较 Web 字段载体、财政稳定累计、repository-driven 阈值测试和改革推进路径，选择最窄红绿切片 |
+| P0 | 修补 Web `institutional_order` 字段载体 | `web-strategy-map/src/data.ts`、`web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 给 `nationState` 增加 `completedCoreReforms` / `treasuryStability`，先证明 debug/export/import 保留，不直接做制度胜利 UI |
 | P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
@@ -173,3 +173,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成证明：`Institutional_Order_Should_Count_Unique_Core_Reforms_Only` 覆盖重复 `central_reform` / `fiscal_order` 时不达成、`completedCoreReforms == 2`、原因包含“核心改革”。
 - 验证：targeted `VictorySystemInstitutionalOrderTests` `2/2`、`python tools\validate_domain_core.py`、完整 `WanChaoGuiYiTests` `93/93`、`tools\verify_headless_war.ps1` `16/16`。
 - 当前 P0 转向：复核 `institutional_order` 下一条最小修补线，优先比较 Web `nationState` / debug / export carrier、`treasuryStability` 累计来源、repository-driven `victory_conditions.json` 阈值测试，以及改革推进路径。
+
+## 2026-05-24 institutional_order Web 载体复核
+
+- 已完成复核：Web `getDebugState()`、`exportGameState()`、`importGameState()` 已能复制 `nationState`，但 `StrategyDataset.nation` 与 Playwright `GameExportState.nationState` 还没有 `completedCoreReforms` / `treasuryStability`。
+- 当前 P0 首选：下一修补轮做 Web carrier proof，给初始 `nationState` 增加 `completedCoreReforms:0` 与 `treasuryStability:50`，并用 Playwright 验证导入包含制度字段的 snapshot 后 debug/export/import 保留。
+- 暂缓项：制度胜利 UI/outliner 达成判断、财政稳定正式累计、改革推进链和 repository-driven 阈值测试。
