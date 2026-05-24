@@ -11462,3 +11462,79 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 改动范围限于 Web UI、Playwright 测试、项目报告与 MVP 台账；`git diff --check` 通过后做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order 后续成熟切片复核
+
+意图理解 🟢
+
+- Why：`f3787f5b` 已让 Web 制度胜利可见，但剩余成熟风险不能继续停留在“字段能显示”；需要选出下一条最小、可验证、能减少真实偏差的修补。
+- Context：本轮为找漏洞/找缺口，只读复核；不改运行代码，不重复 Web 制度胜利进度显示。
+- What：比较 `treasuryStability` 正式累计、`completedCoreReforms` 推进链、Web/Domain 兼并压力 parity、repository-driven 阈值测试，决定下一修补优先级。
+
+### 类型
+
+- 找漏洞/找缺口：制度胜利 Web 可见后下一条成熟切片复核。
+
+### 目标
+
+- 确认哪条后续工作最小且最接近 MVP 成熟：
+  - 财政稳定累计来源。
+  - 核心改革推进链。
+  - Web/Domain `annexationPressure` parity。
+  - Domain 测试直接消费 `victory_conditions.json` 阈值。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 31]`，本轮开始时工作树干净。
+- 最新提交链：`f3787f5b Show institutional order progress in Web victory summary`、`2288ae3a Aim institutional order at Web victory progress`、`df154ca9 Carry institutional order fields through Web state`。
+- 最近验证来自 `f3787f5b`：targeted Playwright 红/绿、胜利相关 Playwright 子集 `4/4`、`npm --prefix web-strategy-map run typecheck`、字段 grep、`git diff --check`。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 发现
+
+- Web/Domain 兼并压力 parity：
+  - Domain `GameStateFactory.CalculateInitialAnnexation()` 用 `RegionDefinition.landStructure.localElites * 100` 形成初始 `RegionState.annexationPressure`。
+  - Domain `DomainVictorySystem.EvaluateInstitutionalOrder()` 读取玩家地区最大 `RegionState.annexationPressure`，并用 `maxAnnexationPressure` 阈值阻断制度胜利。
+  - Web `RegionDefinition` 已有 `landStructure`，但 `RegionViewModel`、export/import `regions` 和 `restoreRegionRuntimeState()` 都没有 `annexationPressure`。
+  - Web `institutionalOrderPressureScore()` 当前只能用玩家自有地区最大 `risk` 代理“兼并压力”，这是已知 Web/Domain 偏差。
+  - 最小修补可直接在 Web runtime 增加 `annexationPressure` 字段：初始值按 Domain 公式从 `landStructure.localElites` 计算，export/import 保留，制度胜利压力门改用该字段。
+- `treasuryStability` 正式累计：
+  - `technologies.json` 里有 `treasuryStability`，`chronicle_events.json` 里大量 `treasuryPressure` / 少量 `treasuryStability`。
+  - Web `applyGovernancePolicy()` 当前不消费 `treasuryStability` 或 `treasuryPressure`；Domain `GameStateFactory` 只给 faction 初始 `treasuryStability = 50`。
+  - 这条线需要先定义政策、科技、事件和经济回合如何合成财政稳定，范围大于下一条最小修补。
+- `completedCoreReforms` 推进链：
+  - 政策数据已有多个 `category:"reform"`，例如 `standardization`、`jun_xian_system`、`central_reform`、`central_audit`。
+  - Domain 已修复重复 `completedReformIds` 计数；Web 目前只有数字 `completedCoreReforms`，没有可去重的 reform ID 列表。
+  - 直接推进改革会涉及 Web 存档字段、重复政策语义和核心改革分类，适合后续但不是最小 parity 修补。
+- repository-driven 阈值测试：
+  - `NonUnityJsonDataRepository` 已加载 `victory_conditions.json` 并暴露 `VictoryConditions`。
+  - `VictorySystemInstitutionalOrderTests` 仍手写 `completedCoreReforms:4`、`minTreasuryStability:65`、`maxAnnexationPressure:45`。
+  - 补 JSON 阈值测试能防漂移，风险很低；但它主要是证明，不会减少当前 Web/Domain 兼并压力口径偏差。
+
+### 下一轮低风险修补建议
+
+- 首选：Web/Domain `annexationPressure` parity 小切片。
+- 建议 Playwright：`shows institutional order pressure uses annexation pressure rather than rebellion risk`。
+- 最小实现：
+  - `RegionViewModel` 增加运行态 `annexationPressure`。
+  - Web 初始值按 Domain 公式：`landStructure.localElites * 100`，并 clamp 到 `0..100`。
+  - export/import `regions` 保留 `annexationPressure`。
+  - `institutionalOrderPressureScore()` 改用玩家自有地区最大 `annexationPressure`。
+  - 测试导入“低 risk / 高 annexationPressure”状态，确认制度胜利被 `兼并压力` 阻断；再导入低 annexationPressure 状态，确认可达成且 export/import 保持。
+- 暂不做：财政稳定正式累计、核心改革推进链、技术/事件消费、Domain command execution、Unity/Tuanjie。
+
+### 验证
+
+- 本轮只读复核文件：`web-strategy-map/src/ui.ts`、`web-strategy-map/src/data.ts`、`web-strategy-map/src/types.ts`、`web-strategy-map/game-data-source/data/policies.json`、`technologies.json`、`chronicle_events.json`、`domain-core/src/Core/GameStateFactory.cs`、`domain-core/src/Domain/Victory/DomainVictorySystem.cs`、`tools/headless_runner/WanChaoGuiYiTests/VictorySystemInstitutionalOrderTests.cs`、`NonUnityJsonDataRepository.cs`。
+- 文档更新后执行 `git diff --check`。
+
+### 剩余风险
+
+- 即使下轮完成 `annexationPressure` parity，财政稳定仍缺自然累计。
+- Web 的核心改革仍是数字载体，未建立可去重的改革 ID 运行态。
+- Domain institutional_order 仍缺 repository-driven JSON 阈值测试。
+
+### 提交策略
+
+- 本轮改动应仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`；若 `git diff --check` 通过，做隔离文档 Lore commit。

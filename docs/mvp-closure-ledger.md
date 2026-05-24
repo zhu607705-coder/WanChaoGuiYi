@@ -199,3 +199,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成证明：Playwright `shows institutional order victory progress in the Web when fields meet data thresholds` 覆盖 blocked、achieved、export/import 保持状态；相邻胜利子集 `4/4 passed`；`npm --prefix web-strategy-map run typecheck` 通过。
 - 当前 P0 转向：下一轮应做 fact-based review，比较 `treasuryStability` 正式累计、`completedCoreReforms` 推进链、Web/Domain 兼并压力 parity、repository-driven `victory_conditions.json` 阈值测试，选出最小修补切片。
 - 剩余风险：Web 兼并压力暂用玩家自有地区最大 `risk`，仍不是 Domain `annexationPressure` 的精确字段来源。
+
+## 2026-05-24 institutional_order 后续成熟切片复核
+
+- 已完成复核：Domain 初始 `annexationPressure` 已由 `landStructure.localElites * 100` 计算，制度胜利也消费玩家地区最大 `RegionState.annexationPressure`；Web 有 `landStructure` 数据但还没有 `RegionViewModel.annexationPressure`，上一轮只能用 `risk` 代理。
+- 当前 P0 首选：下一修补轮做 Web/Domain 兼并压力 parity，小范围增加 Web `annexationPressure` 运行态、export/import 保留，并让 `institutionalOrderPressureScore()` 改用该字段。
+- 暂缓项：`treasuryStability` 正式累计、核心改革 ID 推进链、科技/事件消费、Domain command execution；这些需要更大规则定义。
+- 后续低风险补证：Domain institutional_order 应再补 repository-driven `victory_conditions.json` 阈值测试，防止手写阈值漂移。
