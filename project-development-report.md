@@ -10965,3 +10965,69 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动集中在 Web UI 与 Playwright；验证通过后将执行 `git diff --check` 并做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order 字段来源复核
+
+意图理解 🟢
+
+- Why：Web / Domain 已完成三代延续分裂度门，下一批胜利条件缺口应转向 `institutional_order`，但必须先确认运行态字段来源，避免硬编码制度胜利。
+- Context：本轮是找漏洞/找缺口，只读复核 `completedCoreReforms`、`minTreasuryStability`、`maxAnnexationPressure` 在 JSON、TS/C# 类型、Domain 运行态、Web nationState、政策/科技/事件数据中的真实状态。
+- What：更新报告和 MVP 台账，给下一修补轮留下最窄 headless/Domain 字段来源切片；不改 Web/UI/存档，不启动大系统。
+
+### 类型
+
+- 找漏洞/找缺口：事实复核 `institutional_order` 运行态字段来源。
+
+### 目标
+
+- 判断 `institutional_order` 是否已经具备可直接判胜的运行态字段。
+- 区分“数据/类型已存在”和“运行态已被消费”。
+- 选出下一轮最小修补，不重复 `maxFragmentation`、Web 三代分裂度、统一九州、StrategicAI、TalentSystem 或帝皇机制 parity。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 23]`，本轮开始时工作树干净；最新提交为 `9becfe3 Stop Web dynasty victories when fragmentation is visible`。
+- 最近报告确认上一轮已完成 Web 三代延续分裂度可见门，剩余风险指向 `institutional_order` 的 `treasuryStability` / `completedCoreReforms`。
+- 进程复核：按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|run_all_checks|playwright|vite|dotnet|validate_domain_core|validate_web_data_source` 后只命中本次查询命令，未发现正在运行的 WanChaoGuiYi dotnet / Playwright / Vite / full-gate 冲突任务。
+
+### 发现
+
+- `victory_conditions.json` 的 `institutional_order` 已声明：`completedCoreReforms: 4`、`minLegitimacy: 70`、`minTreasuryStability: 65`、`maxAnnexationPressure: 45`。
+- TS / C# 数据类型已支持这些字段：`VictoryRequirement.completedCoreReforms`、`minTreasuryStability`、`maxAnnexationPressure` 存在；`EffectSet.treasuryStability` 也存在。
+- Domain 运行态已有两类可用来源：
+  - `FactionState.completedReformIds` 已存在，可作为核心改革数量容器，但当前纯 C# 主线没有稳定的政策/科技推进链去填充它。
+  - `RegionState.annexationPressure` 已存在，并已被治理、人才、StrategicAI 和三代分裂度门消费，可支撑 `maxAnnexationPressure`。
+- Domain 运行态最大缺口：`FactionState` 尚无 `treasuryStability`，`EffectSet.treasuryStability` 只停在数据效果层，没有累计到派系状态。
+- Web 运行态缺口更大：`nationState`、debug state、export/import 目前没有 `completedCoreReforms` 或 `treasuryStability`；Web 也没有独立 `annexationPressure` 明细，只能用玩家可见风险作近似。
+- 数据侧已有可接线索：
+  - `technologies.json` 有 `treasuryStability` 效果，也有 `complete_reform` / `complete_three_reforms` boost。
+  - `chronicle_events.json` 有少量 `treasuryStability` 事件效果。
+  - `policies.json` 有 `central_reform` 等 reform 类政策，并已有 `annexationPressure` 风险/收益字段。
+- 结论：不宜直接做完整 Web 制度胜利达成；会同时打开财政稳定累计、改革推进、科技/事件消费和存档 UI 四条线，超出最小修补。
+
+### 下一轮低风险修补建议
+
+- 首选纯 C# / headless 字段来源与进度 payload，不碰 Web/UI/存档。
+- 建议测试名：`Institutional_Order_Field_Sources_Should_Expose_Treasury_Stability_And_Core_Reforms`。
+- 最小实现边界：
+  - 新增或扩展纯 C# `DomainVictorySystem` / `DomainInstitutionalOrderSystem`，只评估 `institutional_order` 进度，不执行政策、科技或事件。
+  - 明确读取 `FactionState.completedReformIds.Count`、`FactionState.legitimacy`、己方 `RegionState.annexationPressure` 最大值。
+  - 为财政稳定补最小运行态来源：优先新增 `FactionState.treasuryStability` 并在 payload 中暴露 `treasuryStability` / `minTreasuryStability`；不要先硬编码通过。
+  - payload 至少包含：`achieved`、`completedCoreReforms`、`requiredCoreReforms`、`treasuryStability`、`minTreasuryStability`、`maxObservedAnnexationPressure`、`maxAnnexationPressure`、`reason`。
+- 暂缓项：Web outliner/debug、存档 schema、研究流、政策执行流、chronicle 事件消费和完整制度胜利 UI。
+
+### 验证
+
+- 本轮只读复核 `victory_conditions.json`、`DataModels.cs`、`GameState.cs`、`web-strategy-map/src/types.ts`、`web-strategy-map/src/ui.ts`、`technologies.json`、`policies.json`、`chronicle_events.json`、`DomainVictorySystem.cs` 及相关 `rg` 结果。
+- 未改运行代码，未运行业务测试；文档更新后只需 `git diff --check`。
+
+### 剩余风险
+
+- `treasuryStability` 的正式算法仍未定义：未来需要决定它从财政盈余、粮仓/水利技术、税制改革、事件选择或混合口径累计。
+- `completedReformIds` 虽有容器，但未接入当前 Web/headless 可玩改革推进。
+- Web 制度胜利仍不可判定；这是刻意保留，避免在字段来源未稳时制造假达成。
+
+### 提交策略
+
+- 本轮为隔离文档轮；若 `git diff --check` 通过且改动仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，可做 scoped Lore commit。

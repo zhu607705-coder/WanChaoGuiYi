@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 复核 `institutional_order` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态来源；暂不先做 UI 达成 |
+| P0 | 补 `institutional_order` 的 Domain/headless 字段来源与进度 payload | `domain-core/src/Domain/Victory` 或 `domain-core/src/Domain/Governance`、`tools/headless_runner/WanChaoGuiYiTests` | 先证明 `completedReformIds`、`treasuryStability`、法统和兼并压力能形成可解释进度；暂不先做 Web/UI/存档达成 |
 | P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
@@ -142,3 +142,12 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成项：Web 三代延续达成现在读取 `maxFragmentation`，并用玩家可见 `risk` 与低 `integration` 计算 `dynastyFragmentationScore`；分裂度超过上限时 debug/outliner 显示“分裂度”原因且不再误报“三代延续达成”。
 - 验证：Playwright targeted 红/绿；王朝相关 Playwright 子集 `5/5`；`npm --prefix web-strategy-map run typecheck`；胜利口径相关 `rg`。
 - 剩余风险：Web 分裂度是玩家可见口径，不是 Domain 公式逐字段复刻；`institutional_order` 的 `treasuryStability` / `completedCoreReforms` 运行态来源仍是下一批 P0。
+
+## 2026-05-24 institutional_order 字段来源复核
+
+- 已完成复核：`victory_conditions.json` 已声明 `completedCoreReforms:4`、`minLegitimacy:70`、`minTreasuryStability:65`、`maxAnnexationPressure:45`；TS/C# `VictoryRequirement` 与 `EffectSet.treasuryStability` 均已有类型承载。
+- 可用运行态来源：Domain `FactionState.completedReformIds` 可承载已完成改革；Domain `RegionState.annexationPressure` 已被治理、人才、AI 和胜利分裂度消费，可支撑土地兼并压力门。
+- 阻塞点：Domain `FactionState` 尚无 `treasuryStability` 累计字段；Web `nationState` / debug / export/import 也没有 `completedCoreReforms` 或 `treasuryStability`。
+- 数据线索：`technologies.json` 已有 `treasuryStability` 效果和 `complete_reform` / `complete_three_reforms` boost；`policies.json` 已有 `central_reform`；但这些还未形成当前纯代码运行态制度胜利链。
+- 当前 P0 首选：下一修补轮先做纯 C# / headless 字段来源与进度 payload，例如 `Institutional_Order_Field_Sources_Should_Expose_Treasury_Stability_And_Core_Reforms`；payload 显示 `completedCoreReforms`、`requiredCoreReforms`、`treasuryStability`、`minTreasuryStability`、`maxObservedAnnexationPressure`、`maxAnnexationPressure`、`achieved`、`reason`。
+- 暂缓项：不直接做 Web 制度胜利 UI、存档 schema、研究流、事件消费或完整政策改革系统，等财政稳定和改革推进口径先被 headless 测试锁住。
