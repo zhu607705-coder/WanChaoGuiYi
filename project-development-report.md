@@ -11538,3 +11538,65 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动应仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`；若 `git diff --check` 通过，做隔离文档 Lore commit。
+
+## 2026-05-24 自动化修补轮：institutional_order Web 兼并压力 parity 最小修补
+
+意图理解 🟢
+
+- Why：Web 制度胜利上一轮仍用玩家地区 `risk` 代理“兼并压力”，与 Domain `RegionState.annexationPressure` 口径不一致。
+- Context：本轮是修补问题；只做 Web/Domain 兼并压力 parity 小切片，不做财政稳定累计、改革推进链、Domain command execution 或 Unity/Tuanjie。
+- What：用 Playwright TDD 增加 Web `annexationPressure` 运行态、export/import 保留，并让制度胜利压力门改用该字段。
+
+### 类型
+
+- 修补问题：Web `institutional_order` 兼并压力字段 parity。
+
+### 目标
+
+- Web 初始地区运行态具备 `annexationPressure`。
+- 初始值与 Domain 公式保持一致：`landStructure.localElites * 100`，并 clamp 到 `0..100`。
+- Web export/import `regions` 保留 `annexationPressure`。
+- `institutionalOrderPressureScore()` 不再读 `risk`，改读玩家自有地区最大 `annexationPressure`。
+- Playwright 证明低 `risk` 但高 `annexationPressure` 会阻断制度胜利。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 32]`，本轮开始时工作树干净。
+- 最新提交链：`f93d03a0 Aim institutional pressure at Web parity`、`f3787f5b Show institutional order progress in Web victory summary`、`2288ae3a Aim institutional order at Web victory progress`。
+- 最近报告确认下一修补首选为 Web/Domain `annexationPressure` parity。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 变更
+
+- `web-strategy-map/src/types.ts`
+  - `RegionViewModel` 增加 `annexationPressure: number`。
+- `web-strategy-map/src/data.ts`
+  - 新增 `initialAnnexationPressure()`，按 `definition.landStructure.localElites * 100` 生成 Web 初始兼并压力。
+  - 初始化 `RegionViewModel.annexationPressure`。
+- `web-strategy-map/src/ui.ts`
+  - `GameExportState.regions` 增加 `annexationPressure`。
+  - `exportGameState()` / `restoreRegionRuntimeState()` 保留并恢复该字段。
+  - `institutionalOrderPressureScore()` 改为玩家自有地区最大 `annexationPressure`。
+- `web-strategy-map/tests/strategy-map.spec.ts`
+  - 新增 Playwright：`shows institutional order pressure uses annexation pressure rather than rebellion risk`。
+  - 既有制度胜利进度测试改为显式设置 `annexationPressure`，不再隐含锁定旧 `risk` 代理口径。
+
+### 验证
+
+- RED：`npm --prefix web-strategy-map run test:ui -- --grep "shows institutional order pressure uses annexation pressure rather than rebellion risk" --workers=1 --reporter=line` 失败于 Web export 缺少数字型 `annexationPressure`。
+- GREEN：同一 targeted Playwright `1/1 passed`。
+- 胜利相关 Playwright 子集：`shows unify jiuzhou victory`、`blocks three-generation victory`、`preserves institutional order fields`、`shows institutional order victory progress`、`shows institutional order pressure uses annexation pressure` 共 `5/5 passed`。
+- TypeScript：`npm --prefix web-strategy-map run typecheck` 通过。
+- 字段 grep：`rg -n "annexationPressure|institutionalOrderPressureScore|initialAnnexationPressure" web-strategy-map\src web-strategy-map\tests\strategy-map.spec.ts`，命中范围符合预期。
+- Playwright 每次运行前同步并校验数据源：`WEB DATA SOURCE VALIDATION PASSED`。
+
+### 剩余风险
+
+- `treasuryStability` 仍缺正式累计来源。
+- Web 核心改革仍是数字 `completedCoreReforms`，未建立可去重改革 ID 运行态。
+- Domain institutional_order 仍缺 repository-driven `victory_conditions.json` 阈值测试。
+
+### 提交策略
+
+- 改动范围限于 Web data/type/ui/test 与报告/台账；`git diff --check` 通过后做 scoped Lore commit。

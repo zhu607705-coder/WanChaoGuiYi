@@ -329,6 +329,7 @@ type GameExportState = {
     integration: number;
     contribution: number;
     risk: number;
+    annexationPressure: number;
     legitimacy: number;
   }>;
   armies: Array<{
@@ -770,6 +771,7 @@ test.describe('code-driven strategy map', () => {
         ...region,
         owner: 'player',
         risk: 56,
+        annexationPressure: 56,
         integration: Math.max(region.integration, 70),
         legitimacy: Math.max(region.legitimacy, 65)
       }))
@@ -804,6 +806,7 @@ test.describe('code-driven strategy map', () => {
         ...region,
         owner: 'player',
         risk: 18,
+        annexationPressure: 18,
         integration: Math.max(region.integration, 80),
         legitimacy: Math.max(region.legitimacy, 70)
       }))
@@ -822,6 +825,71 @@ test.describe('code-driven strategy map', () => {
     await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(true);
     await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('制度胜利达成');
     await expect(page.locator('#outliner-list')).toContainText('制度胜利达成');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows institutional order pressure uses annexation pressure rather than rebellion risk', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    expect(exported.regions.every((region) => typeof region.annexationPressure === 'number')).toBe(true);
+
+    const highAnnexationPressure: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      nationState: {
+        ...exported.nationState,
+        legitimacy: 72,
+        completedCoreReforms: 4,
+        treasuryStability: 66
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: 8,
+        annexationPressure: 62,
+        integration: Math.max(region.integration, 85),
+        legitimacy: Math.max(region.legitimacy, 70)
+      }))
+    };
+    expect(await importGameState(page, highAnnexationPressure)).toBe(true);
+
+    await expectDebug(page, (state) => state.ui.institutionalOrderPressureScore).toBe(62);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('兼并压力 62/45');
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).not.toContain('制度胜利达成');
+    await expect(page.locator('#outliner-list')).toContainText('兼并压力 62/45');
+    await expect(page.locator('#outliner-list')).not.toContainText('制度胜利达成');
+
+    const blockedSave = await exportGameState(page);
+    expect(blockedSave.regions.every((region) => region.annexationPressure === 62)).toBe(true);
+    await openApp(page);
+    expect(await importGameState(page, blockedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderPressureScore).toBe(62);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(false);
+
+    const lowAnnexationPressure: GameExportState = {
+      ...blockedSave,
+      regions: blockedSave.regions.map((region) => ({
+        ...region,
+        risk: 8,
+        annexationPressure: 18
+      }))
+    };
+    expect(await importGameState(page, lowAnnexationPressure)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderPressureScore).toBe(18);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('制度胜利达成');
+
+    const achievedSave = await exportGameState(page);
+    expect(achievedSave.regions.every((region) => region.annexationPressure === 18)).toBe(true);
+    await openApp(page);
+    expect(await importGameState(page, achievedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('兼并压力 18/45');
 
     expect(consoleErrors).toEqual([]);
   });

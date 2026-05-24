@@ -431,6 +431,7 @@ interface GameExportState {
     integration: number;
     contribution: number;
     risk: number;
+    annexationPressure: number;
     legitimacy: number;
   }>;
   armies: Array<{
@@ -1073,6 +1074,7 @@ export class StrategyUi {
         integration: region.integration,
         contribution: region.contribution,
         risk: region.risk,
+        annexationPressure: region.annexationPressure,
         legitimacy: region.legitimacy
       })),
       armies: this.dataset.armies.map((army) => ({
@@ -1187,6 +1189,7 @@ export class StrategyUi {
       region.integration = saved.integration;
       region.contribution = saved.contribution;
       region.risk = saved.risk;
+      region.annexationPressure = clamp(saved.annexationPressure ?? region.annexationPressure, 0, 100);
       region.legitimacy = saved.legitimacy;
     }
   }
@@ -3338,7 +3341,7 @@ export class StrategyUi {
   private institutionalOrderPressureScore(): number {
     const playerRegions = this.dataset.regions.filter((region) => region.owner === 'player');
     if (playerRegions.length === 0) return 100;
-    return clamp(Math.max(...playerRegions.map((region) => Math.round(region.risk))), 0, 100);
+    return clamp(Math.max(...playerRegions.map((region) => Math.round(region.annexationPressure))), 0, 100);
   }
 
   private playerOwnedRegionCount(): number {

@@ -206,3 +206,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 当前 P0 首选：下一修补轮做 Web/Domain 兼并压力 parity，小范围增加 Web `annexationPressure` 运行态、export/import 保留，并让 `institutionalOrderPressureScore()` 改用该字段。
 - 暂缓项：`treasuryStability` 正式累计、核心改革 ID 推进链、科技/事件消费、Domain command execution；这些需要更大规则定义。
 - 后续低风险补证：Domain institutional_order 应再补 repository-driven `victory_conditions.json` 阈值测试，防止手写阈值漂移。
+
+## 2026-05-24 institutional_order Web 兼并压力 parity 最小修补
+
+- 已完成项：Web `RegionViewModel` 现在有运行态 `annexationPressure`，初始值按 Domain 公式 `landStructure.localElites * 100` 生成，export/import 保留，制度胜利压力门改用玩家自有地区最大 `annexationPressure`。
+- 已完成证明：Playwright `shows institutional order pressure uses annexation pressure rather than rebellion risk` 红/绿覆盖低 risk 高兼并压力阻断、低兼并压力达成、export/import 保持；胜利相关子集 `5/5 passed`；`npm --prefix web-strategy-map run typecheck` 通过。
+- 当前 P0 转向：下一轮应找缺口，优先比较 `treasuryStability` 正式累计、核心改革 ID 推进链、repository-driven `victory_conditions.json` 阈值测试。
+- 剩余风险：财政稳定和改革推进仍是制度胜利从“可导入证明”走向自然玩法闭环的主要缺口。

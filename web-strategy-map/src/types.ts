@@ -494,6 +494,7 @@ export interface RegionViewModel {
   integration: number;
   contribution: number;
   risk: number;
+  annexationPressure: number;
   legitimacy: number;
   specialization: string;
   governanceFocus: GovernanceFocusId;

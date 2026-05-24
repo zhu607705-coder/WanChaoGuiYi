@@ -141,6 +141,7 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     const integration = owner === 'player' ? 72 : owner === 'rival' ? 34 : 48;
     const contribution = owner === 'player' ? 78 : owner === 'rival' ? 32 : 52;
     const legitimacy = clamp(55 + (definition.legitimacyMemory?.length ?? 0) * 8 - risk * 0.18, 0, 100);
+    const annexationPressure = initialAnnexationPressure(definition);
     const specialization = resolveSpecialization(definition, history);
     const governanceFocus = focusFromSpecialization(specialization);
     const laborFocus = laborFromGovernanceFocus(governanceFocus);
@@ -164,6 +165,7 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
       integration,
       contribution,
       risk,
+      annexationPressure,
       legitimacy,
       specialization,
       governanceFocus,
@@ -524,6 +526,10 @@ function chooseBuilding(buildings: BuildingDefinition[], specialization: string,
     'defense';
 
   return buildings.find((building) => building.category === category) ?? buildings[0];
+}
+
+function initialAnnexationPressure(definition: RegionDefinition): number {
+  return clamp(Math.round((definition.landStructure?.localElites ?? 0.3) * 100), 0, 100);
 }
 
 function choosePolicy(
