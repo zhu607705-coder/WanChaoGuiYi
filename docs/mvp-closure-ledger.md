@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 复核 `institutional_order` 下一条成熟切片 | `web-strategy-map/src`、`domain-core/src/Domain/Victory`、`tools/headless_runner/WanChaoGuiYiTests` | Web 字段载体已补；下一步比较 Web 制度胜利进度、财政稳定累计、改革推进路径和 repository-driven 阈值测试 |
+| P0 | 修补 Web `institutional_order` 进度/outliner | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | Web 字段载体已补；下一步读取 `victory_conditions.json` 阈值，显示制度胜利进度、达成状态和玩家可见压力门 |
 | P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
@@ -186,3 +186,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成证明：Playwright `preserves institutional order fields through Web debug export import` 覆盖默认 `0/50`、导入 `3/68`、debug、导出和再导入保留。
 - 验证：targeted Playwright 红/绿；胜利相关 Playwright 子集 `3/3`；`npm --prefix web-strategy-map run typecheck`；字段相关 `rg`。
 - 当前 P0 转向：复核下一条制度胜利成熟切片，优先比较 Web 制度胜利进度/outliner、财政稳定累计、改革推进路径、repository-driven 阈值测试。
+
+## 2026-05-24 institutional_order Web 进度显示复核
+
+- 已完成复核：Web 胜利 outliner 仍只显示三代延续与统一九州；`institutional_order` 阈值已在 JSON 和 TS 类型中存在，Web `nationState` 也已有 `completedCoreReforms` / `treasuryStability`。
+- 当前 P0 首选：下一修补轮补 Web 制度胜利进度/outliner/debug achievement，读取 `completedCoreReforms:4`、`minLegitimacy:70`、`minTreasuryStability:65`、`maxAnnexationPressure:45`，并用玩家自有地区最大 `risk` 作为第一版 Web 可见“兼并压力”门。
+- 暂缓项：财政稳定正式累计、改革自然推进、Domain command execution、repository-driven 阈值测试；后续需要再补 Web/Domain 精确压力 parity。

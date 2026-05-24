@@ -11319,3 +11319,79 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 改动范围限于 Web data/ui/test 与报告/台账；`git diff --check` 和验证通过后做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order Web 进度显示优先级复核
+
+意图理解 🟢
+
+- Why：`df154ca9` 已证明 Web 能保存制度胜利字段，下一步应让玩家和测试看到制度胜利进度，而不是继续只靠 debug 字段。
+- Context：本轮是找漏洞/找缺口，只读复核；不改运行代码，不重复 Web carrier proof。
+- What：比较 Web 进度/outliner、财政稳定累计、改革推进路径和 repository-driven 阈值测试，选出下一修补轮。
+
+### 类型
+
+- 找漏洞/找缺口：复核 `institutional_order` 在 Web carrier proof 后的下一条成熟切片。
+
+### 目标
+
+- 判断哪条后续线最小且最能推动 MVP 成熟：
+  - Web 制度胜利进度 / outliner / debug achievement。
+  - `treasuryStability` 累计。
+  - `completedCoreReforms` / 改革推进路径。
+  - repository-driven `victory_conditions.json` 阈值测试。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 29]`，本轮开始时工作树干净。
+- 最新提交链：`df154ca9 Carry institutional order fields through Web state`、`f0624441 Aim institutional order at Web carrier proof`、`f624a04 Prevent duplicate reforms from claiming institutional order`。
+- 最近验证来自 `df154ca9`：targeted Playwright 红/绿、胜利相关 Playwright 子集 `3/3`、`npm --prefix web-strategy-map run typecheck`、字段相关 `rg`、`git diff --check`。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 发现
+
+- Web 进度/outliner：
+  - `victoryProgressSummary()` 仍只返回“三代延续 + 统一九州”，没有 `institutional_order`。
+  - `outlinerItem('胜利', this.victoryProgressSummary(), ...)` 已经是胜利进度入口，只要扩展 summary 即可让玩家可见。
+  - `getDebugState()` 已 spread `nationState`，但还没有 `institutionalOrderVictoryAchieved` 或 `institutionalOrderProgressSummary`。
+  - `victory_conditions.json` 已有制度胜利阈值：`completedCoreReforms:4`、`minLegitimacy:70`、`minTreasuryStability:65`、`maxAnnexationPressure:45`。
+  - Web `RegionViewModel` 没有 `annexationPressure` 字段；可用玩家可见口径只有地区 `risk`、`integration`、`legitimacy`，其中 `risk` 已由 `rebellionRisk` 和 `localPower` 聚合。
+- 财政稳定累计：
+  - `technologies.json` / `chronicle_events.json` 有 `treasuryStability` 或 `treasuryPressure` 数据，政策主要是 `taxEfficiency` / `money` / `treasuryPressure`。
+  - Web `applyGovernancePolicy()` 不消费 `treasuryStability` / `treasuryPressure`；Domain `DomainEconomySystem` 也不更新 `FactionState.treasuryStability`。
+  - 这条线会打开政策、科技、事件和经济公式，范围大于下一轮应选切片。
+- 改革推进：
+  - 政策数据已有 `category:"reform"`，例如 `standardization`、`central_reform`、`central_audit`。
+  - Web `choosePolicy()` / `choosePolicyForGovernanceFocus()` 当前不形成稳定的“核心改革推进链”；`applyGovernancePolicy()` 也不记录已完成改革。
+  - 可以作为后续成熟切片，但需要先决定重复政策、改革 ID 与核心改革分类语义。
+- repository-driven 阈值：
+  - `NonUnityJsonDataRepository` 已加载 `victory_conditions.json` 并暴露 `VictoryConditions`。
+  - 当前 `VictorySystemInstitutionalOrderTests` 仍手写阈值；补真实 JSON 阈值测试可防漂移，但主要是绿色证明，玩家可见价值低于 Web 进度/outliner。
+
+### 下一轮低风险修补建议
+
+- 首选：Web 制度胜利进度 / outliner / debug achievement。
+- 建议 Playwright：`shows institutional order victory progress in the Web when fields meet data thresholds`。
+- 最小实现：
+  - 从 `victory_conditions.json` 读取 `institutional_order` 阈值。
+  - 用 `nationState.completedCoreReforms`、`nationState.legitimacy`、`nationState.treasuryStability` 和玩家可见地区压力口径计算制度胜利进度。
+  - Web 地区没有 `annexationPressure`，下一轮可先定义 `institutionalOrderPressureScore` 为玩家自有地区最大 `risk`，用 `maxAnnexationPressure` 阈值命名为“兼并压力”可见门；若未来补精确字段，再做 Web/Domain parity 修正。
+  - debug 暴露 `institutionalOrderProgressSummary`、`institutionalOrderVictoryAchieved`、`institutionalOrderPressureScore`、`institutionalOrderMaxAnnexationPressure`。
+  - outliner 胜利行包含“制度胜利”与达成/未达成原因。
+- 暂不做：财政稳定累计、改革推进、完整政策/研究/事件链、Domain command execution、Unity/Tuanjie。
+
+### 验证
+
+- 本轮只读复核：`web-strategy-map/src/ui.ts`、`web-strategy-map/src/data.ts`、`web-strategy-map/src/types.ts`、`web-strategy-map/tests/strategy-map.spec.ts`、`victory_conditions.json`、`policies.json`、`technologies.json`、`chronicle_events.json`、`DomainEconomySystem.cs`、`DomainVictorySystem.cs`、`VictorySystemInstitutionalOrderTests.cs`、`NonUnityJsonDataRepository.cs`。
+- 文档更新后执行 `git diff --check`。
+
+### 剩余风险
+
+- 下一轮若采用 Web `risk` 作为兼并压力口径，它仍不是 Domain `annexationPressure` 字段的精确 parity。
+- `treasuryStability` 仍缺正式累计。
+- `completedCoreReforms` 仍缺自然推进路径。
+- repository-driven 阈值测试仍需后续补上，避免手写阈值长期漂移。
+
+### 提交策略
+
+- 本轮改动应仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`；若 `git diff --check` 通过，做隔离文档 Lore commit。
