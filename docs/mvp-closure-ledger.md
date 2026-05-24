@@ -192,3 +192,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成复核：Web 胜利 outliner 仍只显示三代延续与统一九州；`institutional_order` 阈值已在 JSON 和 TS 类型中存在，Web `nationState` 也已有 `completedCoreReforms` / `treasuryStability`。
 - 当前 P0 首选：下一修补轮补 Web 制度胜利进度/outliner/debug achievement，读取 `completedCoreReforms:4`、`minLegitimacy:70`、`minTreasuryStability:65`、`maxAnnexationPressure:45`，并用玩家自有地区最大 `risk` 作为第一版 Web 可见“兼并压力”门。
 - 暂缓项：财政稳定正式累计、改革自然推进、Domain command execution、repository-driven 阈值测试；后续需要再补 Web/Domain 精确压力 parity。
+
+## 2026-05-24 institutional_order Web 进度显示最小修补
+
+- 已完成项：Web 胜利 outliner/debug 现在消费 `institutional_order` 阈值，并显示制度胜利进度、达成状态、兼并压力分数和阈值。
+- 已完成证明：Playwright `shows institutional order victory progress in the Web when fields meet data thresholds` 覆盖 blocked、achieved、export/import 保持状态；相邻胜利子集 `4/4 passed`；`npm --prefix web-strategy-map run typecheck` 通过。
+- 当前 P0 转向：下一轮应做 fact-based review，比较 `treasuryStability` 正式累计、`completedCoreReforms` 推进链、Web/Domain 兼并压力 parity、repository-driven `victory_conditions.json` 阈值测试，选出最小修补切片。
+- 剩余风险：Web 兼并压力暂用玩家自有地区最大 `risk`，仍不是 Domain `annexationPressure` 的精确字段来源。

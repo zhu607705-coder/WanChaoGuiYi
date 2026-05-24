@@ -74,6 +74,10 @@ type DebugState = {
     dynastyFragmentationReason: string;
     unifyJiuZhouProgressSummary: string;
     unifyJiuZhouVictoryAchieved: boolean;
+    institutionalOrderProgressSummary: string;
+    institutionalOrderVictoryAchieved: boolean;
+    institutionalOrderPressureScore: number;
+    institutionalOrderMaxAnnexationPressure: number;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -743,6 +747,81 @@ test.describe('code-driven strategy map', () => {
     const restored = await exportGameState(page);
     expect(restored.nationState.completedCoreReforms).toBe(3);
     expect(restored.nationState.treasuryStability).toBe(68);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('shows institutional order victory progress in the Web when fields meet data thresholds', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const blockedInstitutionalOrder: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      nationState: {
+        ...exported.nationState,
+        legitimacy: 69,
+        completedCoreReforms: 3,
+        treasuryStability: 64
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: 56,
+        integration: Math.max(region.integration, 70),
+        legitimacy: Math.max(region.legitimacy, 65)
+      }))
+    };
+    expect(await importGameState(page, blockedInstitutionalOrder)).toBe(true);
+
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('制度胜利');
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('核心改革 3/4');
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('法统 69/70');
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('财政稳定 64/65');
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('兼并压力 56/45');
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('制度胜利');
+    await expect(page.locator('#outliner-list')).toContainText('制度胜利');
+    await expect(page.locator('#outliner-list')).not.toContainText('制度胜利达成');
+
+    const blockedSave = await exportGameState(page);
+    await openApp(page);
+    expect(await importGameState(page, blockedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('兼并压力 56/45');
+
+    const achievedInstitutionalOrder: GameExportState = {
+      ...blockedSave,
+      nationState: {
+        ...blockedSave.nationState,
+        legitimacy: 72,
+        completedCoreReforms: 4,
+        treasuryStability: 66
+      },
+      regions: blockedSave.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: 18,
+        integration: Math.max(region.integration, 80),
+        legitimacy: Math.max(region.legitimacy, 70)
+      }))
+    };
+    expect(await importGameState(page, achievedInstitutionalOrder)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderPressureScore).toBeLessThanOrEqual(45);
+    await expectDebug(page, (state) => state.ui.institutionalOrderMaxAnnexationPressure).toBe(45);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('制度胜利达成');
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('制度胜利达成');
+    await expect(page.locator('#outliner-list')).toContainText('制度胜利达成');
+
+    const achievedSave = await exportGameState(page);
+    await openApp(page);
+    expect(await importGameState(page, achievedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.institutionalOrderProgressSummary).toContain('制度胜利达成');
+    await expect(page.locator('#outliner-list')).toContainText('制度胜利达成');
 
     expect(consoleErrors).toEqual([]);
   });

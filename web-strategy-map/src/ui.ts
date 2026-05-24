@@ -764,6 +764,10 @@ export class StrategyUi {
     dynastyFragmentationReason: string;
     unifyJiuZhouProgressSummary: string;
     unifyJiuZhouVictoryAchieved: boolean;
+    institutionalOrderProgressSummary: string;
+    institutionalOrderVictoryAchieved: boolean;
+    institutionalOrderPressureScore: number;
+    institutionalOrderMaxAnnexationPressure: number;
     governanceQueueLength: number;
     logisticsQueueLength: number;
     commandQueueLength: number;
@@ -852,6 +856,10 @@ export class StrategyUi {
       dynastyFragmentationReason: this.dynastyFragmentationReason(),
       unifyJiuZhouProgressSummary: this.unifyJiuZhouProgressSummary(),
       unifyJiuZhouVictoryAchieved: this.unifyJiuZhouVictoryAchieved(),
+      institutionalOrderProgressSummary: this.institutionalOrderProgressSummary(),
+      institutionalOrderVictoryAchieved: this.institutionalOrderVictoryAchieved(),
+      institutionalOrderPressureScore: this.institutionalOrderPressureScore(),
+      institutionalOrderMaxAnnexationPressure: this.institutionalOrderVictoryTarget().maxAnnexationPressure,
       governanceQueueLength: this.governanceQueue.length,
       logisticsQueueLength: this.logisticsQueue.length,
       commandQueueLength: this.commandQueue.length,
@@ -3220,7 +3228,7 @@ export class StrategyUi {
   }
 
   private victoryProgressSummary(): string {
-    return `${this.threeGenerationProgressSummary()}；${this.unifyJiuZhouProgressSummary()}`;
+    return `${this.threeGenerationProgressSummary()}；${this.unifyJiuZhouProgressSummary()}；${this.institutionalOrderProgressSummary()}`;
   }
 
   private threeGenerationProgressSummary(): string {
@@ -3290,6 +3298,47 @@ export class StrategyUi {
     return {
       minLegitimacy: condition?.requirements.minLegitimacy ?? 55
     };
+  }
+
+  private institutionalOrderVictoryAchieved(): boolean {
+    const target = this.institutionalOrderVictoryTarget();
+    return (
+      Math.round(this.nationState.completedCoreReforms ?? 0) >= target.requiredCoreReforms &&
+      Math.round(this.nationState.legitimacy ?? 0) >= target.minLegitimacy &&
+      Math.round(this.nationState.treasuryStability ?? 0) >= target.minTreasuryStability &&
+      this.institutionalOrderPressureScore() <= target.maxAnnexationPressure
+    );
+  }
+
+  private institutionalOrderProgressSummary(): string {
+    const target = this.institutionalOrderVictoryTarget();
+    const completedCoreReforms = Math.round(this.nationState.completedCoreReforms ?? 0);
+    const legitimacy = Math.round(this.nationState.legitimacy ?? 0);
+    const treasuryStability = Math.round(this.nationState.treasuryStability ?? 0);
+    const pressure = this.institutionalOrderPressureScore();
+    const label = this.institutionalOrderVictoryAchieved() ? '制度胜利达成' : '制度胜利';
+    return `${label}：核心改革 ${completedCoreReforms}/${target.requiredCoreReforms}，法统 ${legitimacy}/${target.minLegitimacy}，财政稳定 ${treasuryStability}/${target.minTreasuryStability}，兼并压力 ${pressure}/${target.maxAnnexationPressure}`;
+  }
+
+  private institutionalOrderVictoryTarget(): {
+    requiredCoreReforms: number;
+    minLegitimacy: number;
+    minTreasuryStability: number;
+    maxAnnexationPressure: number;
+  } {
+    const condition = this.dataset.victoryConditions.find((item) => item.id === 'institutional_order');
+    return {
+      requiredCoreReforms: Math.max(1, condition?.requirements.completedCoreReforms ?? 4),
+      minLegitimacy: condition?.requirements.minLegitimacy ?? 70,
+      minTreasuryStability: condition?.requirements.minTreasuryStability ?? 65,
+      maxAnnexationPressure: Math.max(0, condition?.requirements.maxAnnexationPressure ?? 45)
+    };
+  }
+
+  private institutionalOrderPressureScore(): number {
+    const playerRegions = this.dataset.regions.filter((region) => region.owner === 'player');
+    if (playerRegions.length === 0) return 100;
+    return clamp(Math.max(...playerRegions.map((region) => Math.round(region.risk))), 0, 100);
   }
 
   private playerOwnedRegionCount(): number {

@@ -11395,3 +11395,70 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮改动应仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`；若 `git diff --check` 通过，做隔离文档 Lore commit。
+
+## 2026-05-24 自动化修补轮：institutional_order Web 进度显示最小修补
+
+意图理解 🟢
+
+- Why：Web 已能保存 `completedCoreReforms` 与 `treasuryStability`，但胜利 outliner/debug 尚未消费 `institutional_order` 阈值，玩家无法看到制度胜利进度或达成状态。
+- Context：本轮继续纯代码 Web + headless Domain Core 路线；不做财政稳定累计、改革推进、Domain command execution、存档结构变更或 Unity/Tuanjie。
+- What：用 Playwright TDD 补 Web 制度胜利进度、debug payload、outliner 胜利摘要，并用玩家自有地区最大 `risk` 作为第一版 Web 可见“兼并压力”门。
+
+### 类型
+
+- 修补问题：Web `institutional_order` 运行态展示最小切片。
+
+### 目标
+
+- 从 `victory_conditions.json` 读取制度胜利阈值：
+  - `completedCoreReforms:4`
+  - `minLegitimacy:70`
+  - `minTreasuryStability:65`
+  - `maxAnnexationPressure:45`
+- Web debug/outliner 显示制度胜利进度与达成状态。
+- Playwright 覆盖未达成、达成、export/import 后保持状态。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 30]`，本轮开始时工作树干净。
+- 最新提交链：`2288ae3a Aim institutional order at Web victory progress`、`df154ca9 Carry institutional order fields through Web state`、`f0624441 Aim institutional order at Web carrier proof`。
+- 最近报告确认唯一改革 ID 修补、Web carrier proof、Web 制度胜利进度复核均已完成；下一步应是本轮 Web 进度显示修补。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 变更
+
+- `web-strategy-map/src/ui.ts`
+  - `victoryProgressSummary()` 现在拼接“三代延续 / 统一九州 / 制度胜利”。
+  - 新增 `institutionalOrderVictoryTarget()`，读取 `institutional_order` 的四个阈值。
+  - 新增 `institutionalOrderPressureScore()`，以玩家自有地区最大 `risk` 作为 Web 可见兼并压力口径；无玩家地区时返回 `100`。
+  - 新增 `institutionalOrderVictoryAchieved()` 与 `institutionalOrderProgressSummary()`。
+  - `getDebugState()` 暴露：
+    - `institutionalOrderProgressSummary`
+    - `institutionalOrderVictoryAchieved`
+    - `institutionalOrderPressureScore`
+    - `institutionalOrderMaxAnnexationPressure`
+- `web-strategy-map/tests/strategy-map.spec.ts`
+  - 新增 Playwright：`shows institutional order victory progress in the Web when fields meet data thresholds`。
+  - 红灯证明：字段未暴露时 `institutionalOrderVictoryAchieved` 为 `undefined`。
+  - 绿灯覆盖：高风险/不足改革/低法统/低财政时不达成且显示 `兼并压力 56/45`；满足阈值且低风险时显示 `制度胜利达成`；export/import 后保持 blocked/achieved 状态。
+
+### 验证
+
+- RED：`npm --prefix web-strategy-map run test:ui -- --grep "shows institutional order victory progress in the Web when fields meet data thresholds" --workers=1 --reporter=line` 失败于缺失 `institutionalOrderVictoryAchieved`。
+- GREEN：同一 targeted Playwright `1/1 passed`。
+- 字段 grep：`rg -n "institutionalOrder|completedCoreReforms|treasuryStability|victoryProgressSummary|maxAnnexationPressure" web-strategy-map\src web-strategy-map\tests\strategy-map.spec.ts`，命中范围符合预期。
+- TypeScript：`npm --prefix web-strategy-map run typecheck` 通过。
+- 胜利相关 Playwright 子集：`shows unify jiuzhou victory`、`blocks three-generation victory`、`preserves institutional order fields`、`shows institutional order victory progress` 共 `4/4 passed`。
+- Playwright 每次运行前同步并校验数据源：`WEB DATA SOURCE VALIDATION PASSED`。
+
+### 剩余风险
+
+- Web 制度胜利“兼并压力”仍采用玩家可见 `risk` 最大值，不是 Domain `RegionState.annexationPressure` 的精确 parity。
+- `treasuryStability` 仍缺正式累计来源。
+- `completedCoreReforms` 仍缺政策/研究/事件推进链。
+- Domain/Web 阈值均依赖同一 JSON 数据，但部分测试仍存在手写阈值，需要后续 repository-driven 证明防漂移。
+
+### 提交策略
+
+- 改动范围限于 Web UI、Playwright 测试、项目报告与 MVP 台账；`git diff --check` 通过后做 scoped Lore commit。
