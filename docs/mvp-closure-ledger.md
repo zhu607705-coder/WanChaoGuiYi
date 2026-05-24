@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 修补 `institutional_order` 重复改革 ID 假阳性 | `domain-core/src/Domain/Victory/DomainVictorySystem.cs`、`tools/headless_runner/WanChaoGuiYiTests` | `completedReformIds` 当前按 raw count 计数；下一步先改为唯一 ID 计数，避免重复改革误达成 |
+| P0 | 复核 `institutional_order` 下一条最小修补线 | `domain-core/src/Domain/Victory`、`web-strategy-map/src`、`web-strategy-map/game-data-source` | 重复改革 ID 假阳性已修补；下一步比较 Web 字段载体、财政稳定累计、repository-driven 阈值测试和改革推进路径，选择最窄红绿切片 |
 | P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
@@ -166,3 +166,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 改革语义结论：Domain 当前按 `completedReformIds.Count` 计算核心改革数，重复 ID 会制造制度胜利假阳性；这是下一修补轮最小红绿切片。
 - 数据阈值结论：`NonUnityJsonDataRepository` 已能加载 `victory_conditions.json`，但 `9920627` 测试仍手写阈值；后续可补 repository-driven 阈值测试，优先级低于重复 ID 语义修补。
 - 当前 P0 首选：新增 `Institutional_Order_Should_Count_Unique_Core_Reforms_Only`，证明重复改革 ID 不会满足 `completedCoreReforms:4`，并把 `DomainVictorySystem` 改为非空唯一 ID 计数。
+
+## 2026-05-24 institutional_order 唯一改革 ID 最小修补
+
+- 已完成项：`DomainVictorySystem.CountCompletedCoreReforms()` 现在按 trim 后非空唯一 ID 计数，重复 `completedReformIds` 和空 ID 不再推动制度胜利。
+- 已完成证明：`Institutional_Order_Should_Count_Unique_Core_Reforms_Only` 覆盖重复 `central_reform` / `fiscal_order` 时不达成、`completedCoreReforms == 2`、原因包含“核心改革”。
+- 验证：targeted `VictorySystemInstitutionalOrderTests` `2/2`、`python tools\validate_domain_core.py`、完整 `WanChaoGuiYiTests` `93/93`、`tools\verify_headless_war.ps1` `16/16`。
+- 当前 P0 转向：复核 `institutional_order` 下一条最小修补线，优先比较 Web `nationState` / debug / export carrier、`treasuryStability` 累计来源、repository-driven `victory_conditions.json` 阈值测试，以及改革推进路径。

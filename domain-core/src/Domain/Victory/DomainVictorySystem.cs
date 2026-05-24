@@ -138,7 +138,17 @@ namespace WanChaoGuiYi
         private static int CountCompletedCoreReforms(FactionState faction)
         {
             if (faction == null || faction.completedReformIds == null) return 0;
-            return faction.completedReformIds.Count;
+
+            System.Collections.Generic.HashSet<string> uniqueReformIds =
+                new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            for (int i = 0; i < faction.completedReformIds.Count; i++)
+            {
+                string reformId = faction.completedReformIds[i];
+                if (string.IsNullOrWhiteSpace(reformId)) continue;
+                uniqueReformIds.Add(reformId.Trim());
+            }
+
+            return uniqueReformIds.Count;
         }
 
         private static int CalculateMaxObservedAnnexationPressure(GameState state, FactionState faction)

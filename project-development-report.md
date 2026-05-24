@@ -11032,6 +11032,59 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 
 - 本轮为隔离文档轮；若 `git diff --check` 通过且改动仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，可做 scoped Lore commit。
 
+## 2026-05-24 自动化修补轮：institutional_order 唯一改革 ID 计数
+
+意图理解 🟢
+
+- Why：制度胜利已能读取 `completedReformIds`，但 raw count 会让重复改革 ID 误满足 `completedCoreReforms:4`。
+- Context：本轮是修补问题，只处理纯 C# Domain/headless 评价语义，不扩到 Web、存档、财政稳定累计、政策/研究/事件推进或 StrategicAI 命令。
+- What：用 targeted xUnit 锁住重复 ID 不应达成制度胜利，并把 `DomainVictorySystem` 改为非空唯一 ID 计数。
+
+### 类型
+
+- 修补问题：修复 `institutional_order` 对重复改革 ID 的假阳性。
+
+### 目标
+
+- 新增 `Institutional_Order_Should_Count_Unique_Core_Reforms_Only`。
+- 构造 `completedReformIds = ["central_reform", "central_reform", "fiscal_order", "fiscal_order", ""]`，同时让法统、`treasuryStability` 和玩家地区兼并压力均达标。
+- 断言制度胜利不达成，`completedCoreReforms == 2`，`requiredCoreReforms == 4`，失败原因包含“核心改革”。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 26]`，本轮接手时仅有 `DomainVictorySystem.cs` 与 `VictorySystemInstitutionalOrderTests.cs` 两个未提交代码改动。
+- 最近报告确认 `cdff278 Aim institutional order at unique reform counting` 已把重复改革 ID 语义列为当前 P0。
+- 精确进程筛选 `WanChaoGuiYi|万朝归一|web-strategy-map|run_all_checks|playwright|vite|dotnet|validate_domain_core|validate_web_data_source|verify_headless` 只命中 Roslyn 编译服务和本次查询命令，未发现冲突的 WanChao dotnet、Playwright、Vite、数据或 full-gate 任务。
+
+### 变更
+
+- `domain-core/src/Domain/Victory/DomainVictorySystem.cs`
+  - `CountCompletedCoreReforms()` 从 `completedReformIds.Count` 改为 trim 后非空唯一 ID 计数。
+  - 使用 `StringComparer.Ordinal` 保持 ID 精确匹配，避免大小写折叠带来存档或数据语义漂移。
+- `tools/headless_runner/WanChaoGuiYiTests/VictorySystemInstitutionalOrderTests.cs`
+  - 新增重复改革 ID 回归测试，证明重复项和空 ID 不会被算成已完成核心改革。
+
+### 验证
+
+- 接手摘要记录本轮 RED：targeted `VictorySystemInstitutionalOrderTests` 曾因 raw count 误判达成而失败。
+- 本轮重新运行 GREEN：
+  - `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~VictorySystemInstitutionalOrderTests"` 通过：`2/2`。
+  - `python tools\validate_domain_core.py` 通过。
+  - `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj` 通过：`93/93`。
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过：data-source validation passed，domain-core OK，headless war `16/16`。
+
+### 剩余风险
+
+- Web `nationState` / debug / export/import 仍未接入制度胜利字段。
+- `treasuryStability` 仍只有运行态字段和测试种子值，尚未从技术、政策、事件或经济系统累计。
+- `completedReformIds` 的正式推进路径仍未接入纯代码 Web/headless 回合流。
+- `DomainVictorySystem` 目前的制度胜利测试仍手写阈值；后续可补 repository-driven `victory_conditions.json` 阈值读取测试。
+
+### 提交策略
+
+- 改动范围限于 Domain 胜利系统、headless xUnit、报告和台账；`git diff --check` 通过后做 scoped Lore commit。
+
 ## 2026-05-24 自动化修补轮：institutional_order Domain 字段来源 proof
 
 意图理解 🟢

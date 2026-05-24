@@ -41,6 +41,28 @@ namespace WanChaoGuiYi.Tests
             Assert.Contains("制度胜利", ordered.reason);
         }
 
+        [Fact]
+        public void Institutional_Order_Should_Count_Unique_Core_Reforms_Only()
+        {
+            VictoryConditionDefinition condition = BuildInstitutionalOrderCondition();
+            DomainVictorySystem system = new DomainVictorySystem();
+
+            GameState state = BuildInstitutionalStateWithReformIds(
+                new string[] { "central_reform", "central_reform", "fiscal_order", "fiscal_order", "" },
+                74,
+                70,
+                36);
+            FactionState faction = state.FindFaction("faction_player");
+
+            VictoryEvaluationPayload payload = system.EvaluateInstitutionalOrder(state, faction, condition);
+
+            Assert.False(payload.achieved);
+            Assert.Equal("institutional_order", payload.victoryId);
+            Assert.Equal(2, payload.completedCoreReforms);
+            Assert.Equal(4, payload.requiredCoreReforms);
+            Assert.Contains("核心改革", payload.reason);
+        }
+
         private static VictoryConditionDefinition BuildInstitutionalOrderCondition()
         {
             return new VictoryConditionDefinition
@@ -93,6 +115,22 @@ namespace WanChaoGuiYi.Tests
             state.factions.Add(player);
             state.regions.Add(BuildRegion("capital", player.id, annexationPressure));
             state.regions.Add(BuildRegion("frontier", player.id, annexationPressure - 4));
+
+            return state;
+        }
+
+        private static GameState BuildInstitutionalStateWithReformIds(
+            string[] reformIds,
+            int legitimacy,
+            int treasuryStability,
+            int annexationPressure)
+        {
+            GameState state = BuildInstitutionalState(0, legitimacy, treasuryStability, annexationPressure);
+            FactionState player = state.FindFaction("faction_player");
+            for (int i = 0; i < reformIds.Length; i++)
+            {
+                player.completedReformIds.Add(reformIds[i]);
+            }
 
             return state;
         }
