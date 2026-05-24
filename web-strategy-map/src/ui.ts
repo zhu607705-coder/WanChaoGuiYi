@@ -757,6 +757,9 @@ export class StrategyUi {
     dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
+    dynastyFragmentationScore: number;
+    dynastyMaxFragmentation: number;
+    dynastyFragmentationReason: string;
     unifyJiuZhouProgressSummary: string;
     unifyJiuZhouVictoryAchieved: boolean;
     governanceQueueLength: number;
@@ -842,6 +845,9 @@ export class StrategyUi {
       dynastyFailureRisk: this.dynastyFailureRisk(),
       victoryProgressSummary: this.victoryProgressSummary(),
       dynastyVictoryAchieved: this.dynastyVictoryAchieved(),
+      dynastyFragmentationScore: this.dynastyFragmentationScore(),
+      dynastyMaxFragmentation: this.threeGenerationVictoryTarget().maxFragmentation,
+      dynastyFragmentationReason: this.dynastyFragmentationReason(),
       unifyJiuZhouProgressSummary: this.unifyJiuZhouProgressSummary(),
       unifyJiuZhouVictoryAchieved: this.unifyJiuZhouVictoryAchieved(),
       governanceQueueLength: this.governanceQueue.length,
@@ -3205,7 +3211,10 @@ export class StrategyUi {
 
   private dynastyVictoryAchieved(): boolean {
     const target = this.threeGenerationVictoryTarget();
-    return (this.nationState.stableSuccessions ?? 0) >= target.stableSuccessions && this.nationState.legitimacy >= target.minLegitimacy;
+    const stableEnough = (this.nationState.stableSuccessions ?? 0) >= target.stableSuccessions;
+    const legitimacyEnough = this.nationState.legitimacy >= target.minLegitimacy;
+    const fragmentationEnough = target.maxFragmentation <= 0 || this.dynastyFragmentationScore() <= target.maxFragmentation;
+    return stableEnough && legitimacyEnough && fragmentationEnough;
   }
 
   private victoryProgressSummary(): string {
@@ -3216,18 +3225,47 @@ export class StrategyUi {
     const target = this.threeGenerationVictoryTarget();
     const stable = Math.round(this.nationState.stableSuccessions ?? 0);
     const legitimacy = Math.round(this.nationState.legitimacy);
+    const fragmentation = this.dynastyFragmentationScore();
     if (this.dynastyVictoryAchieved()) {
-      return `三代延续达成：续承 ${stable}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}`;
+      return `三代延续达成：续承 ${stable}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}，分裂度 ${fragmentation}/${target.maxFragmentation}`;
     }
-    return `三代延续 ${Math.min(stable, target.stableSuccessions)}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}`;
+    const fragmentationReason = this.dynastyFragmentationReason();
+    const suffix = fragmentationReason ? `，${fragmentationReason}` : '';
+    return `三代延续 ${Math.min(stable, target.stableSuccessions)}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}${suffix}`;
   }
 
-  private threeGenerationVictoryTarget(): { stableSuccessions: number; minLegitimacy: number } {
+  private threeGenerationVictoryTarget(): { stableSuccessions: number; minLegitimacy: number; maxFragmentation: number } {
     const condition = this.dataset.victoryConditions.find((item) => item.id === 'three_generation_dynasty');
     return {
       stableSuccessions: Math.max(1, condition?.requirements.stableSuccessions ?? 3),
-      minLegitimacy: condition?.requirements.minLegitimacy ?? 50
+      minLegitimacy: condition?.requirements.minLegitimacy ?? 50,
+      maxFragmentation: Math.max(0, condition?.requirements.maxFragmentation ?? 10)
     };
+  }
+
+  private dynastyFragmentationScore(): number {
+    const playerRegions = this.dataset.regions.filter((region) => region.owner === 'player');
+    if (playerRegions.length === 0) return 100;
+
+    const total = playerRegions.reduce((sum, region) => {
+      const riskPressure = clamp(Math.round(region.risk), 0, 100);
+      const integration = clamp(Math.round(region.integration), 0, 100);
+      const excessRisk = Math.max(0, riskPressure - 60);
+      const integrationDeficit = Math.max(0, 60 - integration);
+      return sum + Math.round(excessRisk * 0.4 + integrationDeficit * 0.4);
+    }, 0);
+
+    return clamp(Math.round(total / playerRegions.length), 0, 100);
+  }
+
+  private dynastyFragmentationReason(): string {
+    const target = this.threeGenerationVictoryTarget();
+    if (target.maxFragmentation <= 0) return '';
+
+    const score = this.dynastyFragmentationScore();
+    if (score <= target.maxFragmentation) return '';
+
+    return `分裂度 ${score}/${target.maxFragmentation}：地方风险或整合不足`;
   }
 
   private unifyJiuZhouVictoryAchieved(): boolean {

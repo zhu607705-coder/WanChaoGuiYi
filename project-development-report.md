@@ -10913,3 +10913,55 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮是找缺口文档轮；若 `git diff --check` 通过且改动仅限报告/台账，可安全隔离为审查文档 scoped commit。
+
+## 2026-05-24 自动化修补轮：Web 三代延续分裂度可见门
+
+### 类型
+
+- 修补问题：按上一轮复核结论实现最小 Web three_generation_dynasty fragmentation parity slice。
+
+### 目标
+
+- 从 `victory_conditions.json` 读取 `maxFragmentation`。
+- 用玩家可见 `RegionViewModel.risk` 和低 `integration` 计算 Web 分裂度。
+- 在 debug/outliner 显示分裂度分数、上限和原因。
+- 当分裂度超过上限时阻断“三代延续达成”。
+- 不改存档 schema，不做 `institutional_order`，不改 Domain/Unity/Tuanjie。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 22]`，本轮开始时工作树干净；最新提交为 `195d3ec`。
+- 最近报告确认上一轮只做 Web/Domain parity 与 `institutional_order` 字段来源复核，下一修补指向 Web 分裂度门。
+- 进程复核：按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|playwright|vite|dotnet|run_all_checks|verify_headless|validate_domain_core|validate_web_data_source` 后只命中本次查询命令，未发现冲突任务；中途一次相关 Playwright 子集被心跳打断后再次复核也无残留进程。
+
+### 改动
+
+- TDD RED：新增 Playwright `blocks three-generation victory in the Web when fragmentation exceeds the data limit`，先确认当前 debug 缺少 `dynastyMaxFragmentation`，Web 尚不能解释分裂度。
+- GREEN：
+  - `getDebugState()` 新增 `dynastyFragmentationScore`、`dynastyMaxFragmentation`、`dynastyFragmentationReason`。
+  - `threeGenerationVictoryTarget()` 读取 `maxFragmentation`。
+  - `dynastyVictoryAchieved()` 同时要求续承、法统和分裂度达标。
+  - `threeGenerationProgressSummary()` 在达成和未达成摘要中显示分裂度信息，outliner 通过现有胜利摘要同步可见。
+  - `dynastyFragmentationScore()` 使用玩家可见 `risk` 和低 `integration` 计算：只统计超过 60 的风险与低于 60 的整合缺口，避免把既有可续命成功线误杀。
+- Playwright 覆盖：
+  - 高风险/低整合且续承、法统达标：不达成，debug/outliner 包含“分裂度”，导出/导入后仍被阻断。
+  - 低风险/高整合且续承、法统达标：达成，导出/导入后仍达成。
+
+### 验证
+
+- RED：targeted Playwright 失败于 `dynastyMaxFragmentation` 为 `undefined`。
+- GREEN targeted：`npm --prefix web-strategy-map run test:ui -- --grep "blocks three-generation victory in the Web when fragmentation exceeds the data limit" --workers=1` 通过 `1/1`。
+- 回归子集：`npm --prefix web-strategy-map run test:ui -- --grep "dynasty|three-generation" --workers=1` 通过 `5/5`。
+- `npm --prefix web-strategy-map run typecheck` 通过。
+- `rg -n "dynastyVictoryAchieved|dynastyFragmentationScore|dynastyMaxFragmentation|dynastyFragmentationReason|maxFragmentation|threeGenerationVictoryTarget|三代延续达成|分裂度" web-strategy-map/src/ui.ts web-strategy-map/tests/strategy-map.spec.ts web-strategy-map/game-data-source/data/victory_conditions.json` 确认 Web 胜利口径、debug 字段和数据阈值引用存在。
+
+### 剩余风险
+
+- Web 分裂度是玩家可见口径，只用 `risk` / 低 `integration`；Domain 分裂度仍使用 `rebellionRisk`、`localPower`、`annexationPressure`、低 `integration`。若后续要求完全同公式，需要先把 Web 字段来源补齐。
+- `institutional_order` 的 `completedCoreReforms` 与 `treasuryStability` 运行态来源仍未定义，是下一批 P0。
+- Domain `DynastyCyclePressureAcceptanceTests.MeetsThreeGenerationVictory()` 私有 helper 仍是进度 helper 口径，后续若继续作为胜利断言应替换为 `DomainVictorySystem`。
+
+### 提交策略
+
+- 本轮改动集中在 Web UI 与 Playwright；验证通过后将执行 `git diff --check` 并做 scoped Lore commit。

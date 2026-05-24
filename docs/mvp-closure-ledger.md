@@ -44,7 +44,7 @@
 | 建筑系统 | buildings data、recommendedBuilding、governance project/building markers | 部分可玩 | 建筑应成为区域长期治理和物流取舍，不只是推荐文本 | building project Playwright、data reference tests |
 | 编年事件 | 200 chronicle events、event choices、Unity-free Web turn loop test | 已可玩 | 事件要解释王朝周期压力，不只随机弹窗 | chronicle trigger/choice tests、UI result log |
 | 天气、风俗、装备、天文、将领 | data contracts and JSON/data model support | 部分可玩 | 保留为当前 MVP 表达层，至少要有数据解释和一个可观察影响路径 | data validation、UI summary 或 headless effect smoke |
-| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功/失败长线；`DomainVictorySystem` 已在 headless 侧消费 `maxFragmentation` 阻断高分裂三代胜利 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因；三代延续必须持续受分裂度约束，并避免 Web/Domain 胜利口径漂移 | 三代延续 Playwright 进度断言、Web 20 回合成功/失败长线、`DomainVictorySystem` maxFragmentation xUnit、后续 Web/Domain parity 复核 |
+| 胜利条件 | `victory_conditions.json` 三种胜利、Numeric victory helpers、Web 三代延续胜利进度、达成断言与 20 回合成功/失败长线；Domain 和 Web 均已消费 `maxFragmentation` 阻断高分裂三代胜利 | 部分可玩 | 一局可从开局推进到胜利/失败，玩家能理解原因；三代延续必须持续受分裂度约束，并避免 Web/Domain 胜利口径漂移 | 三代延续 Playwright 进度断言、Web 20 回合成功/失败长线、`DomainVictorySystem` maxFragmentation xUnit、Web 分裂度 Playwright |
 | 存档/导入导出 | Web local slots、schemaVersion、import/export Playwright、王朝压力和接管模式导出/导入断言 | 已可玩 | 存档必须覆盖治理、军队、物流、战报和关键王朝压力状态 | Playwright save/load、corrupt save tests、王朝接管存档断言 |
 | UI 决策清晰度 | outliner、risk summaries、dynasty pressure summary、governance panel、war reports | 部分可玩 | 每回合清楚显示最大风险、原因、可选行动、预计后果、实际变化 | Playwright viewport and decision-surface assertions |
 | Domain/Web 因果同步 | headless report helpers、headless-vs-ui numerics tests | 同步风险 | 重复表达的因果规则必须有 parity 检查，防止 C# 与 TS 漂移 | parity unit tests、headless report schema tests |
@@ -63,8 +63,8 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 补三代延续 Web 分裂度可见门 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | headless 已消费 `maxFragmentation`；Web 三代达成仍只看续承和法统，下一修补应读 `maxFragmentation`，用玩家可见 `risk` / 低 `integration` 阻止高分裂误报达成，并验证导出/导入保留 |
 | P0 | 复核 `institutional_order` 的运行态字段定义 | `victory_conditions.json`、Domain/Web 胜利进度 | 制度胜利仍缺 `completedCoreReforms`、`minTreasuryStability` 运行态来源；暂不先做 UI 达成 |
+| P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
 | P1 | 扩展 TalentSystem 多角色和 Web 可见入口 | `domain-core/src/Domain/Talents`、`web-strategy-map/src/ui.ts`、`tools/headless_runner/WanChaoGuiYiTests` | 已有清丈能吏 headless 最小证明；后续再补宿将、理财重臣、边疆使臣和玩家可见招贤/任命入口 |
@@ -100,6 +100,7 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：统一九州胜利进度已接入运行态，按 `unify_jiuzhou.minLegitimacy` 与 `regions.owner` 计算 `playerOwnedRegions / totalRegions`，并在 outliner/debug 中显示“统一九州 / 统一九州达成”，Playwright 覆盖法统不足未达成、法统达标达成和导出/导入保留。
 - `domain-core/src/Domain/Ai/DomainStrategicAiSystem.cs` 与 `tools/headless_runner/WanChaoGuiYiTests/StrategicAiIntentTests.cs`：已补 StrategicAI 最小可解释意图，覆盖高扩张资源足选 `expand`、高治理压力选 `stabilize`、资源不足选 `recover`，并断言不改变地图所有权。
 - `domain-core/src/Domain/Victory/DomainVictorySystem.cs` 与 `tools/headless_runner/WanChaoGuiYiTests/VictorySystemFragmentationTests.cs`：已补三代延续最小 headless 胜利门，`stableSuccessions` 和法统达标但分裂度超过 `maxFragmentation:10` 时不会误判胜利，并输出“分裂度”原因。
+- `web-strategy-map/src/ui.ts` 与 `web-strategy-map/tests/strategy-map.spec.ts`：已补 Web 三代延续分裂度门，从 `victory_conditions.json.maxFragmentation` 读取上限，用玩家可见 `risk` 与低 `integration` 计算分裂度，在 debug/outliner 显示分裂度原因，并覆盖高分裂阻断、低分裂达成和导出/导入保留。
 
 ## 2026-05-23 缺口复核
 
@@ -135,3 +136,9 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成复核：Web `dynastyVictoryAchieved()` 仍只检查 `stableSuccessions` 和 `minLegitimacy`；Domain `DomainVictorySystem` 已检查 `maxFragmentation`。这会让 Web 在高风险/低整合状态下仍可能显示“三代延续达成”。
 - `institutional_order` 证据：`VictoryRequirement.completedCoreReforms`、`minTreasuryStability`、`maxAnnexationPressure` 已在 TS/C# 类型中存在，`FactionState.completedReformIds` 也存在；但 Web `nationState` 还没有 completed reforms / treasury stability，技术和事件里的 `treasuryStability` 仍未形成稳定运行态累计来源。
 - 下一修补首选：先补 Web 三代分裂度可见门，使用 `victory_conditions.json.maxFragmentation` 和玩家可见 `risk` / 低 `integration` 形成最小阻断与 Playwright 导入断言；之后再做 `institutional_order` 字段来源。
+
+## 2026-05-24 Web 分裂度最小修补
+
+- 已完成项：Web 三代延续达成现在读取 `maxFragmentation`，并用玩家可见 `risk` 与低 `integration` 计算 `dynastyFragmentationScore`；分裂度超过上限时 debug/outliner 显示“分裂度”原因且不再误报“三代延续达成”。
+- 验证：Playwright targeted 红/绿；王朝相关 Playwright 子集 `5/5`；`npm --prefix web-strategy-map run typecheck`；胜利口径相关 `rg`。
+- 剩余风险：Web 分裂度是玩家可见口径，不是 Domain 公式逐字段复刻；`institutional_order` 的 `treasuryStability` / `completedCoreReforms` 运行态来源仍是下一批 P0。

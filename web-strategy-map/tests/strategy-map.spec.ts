@@ -67,6 +67,9 @@ type DebugState = {
     dynastyFailureRisk: string;
     victoryProgressSummary: string;
     dynastyVictoryAchieved: boolean;
+    dynastyFragmentationScore: number;
+    dynastyMaxFragmentation: number;
+    dynastyFragmentationReason: string;
     unifyJiuZhouProgressSummary: string;
     unifyJiuZhouVictoryAchieved: boolean;
     governanceQueueLength: number;
@@ -631,6 +634,73 @@ test.describe('code-driven strategy map', () => {
     await expectDebug(page, (state) => state.ui.unifyJiuZhouVictoryAchieved).toBe(true);
     await expectDebug(page, (state) => state.ui.unifyJiuZhouProgressSummary).toContain('统一九州达成');
     await expect(page.locator('#outliner-list')).toContainText('统一九州达成');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('blocks three-generation victory in the Web when fragmentation exceeds the data limit', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const fragmentedDynasty: GameExportState = {
+      ...exported,
+      dynastyControlMode: 'takeover',
+      nationState: {
+        ...exported.nationState,
+        legitimacy: 72,
+        stableSuccessions: 3
+      },
+      regions: exported.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: Math.max(region.risk, 72),
+        integration: Math.min(region.integration, 32),
+        legitimacy: Math.max(region.legitimacy, 60)
+      }))
+    };
+    expect(await importGameState(page, fragmentedDynasty)).toBe(true);
+
+    await expectDebug(page, (state) => state.ui.dynastyMaxFragmentation).toBe(10);
+    await expectDebug(page, (state) => state.ui.dynastyFragmentationScore).toBeGreaterThan(10);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.dynastyFragmentationReason).toContain('分裂度');
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('分裂度');
+    await expect(page.locator('#outliner-list')).not.toContainText('三代延续达成');
+    await expect(page.locator('#outliner-list')).toContainText('分裂度');
+
+    const blockedSave = await exportGameState(page);
+    await openApp(page);
+    expect(await importGameState(page, blockedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(false);
+    await expectDebug(page, (state) => state.ui.dynastyFragmentationScore).toBeGreaterThan(10);
+
+    const stableDynasty: GameExportState = {
+      ...blockedSave,
+      nationState: {
+        ...blockedSave.nationState,
+        legitimacy: 72,
+        stableSuccessions: 3
+      },
+      regions: blockedSave.regions.map((region) => ({
+        ...region,
+        owner: 'player',
+        risk: 4,
+        integration: 96,
+        legitimacy: Math.max(region.legitimacy, 70)
+      }))
+    };
+    expect(await importGameState(page, stableDynasty)).toBe(true);
+    await expectDebug(page, (state) => state.ui.dynastyFragmentationScore).toBeLessThanOrEqual(10);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('三代延续达成');
+
+    const achievedSave = await exportGameState(page);
+    await openApp(page);
+    expect(await importGameState(page, achievedSave)).toBe(true);
+    await expectDebug(page, (state) => state.ui.dynastyVictoryAchieved).toBe(true);
+    await expectDebug(page, (state) => state.ui.victoryProgressSummary).toContain('三代延续达成');
 
     expect(consoleErrors).toEqual([]);
   });
