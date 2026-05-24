@@ -213,3 +213,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 已完成证明：Playwright `shows institutional order pressure uses annexation pressure rather than rebellion risk` 红/绿覆盖低 risk 高兼并压力阻断、低兼并压力达成、export/import 保持；胜利相关子集 `5/5 passed`；`npm --prefix web-strategy-map run typecheck` 通过。
 - 当前 P0 转向：下一轮应找缺口，优先比较 `treasuryStability` 正式累计、核心改革 ID 推进链、repository-driven `victory_conditions.json` 阈值测试。
 - 剩余风险：财政稳定和改革推进仍是制度胜利从“可导入证明”走向自然玩法闭环的主要缺口。
+
+## 2026-05-24 institutional_order 自然推进切片复核
+
+- 已完成复核：Web 已有 `governance_policy` 玩家操作入口和多条 `category:"reform"` 政策，但 `nationState` 仍只有数字 `completedCoreReforms`，没有与 Domain 唯一改革 ID 语义对齐的 Web 运行态。
+- 当前 P0 首选：下一修补轮做 Web 核心改革唯一 ID 自然推进，增加 `completedCoreReformIds`，执行 reform policy 时按 policy id 去重并同步 `completedCoreReforms`。
+- 暂缓项：`treasuryStability` 正式累计仍需政策/科技/编年事件/经济回合的合成规则，不应在未定义前随手加公式。
+- 后续补证：Domain institutional_order 仍应补 repository-driven `victory_conditions.json` 阈值测试。

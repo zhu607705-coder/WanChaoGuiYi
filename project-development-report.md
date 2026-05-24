@@ -11600,3 +11600,70 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 改动范围限于 Web data/type/ui/test 与报告/台账；`git diff --check` 通过后做 scoped Lore commit。
+
+## 2026-05-24 自动化找缺口轮：institutional_order 自然推进切片复核
+
+意图理解 🟢
+
+- Why：Web/Domain 兼并压力 parity 已补齐，但制度胜利仍主要依赖导入态证明；成熟化下一步应让玩家操作自然推动制度胜利字段。
+- Context：本轮为找漏洞/找缺口，只读复核；不改运行代码，不重复兼并压力 parity。
+- What：比较 `treasuryStability` 累计、核心改革唯一 ID 推进、repository-driven 阈值测试，选择下一修补切片。
+
+### 类型
+
+- 找漏洞/找缺口：制度胜利自然推进路径复核。
+
+### 目标
+
+- 判断下一步优先补哪条制度胜利成熟链：
+  - Web 核心改革自然推进。
+  - Web/Domain 财政稳定自然累计。
+  - Domain institutional_order 直接消费 JSON 阈值的防漂移测试。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 33]`，本轮开始时工作树干净。
+- 最新提交链：`55f78d46 Align Web institutional pressure with domain state`、`f93d03a0 Aim institutional pressure at Web parity`、`f3787f5b Show institutional order progress in Web victory summary`。
+- 最近验证来自 `55f78d46`：targeted Playwright 红/绿、胜利相关 Playwright 子集 `5/5`、`npm --prefix web-strategy-map run typecheck`、字段 grep、`git diff --check`。
+- 进程筛选未发现 WanChao dotnet、Playwright、Vite、data 或 full-gate 冲突任务。
+
+### 发现
+
+- 核心改革自然推进：
+  - Web `applyGovernancePolicy()` 是现成玩家操作入口，且治理面板已有 `data-action="governance_policy"`。
+  - `policies.json` 已有多条 `category:"reform"`，包括 `standardization`、`jun_xian_system`、`strict_law`、`grand_projects`、`central_reform`、`pragmatic_law`、`central_audit`。
+  - Web `nationState` 当前只有数字 `completedCoreReforms`，没有改革 ID 列表；这会让自然推进难以继承 Domain 已锁定的“唯一非空 ID 计数”语义。
+  - 最小成熟切片应先给 Web `nationState` 增加 `completedCoreReformIds: string[]`，执行 `category:"reform"` 政策时按 policy id 去重，`completedCoreReforms` 由唯一 ID 数同步。
+- 财政稳定累计：
+  - `technologies.json` 有 `treasuryStability` 效果；`chronicle_events.json` 大量使用 `treasuryPressure`，少量使用 `treasuryStability`。
+  - `policies.json` 当前主要暴露 `risks.treasuryPressure`，没有直接 `effects.treasuryStability` 的治理政策。
+  - Web `applyGovernancePolicy()` 尚未消费 `treasuryPressure`，但直接设计财政稳定公式会涉及政策、技术、编年事件和经济回合，不适合作为下一条最小修补。
+- repository-driven 阈值测试：
+  - `NonUnityJsonDataRepository` 已加载 `victory_conditions.json`，但 `VictorySystemInstitutionalOrderTests` 仍手写制度胜利阈值。
+  - 该测试值得后续补证，能防阈值漂移；但它不会让玩家自然推进制度胜利，优先级低于改革推进链。
+
+### 下一轮低风险修补建议
+
+- 首选：Web 核心改革唯一 ID 自然推进。
+- 建议 Playwright：`advances institutional order with unique reform policies in the Web`。
+- 最小实现：
+  - `StrategyDataset.nation` 增加 `completedCoreReformIds: string[]`，默认空数组。
+  - export/import 保留该数组；导入旧存档时若只有 `completedCoreReforms`，仍保留数字兼容。
+  - `applyGovernancePolicy()` 遇到 `policy.category === "reform"` 时把 `policy.id` 加入唯一数组，并把 `completedCoreReforms` 同步为唯一非空 ID 数。
+  - 测试同一改革政策重复执行不重复计数，执行另一条改革政策才推进计数，并验证 export/import 保持。
+- 暂不做：财政稳定正式累计、科技/事件财政消费、Domain command execution、Unity/Tuanjie。
+
+### 验证
+
+- 本轮只读复核文件：`web-strategy-map/src/ui.ts`、`web-strategy-map/src/data.ts`、`web-strategy-map/src/types.ts`、`web-strategy-map/game-data-source/data/policies.json`、`technologies.json`、`chronicle_events.json`、`tools/headless_runner/WanChaoGuiYiTests/VictorySystemInstitutionalOrderTests.cs`、`NonUnityJsonDataRepository.cs`。
+- 文档更新后执行 `git diff --check`。
+
+### 剩余风险
+
+- 即使完成改革 ID 自然推进，`treasuryStability` 仍需正式累计规则，制度胜利才有完整自然闭环。
+- Domain institutional_order 仍缺 repository-driven `victory_conditions.json` 阈值测试。
+
+### 提交策略
+
+- 本轮改动应仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`；若 `git diff --check` 通过，做隔离文档 Lore commit。
