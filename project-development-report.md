@@ -11031,3 +11031,61 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 ### 提交策略
 
 - 本轮为隔离文档轮；若 `git diff --check` 通过且改动仅限 `project-development-report.md` 与 `docs/mvp-closure-ledger.md`，可做 scoped Lore commit。
+
+## 2026-05-24 自动化修补轮：institutional_order Domain 字段来源 proof
+
+意图理解 🟢
+
+- Why：`institutional_order` 已有 JSON/类型字段，但缺财政稳定运行态来源，下一步需要先在 headless Domain Core 中证明字段能被消费，而不是直接做 Web 达成。
+- Context：上一轮 `8b80c0f` 已把下一修补锁定为纯 C# / headless payload；本轮不碰 Web/UI/存档、研究流、政策执行、chronicle 事件消费、StrategicAI 命令或 Unity/Tuanjie。
+- What：TDD 新增制度胜利字段来源测试，补最小 `treasuryStability` 派系字段与 `EvaluateInstitutionalOrder()` payload，验证后准备 scoped Lore commit。
+
+### 类型
+
+- 修补问题：最小纯 C# / headless `institutional_order` 字段来源证明。
+
+### 目标
+
+- 新增 targeted xUnit：`Institutional_Order_Field_Sources_Should_Expose_Treasury_Stability_And_Core_Reforms`。
+- 让制度胜利 payload 暴露 `achieved`、`completedCoreReforms`、`requiredCoreReforms`、`treasuryStability`、`minTreasuryStability`、`maxObservedAnnexationPressure`、`maxAnnexationPressure`、`reason`。
+- 只评估制度胜利进度，不执行政策、科技、事件、地图归属或 Web UI。
+
+### Preflight
+
+- 当前目录确认：`E:\万朝归一\万朝归一`。
+- `git status --short --branch` 显示 `main...origin/main [ahead 24]`，本轮开始时工作树干净；最新提交为 `8b80c0f Aim institutional victory at field-source proof`。
+- 最近报告确认 `institutional_order` 字段来源复核已完成，下一步指向 Domain/headless 字段来源 proof。
+- 进程复核：按命令行过滤 `万朝归一|WanChaoGuiYi|web-strategy-map|run_all_checks|playwright|vite|dotnet|validate_domain_core|validate_web_data_source|verify_headless` 后只命中本次查询命令，未发现冲突任务。
+
+### 改动
+
+- TDD RED：
+  - 新增 `VictorySystemInstitutionalOrderTests.cs` 并纳入 `WanChaoGuiYiTests.csproj`。
+  - targeted `dotnet test` 失败于缺少 `DomainVictorySystem.EvaluateInstitutionalOrder()`、payload 字段和 `FactionState.treasuryStability`，红灯符合预期。
+- GREEN：
+  - `FactionState` 新增 `treasuryStability`，`GameStateFactory` 初始派系设为 `50`，作为可累计的运行态来源。
+  - `VictoryEvaluationPayload` 增加制度胜利字段，不改变三代延续既有字段。
+  - `DomainVictorySystem.EvaluateInstitutionalOrder()` 只读评估：
+    - `completedCoreReforms` 来自 `FactionState.completedReformIds.Count`。
+    - `treasuryStability` 来自 `FactionState.treasuryStability`。
+    - `maxObservedAnnexationPressure` 来自己方地区 `RegionState.annexationPressure` 最大值。
+    - 法统读取 `FactionState.legitimacy`。
+  - 未达成时聚合原因，例如核心改革、合法性、财政稳定、兼并压力；达成时输出“制度胜利达成”。
+
+### 验证
+
+- RED：`dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~VictorySystemInstitutionalOrderTests"` 失败于缺 API / 字段。
+- GREEN targeted：同一 targeted xUnit 通过 `1/1`。
+- `python tools\validate_domain_core.py` 通过。
+- 完整 `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj` 通过 `92/92`。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify_headless_war.ps1` 通过：data-source validation passed，domain-core OK，headless war `16/16`。
+
+### 剩余风险
+
+- 本轮只提供制度胜利字段来源与评价 payload；尚未接入 Web outliner/debug、存档 schema、政策改革推进、研究/科技 boost 或 chronicle 事件效果消费。
+- `treasuryStability` 正式累计算法仍未定义，目前只是运行态字段和测试种子值。
+- `completedCoreReforms` 当前按 `completedReformIds.Count` 计数，后续如果允许重复 ID，需要补唯一性或改革分类规则。
+
+### 提交策略
+
+- 本轮改动集中在 Domain Core、headless xUnit、测试 csproj 和报告/台账；验证通过后执行 `git diff --check` 并做 scoped Lore commit。

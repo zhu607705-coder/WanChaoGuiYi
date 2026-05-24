@@ -61,6 +61,7 @@ namespace WanChaoGuiYi
                     money = 300,
                     food = 400,
                     legitimacy = 60,
+                    treasuryStability = 50,
                     courtFactionPressure = 20,
                     successionRisk = 20,
                     stableSuccessions = 0,

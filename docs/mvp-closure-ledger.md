@@ -63,7 +63,7 @@
 
 | 优先级 | 任务 | 目标文件 | 验证 |
 | --- | --- | --- | --- |
-| P0 | 补 `institutional_order` 的 Domain/headless 字段来源与进度 payload | `domain-core/src/Domain/Victory` 或 `domain-core/src/Domain/Governance`、`tools/headless_runner/WanChaoGuiYiTests` | 先证明 `completedReformIds`、`treasuryStability`、法统和兼并压力能形成可解释进度；暂不先做 Web/UI/存档达成 |
+| P0 | 复核 `institutional_order` 的下一条可玩接入线 | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts`、政策/科技数据 | Domain 已有字段来源 payload；下一步先复核 Web 可见性、财政稳定累计算法、改革推进路径三者中哪条最窄 |
 | P1 | 复核 Web/Domain 分裂度公式精确 parity | `domain-core/src/Domain/Victory`、`web-strategy-map/src/ui.ts` | Web 已用玩家可见 `risk` / 低 `integration` 形成分裂度门；Domain 仍用 `rebellionRisk` / `localPower` / `annexationPressure` / 低 `integration`，后续如需完全同口径需先补 Web 字段来源 |
 | P1 | 复核 `unify_jiuzhou` 是否还需要长线自然统一演示 | `web-strategy-map/src/ui.ts`、`web-strategy-map/tests/strategy-map.spec.ts` | 统一九州已具备 Web 运行态进度、达成/未达成断言和导出/导入保留；后续可复核是否需要战役自然扩张长线 |
 | P1 | 扩展 StrategicAI 从意图到可控命令建议 | `domain-core/src/Domain/Ai`、`tools/headless_runner/WanChaoGuiYiTests` | 已有纯 C# 意图选择；后续再把 `expand` / `stabilize` / `recover` 转成可审查命令建议，不直接跳到完整 AI 自动回合 |
@@ -151,3 +151,10 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 数据线索：`technologies.json` 已有 `treasuryStability` 效果和 `complete_reform` / `complete_three_reforms` boost；`policies.json` 已有 `central_reform`；但这些还未形成当前纯代码运行态制度胜利链。
 - 当前 P0 首选：下一修补轮先做纯 C# / headless 字段来源与进度 payload，例如 `Institutional_Order_Field_Sources_Should_Expose_Treasury_Stability_And_Core_Reforms`；payload 显示 `completedCoreReforms`、`requiredCoreReforms`、`treasuryStability`、`minTreasuryStability`、`maxObservedAnnexationPressure`、`maxAnnexationPressure`、`achieved`、`reason`。
 - 暂缓项：不直接做 Web 制度胜利 UI、存档 schema、研究流、事件消费或完整政策改革系统，等财政稳定和改革推进口径先被 headless 测试锁住。
+
+## 2026-05-24 institutional_order Domain 字段来源最小修补
+
+- 已完成项：`FactionState.treasuryStability` 成为最小运行态来源，`DomainVictorySystem.EvaluateInstitutionalOrder()` 可只读评估制度胜利进度。
+- payload 已暴露：`completedCoreReforms`、`requiredCoreReforms`、`treasuryStability`、`minTreasuryStability`、`maxObservedAnnexationPressure`、`maxAnnexationPressure`、`achieved`、`reason`。
+- 验证：targeted xUnit 红/绿；`python tools\validate_domain_core.py`；完整 `WanChaoGuiYiTests` `92/92`；`tools\verify_headless_war.ps1` `16/16`。
+- 剩余风险：Web `nationState` / debug / export/import 还未接入制度胜利字段；`treasuryStability` 正式累计算法和 `completedReformIds` 推进路径仍需下一轮复核后再修补。

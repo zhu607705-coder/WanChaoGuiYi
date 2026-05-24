@@ -82,6 +82,7 @@
     <Compile Include="TalentSystemParityTests.cs" />
     <Compile Include="StrategicAiIntentTests.cs" />
     <Compile Include="VictorySystemFragmentationTests.cs" />
+    <Compile Include="VictorySystemInstitutionalOrderTests.cs" />
     <Compile Include="TestSupport.cs" />
 
     <!-- Reused production sources from domain-core -->

@@ -196,6 +196,7 @@ namespace WanChaoGuiYi
         public int money;
         public int food;
         public int legitimacy;
+        public int treasuryStability;
         public int courtFactionPressure;
         public int successionRisk;
         public int stableSuccessions;
