@@ -220,3 +220,149 @@ MVP 收口完成不是“所有审查文档无缺口”，而是：
 - 当前 P0 首选：下一修补轮做 Web 核心改革唯一 ID 自然推进，增加 `completedCoreReformIds`，执行 reform policy 时按 policy id 去重并同步 `completedCoreReforms`。
 - 暂缓项：`treasuryStability` 正式累计仍需政策/科技/编年事件/经济回合的合成规则，不应在未定义前随手加公式。
 - 后续补证：Domain institutional_order 仍应补 repository-driven `victory_conditions.json` 阈值测试。
+
+## 2026-05-24 institutional_order Web 核心改革推进最小修补
+
+- 已完成项：Web `nationState` 增加 `completedCoreReformIds`，治理政策执行 `category:"reform"` 时按 policy id 去重记录，并同步 `completedCoreReforms`。
+- 已完成证明：Playwright `advances institutional order with unique reform policies in the Web` 红/绿覆盖默认空 ID、执行 `standardization` 推进到 1、重复执行不重复计数、export/import 保持。
+- 验证：制度胜利相关 Playwright 子集 `4/4 passed`；`npm --prefix web-strategy-map run typecheck`；`npm --prefix web-strategy-map run build`；字段相关 `rg`；`git diff --check`。
+- 当前 P0 转向：下一轮应找缺口，优先比较 `treasuryStability` 自然累计、Domain repository-driven `victory_conditions.json` 阈值测试、Web 已完成改革 ID 可见性。
+- 剩余风险：制度胜利仍缺财政稳定自然来源；Web 只证明当前推荐改革政策推进，不代表完整研究/政策制度树已完成。
+
+## 2026-05-24 institutional_order 下一成熟切片复核
+
+- 提交阻断：Web 核心改革推进切片已验证但 `git add` 无法创建 `.git/index.lock`，当前仍是未提交工作树；后续修补前应优先恢复 `.git` 写权限并提交。
+- 财政稳定结论：`treasuryStability` / `treasuryPressure` 已存在于 Domain/Web 字段和数据表，但 Web 编年事件只记录选择、不消费 `choice.effects` / `choice.risks`，政策也未消费财政压力；这是制度胜利最大剩余玩法缺口。
+- 阈值防漂移结论：`NonUnityJsonDataRepository` 已加载 `victory_conditions.json`，但 `VictorySystemInstitutionalOrderTests` 仍手写制度胜利阈值；这是下一条最小纯 C# 修补。
+- 当前 P0 首选：新增 `Institutional_Order_Should_Use_Repository_Victory_Condition_Thresholds`，从真实 `victory_conditions.json` 读取 institutional_order 阈值，证明 3 个唯一改革被阻断、4 个唯一改革在其余阈值达标时达成。
+- 暂缓项：Web 已完成改革 ID 列表可见性、`treasuryStability` 完整自然累计、技术/政策/事件一体化财政系统。
+
+## 2026-05-25 institutional_order repository 阈值防漂移最小修补
+
+- 已完成项：新增纯 C# xUnit `Institutional_Order_Should_Use_Repository_Victory_Condition_Thresholds`，直接通过 `NonUnityJsonDataRepository` 读取真实 `victory_conditions.json` 的 `institutional_order` 阈值。
+- 已完成证明：3 个唯一改革在法统、财政稳定、兼并压力均达标时仍因“核心改革”不足而阻断；4 个唯一改革在同一 JSON 阈值下达成制度胜利。
+- 验证：本地 NuGet 包缓存离线 restore；`dotnet build ... --no-restore`；新增 targeted xUnit `1/1`；`VictorySystemInstitutionalOrderTests` `3/3`；完整 `WanChaoGuiYiTests` `94/94`；`python tools\validate_domain_core.py`；Web `npm --prefix web-strategy-map run typecheck`；`git diff --check`。
+- 当前 P0 转向：仍需先恢复 `.git` 写权限并提交当前 Web + Domain 两个已验证切片；下一成熟修补优先做 `treasuryStability` 自然累计来源的最小消费 proof。
+- 剩余风险：当前工作树因 `.git` 权限阻断仍无法提交；制度胜利还缺财政稳定从技术/政策/编年事件自然流入的闭环。
+
+## 2026-05-25 institutional_order 财政稳定来源复核
+
+- 已完成复核：`treasuryStability` / `treasuryPressure` 已存在于 Web 类型、Domain 字段和数据表；`chronicle_events.json`、`policies.json`、`technologies.json` 均已有财政稳定或财政压力数据。
+- 运行态缺口：Web `tryTriggerChronicleEvent()` 当前只记录事件选择，不消费 `choice.effects` / `choice.risks`；`applyGovernancePolicy()` 当前消费地区整合、法统、民变、后勤和改革 ID，不消费 `policy.risks.treasuryPressure`。
+- 已确认不重复项：`DomainVictorySystem.CountCompletedCoreReforms()` 已按 trim 后非空唯一 ID 计数，`Institutional_Order_Should_Count_Unique_Core_Reforms_Only` 已覆盖重复改革 ID 阻断。
+- 当前 P0 顺序：先恢复 `.git` 写权限并提交当前 6 文件；下一修补轮优先做 Web 治理政策财政压力最小消费 proof，用现有可控 `governance_policy` 入口证明 `policy.risks.treasuryPressure` 会降低并保存 `nationState.treasuryStability`。
+- 暂缓项：完整技术研究效果、编年事件 choice effects/risks 消费、经济回合财政公式和制度胜利自动达成链，不应在提交门阻断时继续扩大代码面。
+
+## 2026-05-25 institutional_order Web 财政压力最小修补
+
+- 已完成项：Web `applyGovernancePolicy()` 现在消费 `policy.effects.treasuryStability` 与 `policy.risks.treasuryPressure`，把政策财政压力折算进 `nationState.treasuryStability`。
+- 可解释性：`formatEffects()` 新增 `财稳` / `财压` 标签，治理政策副作用预览可显示 `副作用：财压+4`。
+- 已完成证明：Playwright `applies treasury pressure from governance policies in the Web` 覆盖 relief 治理政策使财政稳定 `50 -> 46`，并通过 export/import 保持。
+- 验证：targeted Playwright `1/1 passed`；制度/统一相关 Playwright 子集 `6/6 passed`；直接浏览器探针确认风险预览、debug、export；`npm --prefix web-strategy-map run typecheck`；字段 `rg`；`git diff --check`。
+- 剩余风险：编年事件 choice effects/risks 和技术研究效果仍未消费；`.git` 权限阻断导致本切片仍未提交。
+
+## 2026-05-25 institutional_order 编年财政来源复核
+
+- 已完成复核：Web 编年事件已有稳定回合入口和 Playwright 覆盖，`chronicle_events.json` 多处包含 `treasuryPressure`，且 `harvest_festival` 的 `increase_storage` 选择已有 `treasuryStability:2`。
+- 当前缺口：`tryTriggerChronicleEvent()` 只记录事件与 choice label，不消费 `choice.effects` / `choice.risks`，所以编年事件仍不能自然提升或压低制度胜利财政稳定。
+- 候选比较：技术树 effects 还没有正式研究入口，经济回合财政公式会跨资源结算；编年事件 choice 消费是下一条最窄、数据已存在、可由现有回合按钮触发的修补。
+- 当前 P0 首选：下一修补轮新增 Web Playwright `applies treasury stability from chronicle choices in the Web`，通过可控 seed 触发 `harvest_festival` / `increase_storage`，断言财政稳定上升、事件摘要保留廷议选择、export/import 保持。
+- 暂缓项：完整技术研究 effects 消费、经济回合财政盈余/赤字公式、编年事件全效果矩阵；先做财政字段最小消费，防止扩大机制面。
+
+## 2026-05-25 institutional_order Web 编年财政最小修补
+
+- 已完成项：Web `tryTriggerChronicleEvent()` 现在通过 `applyChronicleChoiceFiscalEffect()` 消费 choice 财政字段，`effects.treasuryStability` 增加财政稳定，`risks.treasuryPressure` 降低财政稳定。
+- 已完成证明：Playwright `applies treasury stability from chronicle choices in the Web` 用 `changsha` + 冷却竞争事件稳定触发 `harvest_festival` / `增储入仓`，财政稳定 `50 -> 52`，export/import 保持。
+- 验证：targeted Playwright 红/绿；编年/制度相关 Playwright 子集 `7/7 passed`；`npm --prefix web-strategy-map run typecheck`；字段 `rg`；`git diff --check`。
+- 剩余风险：编年事件目前只消费财政相关字段，尚未消费 food、legitimacy、rebellionRisk 等全量 effects/risks；技术研究 effects 与经济回合财政公式仍未进入运行态。
+- 当前 P0 转向：下一轮先找缺口，比较是否扩展编年事件全量 effect 消费、技术树 effects 入口，或经济回合财政公式。
+
+## 2026-05-25 institutional_order 编年核心效果后续复核
+
+- 已完成复核：`ChronicleChoiceDefinition` 已承载 `effects?: EffectSet` 与 `risks?: RiskSet`；`tryTriggerChronicleEvent()` 已有稳定回合入口，但当前只调用财政字段消费函数。
+- 数据证据：`chronicle_events.json` 中 `harvest_festival/increase_storage` 已有 `food:60`，`harvest_festival/ritual_gratitude` 已有 `legitimacy:5` 与 `rebellionRisk:-3`，`yellow_river_flood/open_granary` 已有 `rebellionRisk:-8`、`legitimacy:4`、`treasuryPressure:5`。
+- 候选比较：
+  - 技术树 effects：Web 仅用回合与地形信号伪造 `currentChronicleSignals().techs`，没有正式研究入口；现在做会扩大 UI/存档/解锁范围。
+  - 经济回合财政公式：会牵动粮钱产出、财政稳定、政策成本和制度胜利阈值，范围大于单个成熟修补。
+  - 编年 choice 核心资源/风险：已有数据、类型、触发入口和现成 Playwright 结构，是最窄成熟化切片。
+- 当前 P0 首选：下一修补轮新增 Web Playwright `applies chronicle choice core effects in the Web`，用可控 seed 触发 `harvest_festival` / `increase_storage`，断言粮食增加 60、财政稳定增加 2、事件摘要保留、export/import 保持；实现可从通用 `applyChronicleChoiceCoreEffects()` 开始，只消费 `food`、`money`、`legitimacy`、`rebellionRisk`、`treasuryStability`、`treasuryPressure`，暂不消费建筑、科技、外交或完整 follow-up tag。
+- 暂缓项：技术研究系统、经济回合财政公式、编年事件全字段矩阵、Domain chronicle executor、StrategicAI 命令建议。
+- 提交门风险：当前 `.git/index.lock` 仍因权限无法创建，下一修补前仍应优先恢复 `.git` 写权限并提交当前已验证 6 文件。
+
+## 2026-05-25 institutional_order Web 编年核心效果最小修补
+
+- 已完成项：Web `tryTriggerChronicleEvent()` 现在通过 `applyChronicleChoiceCoreEffects()` 消费 choice 核心运行态字段；在财政稳定之外，`food` / `money` / `legitimacy` / `rebellionRisk` 也会进入当前 Web 状态。
+- 已完成证明：Playwright `applies chronicle choice core effects in the Web` 覆盖 `harvest_festival / increase_storage`，回合基础粮食 `+2` 加 choice 粮食 `+60`，总粮食 `300 -> 362`，财政稳定 `50 -> 52`，export/import 保持。
+- 验证：targeted Playwright 红灯 `Expected 360 / Received 302` 暴露 choice 粮食未消费；修正为包含回合基础收益后 targeted 绿灯 `1/1 passed`；编年/制度相邻 Playwright 子集 `7/7 passed`；`npm --prefix web-strategy-map run typecheck`；`python tools\validate_domain_core.py`；`git diff --check`。
+- 剩余风险：当前只消费核心资源/风险字段；建筑、科技、follow-up tag、外交和完整 Domain chronicle executor 仍未进入运行态。`.git/index.lock` 权限仍阻塞提交。
+- 当前 P0 转向：恢复 `.git` 写权限并提交当前累积切片；若继续修补，下一轮应先找缺口，比较技术研究入口、经济回合财政公式、或编年事件法统/民变反向选择的可见 proof。
+
+## 2026-05-25 institutional_order 编年反向选择后续复核
+
+- 已完成复核：Web 现在已有通用 `applyChronicleChoiceCoreEffects()`，但 Playwright 只证明了 `harvest_festival / increase_storage` 的粮食与财政稳定正向效果。
+- 数据证据：`harvest_festival / ritual_gratitude` 可证明同一事件的另一选择会改变法统与民变风险；`yellow_river_flood / open_granary` 可证明救灾类选择同时降低民变、提高法统、压低财政稳定。
+- 候选比较：
+  - 技术研究入口：当前 Web 仍没有 completed tech / research UI，做起来会跨数据、UI、存档和解锁。
+  - 经济回合财政公式：需要定义财政稳定从粮钱盈亏到制度胜利阈值的公式，风险高于单个 proof。
+  - 编年反向选择 proof：复用已有事件入口和核心效果函数，只补可见测试，能证明核心消费不是只覆盖粮食/财政快乐路径。
+- 当前 P0 首选：下一修补轮新增 Playwright `applies chronicle choice legitimacy and unrest effects in the Web`，通过可控 seed 触发 `harvest_festival / ritual_gratitude` 或 `yellow_river_flood / open_granary`，断言法统上升、当前地区民变风险下降、财政压力按已有规则影响财政稳定，并验证 export/import 保持。
+- 暂缓项：技术研究系统、经济回合财政公式、建筑/科技/follow-up tag 全矩阵、Domain chronicle executor。
+- 提交门风险：当前 `.git/index.lock` 仍因 ACL Deny 无法创建，继续代码修补前仍优先提交当前累积切片。
+
+## 2026-05-25 institutional_order Web 编年反向选择补证
+
+- 已完成项：新增 Playwright `applies chronicle choice legitimacy and unrest effects in the Web`，证明 `applyChronicleChoiceCoreEffects()` 也覆盖法统、地区民变风险和财政压力。
+- 已完成证明：可控 seed 触发 `harvest_festival / ritual_gratitude`，`nationState.legitimacy` `60 -> 65`，当前 `changsha` 风险 `18 -> 14`，地区法统 `62 -> 67`，财政稳定 `50 -> 48`，export/import 保持。
+- 验证：targeted 首跑失败 `Expected 68 / Received 67`，校正地区基础回合口径后 targeted `1/1 passed`；编年/制度相邻子集 `8/8 passed`；`npm --prefix web-strategy-map run typecheck`；`python tools\validate_domain_core.py`；`git diff --check`。
+- 结论：本轮只需测试覆盖，生产代码无需扩展；下一轮应先恢复 `.git` 写权限并提交累积切片，之后再找缺口比较技术研究入口、经济回合财政公式或编年 follow-up tag。
+
+## 2026-05-25 institutional_order 累积切片收口复核
+
+- 当前状态：Domain repository 阈值、Web 改革 ID、政策财政压力、编年核心效果和反向选择 proof 已集中在 6 个修改文件中，验证覆盖到 Domain targeted xUnit 与 Web 制度/编年 8 用例子集。
+- 新鲜验证：`python tools\validate_domain_core.py`、`npm --prefix web-strategy-map run typecheck`、`git diff --check`、`VictorySystemInstitutionalOrderTests 3/3`、Job 托管 Vite 的 Playwright 制度/编年子集 `8/8 passed`。
+- 运行注意：Playwright 配置自带 `webServer` 在本机仍会外层超时，不能作为通过证据；后续用 `Start-Job` 托管 `npm run dev:server -- --port 5177` 再执行 `npx playwright test`。
+- 当前 P0：恢复 `.git` 元数据写权限并提交当前 6 文件；提交前不继续扩大代码面。
+- 下一找缺口方向：提交恢复后再比较技术研究入口、经济回合财政稳定公式、编年建筑/科技/follow-up tag 或 Domain chronicle executor。
+
+## 2026-05-25 技术/编年/经济下一成熟切片复核
+
+- 技术树现状：Domain `FactionState` 已有 `researchPoints`、`completedTechIds`、`currentResearchId`，但 Web 只有 `currentChronicleSignals()` 用回合/地形推导临时 techs；Web debug/export/import 没有完成科技字段。
+- 编年 follow-up 现状：TS/C# 类型和 `chronicle_events.json` 均有 `followUpTags`，但 Web 不把 choice follow-up 写入后续 eligibility 信号。
+- 经济财政现状：Domain/Web 均有基础经济路径，当前 institutional_order 已消费政策与编年 choice 对 `treasuryStability` 的直接影响；把粮钱盈亏合成为财政稳定仍需规则定义。
+- 当前 P0 顺序：先恢复 `.git` 写权限并提交当前 institutional_order 6 文件；提交后下一修补首选 Web 技术研究 carrier proof，让 `completedTechIds` / `researchPoints` 可导入、导出、debug，并让编年 `requiredTechs` 从完成科技读取。
+- 暂缓项：完整研究 UI、科技 effects/unlocks 消费、经济财政公式、Domain chronicle executor、编年 follow-up tag 链式事件。
+
+## 2026-05-25 Web 技术研究 carrier 最小修补
+
+- 已完成项：Web `nationState` 增加 `researchPoints`、`completedTechIds`、`currentResearchId`，debug/export/import 可保留完成科技字段。
+- 已完成 proof：Playwright `uses completed technologies for chronicle required tech gates in the Web` 证明未完成 `paper_bureaucracy` 时 `xiaowen_sinicization / 孝文迁都` 不触发，完成后触发，并且 export/import 保持完成科技。
+- 运行态接线：`currentChronicleSignals()` 现在合并 `nationState.completedTechIds`，同时保留既有回合/地形伪 tech 信号以免破坏现有编年事件路径。
+- 验证：targeted Playwright 红/绿；制度/编年/技术 carrier 子集 `9/9 passed`；`npm --prefix web-strategy-map run typecheck`；`python tools\validate_domain_core.py`；`git diff --check`。
+- 当前 P0：仍需恢复 `.git` 写权限并提交当前累积切片。
+- 下一候选：完整研究 UI/研究点累计、科技 effects/unlocks 消费、或更小的编年 follow-up tag carrier proof。
+
+## 2026-05-25 Web 编年 follow-up tag carrier 最小修补
+
+- 已完成项：Web 编年 runtime event 现在保存 `choice.followUpTags`，导入旧/新存档时规整该字段，并把最近编年 follow-up tags 合并进 `currentChronicleSignals().tags`。
+- 已完成 proof：Playwright `uses chronicle follow-up tags to unlock later Web events` 证明并州 `border_horse_plague / 市马补缺` 写入 `frontier_trade` 后，可解锁原本并州不天然具备的 `trade_route_open / 商路开通`，并且 export/import 保持链路。
+- 验证：targeted Playwright 红/绿；制度/编年/技术/follow-up 相邻子集 `9/9 passed`；`npm --prefix web-strategy-map run typecheck`；`python tools\validate_domain_core.py`；`git diff --check`。
+- 剩余风险：当前只是短期 tag carrier，没有 UI 展示、tag 过期规则、Domain chronicle executor 或完整 follow-up 事件链平衡。
+- 当前 P0：恢复 `.git` 写权限并提交当前 6 文件累积切片；本轮 `git add` 仍因 `.git/index.lock` permission denied 失败。提交恢复后下一轮先找缺口，比较完整研究 UI/科技 effects、经济财政公式、Domain chronicle executor 或 follow-up tag 时效。
+
+## 2026-05-25 累积切片提交门复核
+
+- 当前证据：6 文件 diff 仍集中在 Domain 制度阈值与 Web 制度/编年/科技/follow-up carrier，未新增 Unity/Tuanjie 或大范围玩法迁移。
+- 新鲜验证：`git diff --check`、`python tools\validate_domain_core.py`、`npm --prefix web-strategy-map run typecheck` 均通过。
+- 提交阻断：`git add -- docs/mvp-closure-ledger.md project-development-report.md tools/headless_runner/WanChaoGuiYiTests/VictorySystemInstitutionalOrderTests.cs web-strategy-map/src/data.ts web-strategy-map/src/ui.ts web-strategy-map/tests/strategy-map.spec.ts` 仍失败，错误为 `.git/index.lock` permission denied。
+- 当前 P0：恢复 `.git` 写权限并提交当前 6 文件累积切片；提交前不要继续扩大代码面。
+- 下一成熟修补候选：提交恢复后做 Web 技术研究最小完成流，从 `technologies.json` 读取技术目录，治理回合累计研究点，达到 cost 后写入 `completedTechIds` 并保持 export/import。
+
+## 2026-05-25 提交门 ACL 与技术研究入口复核
+
+- 提交门根因：`.git` 根目录存在显式 Deny ACL，阻止当前会话创建 `.git/index.lock`；`Set-Acl` 移除 Deny 失败，错误为 unauthorized。
+- 当前策略：不再扩大业务代码面；先恢复 `.git` 写权限并提交 6 文件累积切片。
+- 技术研究缺口事实：
+  - `technologies.json` 已有 40 项技术/制度，包含 cost、prerequisites、boost、unlocks、effects。
+  - Web 已有 `researchPoints` / `completedTechIds` / `currentResearchId` carrier，但还没有加载 `technologies.json`、没有 `TechnologyDefinition` TS 类型、没有治理回合研究点累计和完成科技逻辑。
+  - Domain 已有 `TechnologyDefinition`、repository 载入、`FactionState` 研究字段、`NumericSystem.CalculateResearchPoints()` / `CalculateTechCost()`。
+- 提交恢复后的下一修补：Playwright TDD `completes a Web technology through governance research progress`，用 `agricultural_calendar` 作为最小样例，证明治理回合能把 `researchPoints:34` 推到 cost 35 并写入 `completedTechIds`，export/import 保持。

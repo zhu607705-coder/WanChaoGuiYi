@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 开发记录
+    url: https://github.com/zhu607705-coder/WanChaoGuiYi/blob/main/project-development-report.md
+    about: 查看项目当前权威开发记录和验证历史。

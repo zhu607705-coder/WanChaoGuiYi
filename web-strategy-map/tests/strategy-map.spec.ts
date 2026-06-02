@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 const CI_TIMEOUT_MULTIPLIER = process.env.CI ? 3 : 1;
+const CHRONICLE_EVENTS_DATA = JSON.parse(readFileSync(new URL('../game-data-source/data/chronicle_events.json', import.meta.url), 'utf8')) as {
+  items: Array<{ id: string }>;
+};
 
 function playwrightTimeout(baseMs: number): number {
   return baseMs * CI_TIMEOUT_MULTIPLIER;
@@ -61,7 +65,11 @@ type DebugState = {
     courtPressure: number;
     stableSuccessions: number;
     completedCoreReforms: number;
+    completedCoreReformIds: string[];
     treasuryStability: number;
+    researchPoints: number;
+    completedTechIds: string[];
+    currentResearchId: string;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
     dynastyRescueBlocked: boolean;
@@ -160,6 +168,9 @@ type DebugState = {
     chronicleHistoryLength: number;
     latestChronicleEventId: string;
     latestChronicleEventSummary: string;
+    turnObjectiveSummary: string;
+    nextStepSummary: string;
+    latestImpactSummary: string;
   };
 };
 
@@ -309,6 +320,22 @@ type GameExportState = {
     route: string;
     last: string;
   };
+  chronicle?: {
+    history: Array<{
+      id: string;
+      name: string;
+      eventType: string;
+      source: 'governance' | 'war';
+      turn: number;
+      regionId: string;
+      regionName: string;
+      choiceLabel: string;
+      summary: string;
+      followUpTags?: string[];
+      musicCueId?: string;
+    }>;
+    cooldowns: Array<{ id: string; turns: number }>;
+  };
   nationState: {
     food: number;
     money: number;
@@ -318,7 +345,11 @@ type GameExportState = {
     courtPressure: number;
     stableSuccessions: number;
     completedCoreReforms: number;
+    completedCoreReformIds: string[];
     treasuryStability: number;
+    researchPoints: number;
+    completedTechIds: string[];
+    currentResearchId: string;
   };
   regions: Array<{
     id: string;
@@ -391,9 +422,19 @@ test.describe('code-driven strategy map', () => {
     await expect(page.locator('.landform-label:not(.hidden)').first()).toBeVisible();
     await expect(page.locator('.building-label:not(.hidden)').first()).toBeVisible();
     await expect(page.getByTestId('governance-metrics')).toContainText('人口');
+    await expect(page.getByTestId('turn-objective-card')).toContainText('本回合目标');
+    await expect(page.getByTestId('turn-objective-card')).toContainText('下一步');
+    await expect(page.getByTestId('turn-objective-card')).toContainText('最近结果');
+    await expect(page.getByTestId('turn-objective-card')).toContainText(/统一九州|三代延续|制度胜利/);
+    await expect(page.getByTestId('governance-impact-strip')).toContainText('直接影响');
+    await expect(page.getByTestId('governance-impact-strip')).toContainText('施政');
+    await expect(page.getByTestId('governance-impact-strip')).toContainText('民变');
+    await expect(page.getByTestId('governance-impact-strip')).toContainText('整合');
     await expect(page.getByTestId('governance-actions')).toContainText('收益');
     await expect(page.getByTestId('governance-actions')).toContainText('副作用');
     await expect(page.locator('#outliner-list')).toContainText('王朝');
+    await expect(page.locator('#outliner-list')).toContainText('当前目标');
+    await expect(page.locator('#outliner-list')).toContainText('下一步');
     await expect(page.locator('#outliner-list')).toContainText(/继承(稳定|承压|危机)/);
     await expectDebugState(
       page,
@@ -442,6 +483,8 @@ test.describe('code-driven strategy map', () => {
       'governance build should spend money and queue work'
     );
     await expect(page.getByTestId('governance-queue')).not.toContainText('暂无经营队列');
+    await expect(page.getByTestId('turn-objective-card')).toContainText('最近结果');
+    await expect(page.getByTestId('turn-objective-card')).toContainText(/开工|需 \d+ 旬/);
 
     const beforeZoom = await debug(page);
     await moveMouseToMap(page);
@@ -748,6 +791,104 @@ test.describe('code-driven strategy map', () => {
     const restored = await exportGameState(page);
     expect(restored.nationState.completedCoreReforms).toBe(3);
     expect(restored.nationState.treasuryStability).toBe(68);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('advances institutional order with unique reform policies in the Web', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    expect(exported.nationState.completedCoreReforms).toBe(0);
+    expect(exported.nationState.completedCoreReformIds).toEqual([]);
+
+    const reformSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      selectedRegionId: 'hexi',
+      nationState: {
+        ...exported.nationState,
+        money: Math.max(exported.nationState.money, 1000),
+        completedCoreReforms: 0,
+        completedCoreReformIds: []
+      },
+      regions: exported.regions.map((region) => region.id === 'hexi' ? {
+        ...region,
+        owner: 'player',
+        risk: 6,
+        integration: Math.max(region.integration, 75),
+        legitimacy: Math.max(region.legitimacy, 70)
+      } : region)
+    };
+    expect(await importGameState(page, reformSeed)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(0);
+    await expectDebug(page, (state) => state.ui.completedCoreReformIds).toEqual([]);
+
+    await page.locator('[data-action="governance_focus_frontier"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.governanceFocus).toBe('frontier');
+    await page.locator('[data-action="governance_policy"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(1);
+    await expectDebug(page, (state) => state.ui.completedCoreReformIds).toEqual(['standardization']);
+
+    await page.locator('[data-action="governance_policy"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(1);
+    await expectDebug(page, (state) => state.ui.completedCoreReformIds).toEqual(['standardization']);
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.completedCoreReforms).toBe(1);
+    expect(saved.nationState.completedCoreReformIds).toEqual(['standardization']);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedCoreReforms).toBe(1);
+    await expectDebug(page, (state) => state.ui.completedCoreReformIds).toEqual(['standardization']);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('applies treasury pressure from governance policies in the Web', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const treasurySeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      selectedRegionId: 'hexi',
+      nationState: {
+        ...exported.nationState,
+        food: Math.max(exported.nationState.food, 1000),
+        money: Math.max(exported.nationState.money, 1000),
+        treasuryStability: 50
+      },
+      regions: exported.regions.map((region) => region.id === 'hexi' ? {
+        ...region,
+        owner: 'player',
+        risk: 22,
+        integration: Math.max(region.integration, 65),
+        legitimacy: Math.max(region.legitimacy, 68)
+      } : region)
+    };
+    expect(await importGameState(page, treasurySeed)).toBe(true);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(50);
+
+    await page.locator('[data-action="governance_focus_relief"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.governanceFocus).toBe('relief');
+    const policyRiskLines = await page.locator('.preview-line.risk').allTextContents();
+    expect(policyRiskLines.some((line) => line.includes('副作用：财压+4'))).toBe(true);
+
+    await page.locator('[data-action="governance_policy"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(46);
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.treasuryStability).toBe(46);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(46);
 
     expect(consoleErrors).toEqual([]);
   });
@@ -1241,6 +1382,13 @@ test.describe('code-driven strategy map', () => {
     await openApp(page);
 
     await page.locator('#war-mode').click();
+    await expect(page.getByTestId('war-objective-card')).toContainText('战役目标');
+    await expect(page.getByTestId('war-objective-card')).toContainText('补给');
+    await expect(page.getByTestId('war-objective-card')).toContainText('截粮');
+    await expect(page.getByTestId('war-objective-card')).toContainText('下一步');
+    await expect(page.getByTestId('war-impact-strip')).toContainText('直接影响');
+    await expect(page.getByTestId('war-impact-strip')).toContainText('派运输队');
+    await expect(page.getByTestId('war-impact-strip')).toContainText('启动战役');
     await expectDebugState(
       page,
       (state) =>
@@ -1337,6 +1485,8 @@ test.describe('code-driven strategy map', () => {
     await expect(page.getByTestId('logistics-queue')).toBeVisible();
     await expect(page.getByTestId('war-command-queue')).toBeVisible();
     await page.locator('[data-action="war_deploy"]').click();
+    await expect(page.getByTestId('war-objective-card')).toContainText('最近结果');
+    await expect(page.getByTestId('war-objective-card')).toContainText(/部署军府|第 \d+ 回合军令/);
     await expectDebugState(
       page,
       (state) =>
@@ -1595,6 +1745,298 @@ test.describe('code-driven strategy map', () => {
     await openApp(page);
     expect(await importGameState(page, snapshot)).toBe(true);
     await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toBe(after.ui.latestChronicleEventSummary);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('applies chronicle choice core effects in the Web', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const chronicleSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 3,
+      selectedRegionId: 'changsha',
+      chronicle: {
+        history: [],
+        cooldowns: [
+          'water_conservancy',
+          'three_kingdoms_trade',
+          'zhang_liang_boya_plan',
+          'wei_river_fishing',
+          'yellow_river_flood',
+          'yellow_river_diversion',
+          'local_elite_resistance',
+          'flood_relief_crisis',
+          'liu_bei_give_up_xinye',
+          'zhao_yun_guard_changban'
+        ].map((id) => ({ id, turns: 20 }))
+      },
+      nationState: {
+        ...exported.nationState,
+        food: 300,
+        treasuryStability: 50
+      },
+      regions: exported.regions.map((region) => region.id === 'changsha' ? {
+        ...region,
+        owner: 'player',
+        controlStage: 'controlled',
+        governanceFocus: 'relief',
+        laborFocus: 'balanced',
+        risk: 18,
+        integration: Math.max(region.integration, 72),
+        legitimacy: Math.max(region.legitimacy, 68)
+      } : region)
+    };
+    expect(await importGameState(page, chronicleSeed)).toBe(true);
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('changsha');
+    await expectDebug(page, (state) => state.ui.food).toBe(300);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(50);
+
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('harvest_festival');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('社祭丰年');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('廷议：增储入仓');
+    await expectDebug(page, (state) => state.ui.food).toBe(362);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(52);
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.food).toBe(362);
+    expect(saved.nationState.treasuryStability).toBe(52);
+    expect(saved.chronicle?.history[0]?.id).toBe('harvest_festival');
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.food).toBe(362);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(52);
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('廷议：增储入仓');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('applies chronicle choice legitimacy and unrest effects in the Web', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const chronicleSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 2,
+      selectedRegionId: 'changsha',
+      chronicle: {
+        history: [],
+        cooldowns: [
+          'water_conservancy',
+          'three_kingdoms_trade',
+          'zhang_liang_boya_plan',
+          'wei_river_fishing',
+          'yellow_river_flood',
+          'yellow_river_diversion',
+          'local_elite_resistance',
+          'flood_relief_crisis',
+          'liu_bei_give_up_xinye',
+          'zhao_yun_guard_changban'
+        ].map((id) => ({ id, turns: 20 }))
+      },
+      nationState: {
+        ...exported.nationState,
+        legitimacy: 60,
+        treasuryStability: 50
+      },
+      regions: exported.regions.map((region) => region.id === 'changsha' ? {
+        ...region,
+        owner: 'player',
+        controlStage: 'controlled',
+        governanceFocus: 'relief',
+        laborFocus: 'balanced',
+        risk: 18,
+        integration: Math.max(region.integration, 72),
+        legitimacy: 62
+      } : region)
+    };
+    expect(await importGameState(page, chronicleSeed)).toBe(true);
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('changsha');
+    await expectDebug(page, (state) => state.ui.legitimacy).toBe(60);
+    await expectDebug(page, (state) => state.ui.selectedRisk).toBe(18);
+    await expectDebug(page, (state) => state.ui.selectedLegitimacy).toBe(62);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(50);
+
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('harvest_festival');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('社祭丰年');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('廷议：修礼答谢');
+    await expectDebug(page, (state) => state.ui.legitimacy).toBe(65);
+    await expectDebug(page, (state) => state.ui.selectedRisk).toBe(14);
+    await expectDebug(page, (state) => state.ui.selectedLegitimacy).toBe(67);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(48);
+
+    const saved = await exportGameState(page);
+    const savedChangsha = saved.regions.find((region) => region.id === 'changsha');
+    expect(saved.nationState.legitimacy).toBe(65);
+    expect(saved.nationState.treasuryStability).toBe(48);
+    expect(savedChangsha?.risk).toBe(14);
+    expect(savedChangsha?.legitimacy).toBe(67);
+    expect(saved.chronicle?.history[0]?.choiceLabel).toBe('修礼答谢');
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.legitimacy).toBe(65);
+    await expectDebug(page, (state) => state.ui.selectedRisk).toBe(14);
+    await expectDebug(page, (state) => state.ui.selectedLegitimacy).toBe(67);
+    await expectDebug(page, (state) => state.ui.treasuryStability).toBe(48);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('uses completed technologies for chronicle required tech gates in the Web', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const cooldownsExceptXiaowen = CHRONICLE_EVENTS_DATA.items
+      .filter((event) => event.id !== 'xiaowen_sinicization')
+      .map((event) => ({ id: event.id, turns: 20 }));
+    const techGateSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 8,
+      selectedRegionId: 'youyan',
+      selectedEmperorId: 'li_shi_min',
+      chronicle: {
+        history: [],
+        cooldowns: cooldownsExceptXiaowen
+      },
+      nationState: {
+        ...exported.nationState,
+        researchPoints: 24,
+        currentResearchId: 'paper_bureaucracy',
+        completedTechIds: []
+      },
+      regions: exported.regions.map((region) => region.id === 'youyan' ? {
+        ...region,
+        owner: 'player',
+        controlStage: 'controlled',
+        governanceFocus: 'frontier',
+        laborFocus: 'balanced',
+        risk: 12,
+        integration: Math.max(region.integration, 72),
+        legitimacy: Math.max(region.legitimacy, 70)
+      } : region)
+    };
+
+    expect(await importGameState(page, techGateSeed)).toBe(true);
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('youyan');
+    await expectDebug(page, (state) => state.ui.completedTechIds).toEqual([]);
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('');
+
+    const unlockedTechGate: GameExportState = {
+      ...techGateSeed,
+      chronicle: {
+        history: [],
+        cooldowns: cooldownsExceptXiaowen
+      },
+      nationState: {
+        ...techGateSeed.nationState,
+        completedTechIds: ['paper_bureaucracy']
+      }
+    };
+
+    expect(await importGameState(page, unlockedTechGate)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedTechIds).toEqual(['paper_bureaucracy']);
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('xiaowen_sinicization');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('孝文迁都');
+
+    const saved = await exportGameState(page);
+    expect(saved.nationState.researchPoints).toBe(24);
+    expect(saved.nationState.currentResearchId).toBe('paper_bureaucracy');
+    expect(saved.nationState.completedTechIds).toEqual(['paper_bureaucracy']);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.completedTechIds).toEqual(['paper_bureaucracy']);
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('xiaowen_sinicization');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('uses chronicle follow-up tags to unlock later Web events', async ({ page }) => {
+    test.setTimeout(playwrightTimeout(60_000));
+    const consoleErrors = captureConsoleErrors(page);
+    await openApp(page);
+
+    const exported = await exportGameState(page);
+    const cooldownsExceptHorsePlague = CHRONICLE_EVENTS_DATA.items
+      .filter((event) => event.id !== 'border_horse_plague')
+      .map((event) => ({ id: event.id, turns: 20 }));
+    const firstSeed: GameExportState = {
+      ...exported,
+      mode: 'governance',
+      governanceTurn: 4,
+      selectedRegionId: 'bingzhou',
+      selectedEmperorId: 'han_wu_di',
+      chronicle: {
+        history: [],
+        cooldowns: cooldownsExceptHorsePlague
+      },
+      nationState: {
+        ...exported.nationState,
+        treasuryStability: 70
+      },
+      regions: exported.regions.map((region) => region.id === 'bingzhou' ? {
+        ...region,
+        owner: 'player',
+        controlStage: 'controlled',
+        governanceFocus: 'frontier',
+        laborFocus: 'balanced',
+        risk: 14,
+        integration: Math.max(region.integration, 72),
+        legitimacy: Math.max(region.legitimacy, 70)
+      } : region)
+    };
+
+    expect(await importGameState(page, firstSeed)).toBe(true);
+    await expectDebug(page, (state) => state.selectedRegionId).toBe('bingzhou');
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('border_horse_plague');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('边马疫');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('廷议：市马补缺');
+
+    const taggedState = await exportGameState(page);
+    expect(taggedState.chronicle?.history[0]?.followUpTags).toEqual(['frontier_trade']);
+
+    const cooldownsExceptTradeRoute = CHRONICLE_EVENTS_DATA.items
+      .filter((event) => event.id !== 'trade_route_open')
+      .map((event) => ({ id: event.id, turns: 20 }));
+    const secondSeed: GameExportState = {
+      ...taggedState,
+      governanceTurn: 5,
+      chronicle: {
+        history: taggedState.chronicle?.history ?? [],
+        cooldowns: cooldownsExceptTradeRoute
+      }
+    };
+
+    expect(await importGameState(page, secondSeed)).toBe(true);
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('border_horse_plague');
+    await page.locator('[data-action="governance_advance_turn"]').click({ timeout: playwrightTimeout(10_000) });
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('trade_route_open');
+    await expectDebug(page, (state) => state.ui.latestChronicleEventSummary).toContain('商路开通');
+
+    const saved = await exportGameState(page);
+    expect(saved.chronicle?.history[0]?.id).toBe('trade_route_open');
+    expect(saved.chronicle?.history[1]?.followUpTags).toEqual(['frontier_trade']);
+
+    await openApp(page);
+    expect(await importGameState(page, saved)).toBe(true);
+    await expectDebug(page, (state) => state.ui.latestChronicleEventId).toBe('trade_route_open');
 
     expect(consoleErrors).toEqual([]);
   });
@@ -2204,8 +2646,8 @@ test.describe('code-driven strategy map', () => {
 });
 
 async function openApp(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.waitForFunction(() => document.documentElement.dataset.appReady === 'true');
+  await page.goto('/', { timeout: playwrightTimeout(30_000), waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.documentElement.dataset.appReady === 'true', undefined, { timeout: playwrightTimeout(30_000) });
 }
 
 function captureConsoleErrors(page: Page): string[] {

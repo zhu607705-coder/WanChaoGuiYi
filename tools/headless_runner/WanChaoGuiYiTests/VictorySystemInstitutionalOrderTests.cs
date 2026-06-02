@@ -1,4 +1,6 @@
 using Xunit;
+using System.IO;
+using System.Reflection;
 
 namespace WanChaoGuiYi.Tests
 {
@@ -61,6 +63,48 @@ namespace WanChaoGuiYi.Tests
             Assert.Equal(2, payload.completedCoreReforms);
             Assert.Equal(4, payload.requiredCoreReforms);
             Assert.Contains("核心改革", payload.reason);
+        }
+
+        [Fact]
+        public void Institutional_Order_Should_Use_Repository_Victory_Condition_Thresholds()
+        {
+            NonUnityJsonDataRepository repository = new NonUnityJsonDataRepository();
+            repository.Load(LocateDataDirectory());
+            VictoryConditionDefinition condition = repository.VictoryConditions["institutional_order"];
+            DomainVictorySystem system = new DomainVictorySystem();
+
+            GameState blockedState = BuildInstitutionalStateWithReformIds(
+                new string[] { "central_reform", "fiscal_order", "audit_order" },
+                condition.requirements.minLegitimacy,
+                condition.requirements.minTreasuryStability,
+                condition.requirements.maxAnnexationPressure);
+            FactionState blockedFaction = blockedState.FindFaction("faction_player");
+
+            VictoryEvaluationPayload blocked = system.EvaluateInstitutionalOrder(blockedState, blockedFaction, condition);
+
+            Assert.False(blocked.achieved);
+            Assert.Equal("institutional_order", blocked.victoryId);
+            Assert.Equal(3, blocked.completedCoreReforms);
+            Assert.Equal(condition.requirements.completedCoreReforms, blocked.requiredCoreReforms);
+            Assert.Equal(condition.requirements.minTreasuryStability, blocked.minTreasuryStability);
+            Assert.Equal(condition.requirements.maxAnnexationPressure, blocked.maxAnnexationPressure);
+            Assert.Contains("核心改革", blocked.reason);
+
+            GameState orderedState = BuildInstitutionalStateWithReformIds(
+                new string[] { "central_reform", "fiscal_order", "audit_order", "law_code" },
+                condition.requirements.minLegitimacy,
+                condition.requirements.minTreasuryStability,
+                condition.requirements.maxAnnexationPressure);
+            FactionState orderedFaction = orderedState.FindFaction("faction_player");
+
+            VictoryEvaluationPayload ordered = system.EvaluateInstitutionalOrder(orderedState, orderedFaction, condition);
+
+            Assert.True(ordered.achieved);
+            Assert.Equal(4, ordered.completedCoreReforms);
+            Assert.Equal(condition.requirements.completedCoreReforms, ordered.requiredCoreReforms);
+            Assert.Equal(condition.requirements.minTreasuryStability, ordered.treasuryStability);
+            Assert.Equal(condition.requirements.maxAnnexationPressure, ordered.maxObservedAnnexationPressure);
+            Assert.Contains("制度胜利", ordered.reason);
         }
 
         private static VictoryConditionDefinition BuildInstitutionalOrderCondition()
@@ -150,6 +194,20 @@ namespace WanChaoGuiYi.Tests
                 taxContributionPercent = 100,
                 foodContributionPercent = 100
             };
+        }
+
+        private static string LocateDataDirectory()
+        {
+            string baseDir = Path.GetDirectoryName(typeof(VictorySystemInstitutionalOrderTests).GetTypeInfo().Assembly.Location);
+            string current = baseDir;
+            for (int i = 0; i < 10 && current != null; i++)
+            {
+                string candidate = Path.Combine(current, "web-strategy-map", "game-data-source", "data");
+                if (Directory.Exists(candidate)) return candidate;
+                current = Path.GetDirectoryName(current);
+            }
+
+            throw new DirectoryNotFoundException("web-strategy-map/game-data-source/data not found near " + baseDir);
         }
     }
 }

@@ -165,6 +165,7 @@ interface ChronicleRuntimeEvent {
   regionName: string;
   choiceLabel: string;
   summary: string;
+  followUpTags: string[];
   musicCueId: string;
 }
 
@@ -716,7 +717,11 @@ export class StrategyUi {
     this.selectedRegion = dataset.regions[0];
     this.selectedEmperor = dataset.emperors[0];
     this.activeArmy = dataset.armies.find((army) => army.faction === 'player') ?? dataset.armies[0];
-    this.nationState = { ...dataset.nation };
+    this.nationState = {
+      ...dataset.nation,
+      completedCoreReformIds: [...dataset.nation.completedCoreReformIds],
+      completedTechIds: [...dataset.nation.completedTechIds]
+    };
     this.bindControls();
     this.renderNation();
     this.render();
@@ -752,7 +757,11 @@ export class StrategyUi {
     courtPressure: number;
     stableSuccessions: number;
     completedCoreReforms: number;
+    completedCoreReformIds: string[];
     treasuryStability: number;
+    researchPoints: number;
+    completedTechIds: string[];
+    currentResearchId: string;
     dynastyPressureSummary: string;
     dynastyControlMode: 'observe' | 'takeover';
     dynastyRescueBlocked: boolean;
@@ -836,6 +845,9 @@ export class StrategyUi {
     chronicleHistoryLength: number;
     latestChronicleEventId: string;
     latestChronicleEventSummary: string;
+    turnObjectiveSummary: string;
+    nextStepSummary: string;
+    latestImpactSummary: string;
   } {
     const routePressure = this.currentRoutePressureCopy();
     const logisticsMapObjects = this.getLogisticsMapObjects();
@@ -927,7 +939,10 @@ export class StrategyUi {
       chronicleCatalogCount: this.dataset.chronicleEvents.length,
       chronicleHistoryLength: this.chronicleEventHistory.length,
       latestChronicleEventId: this.chronicleEventHistory[0]?.id ?? '',
-      latestChronicleEventSummary: this.chronicleEventHistory[0] ? describeChronicleRuntimeEvent(this.chronicleEventHistory[0]) : ''
+      latestChronicleEventSummary: this.chronicleEventHistory[0] ? describeChronicleRuntimeEvent(this.chronicleEventHistory[0]) : '',
+      turnObjectiveSummary: this.primaryObjectiveSummary(),
+      nextStepSummary: this.currentNextStepSummary(this.selectedRegion),
+      latestImpactSummary: this.latestImpactSummary()
     };
   }
 
@@ -1063,7 +1078,11 @@ export class StrategyUi {
         history: this.chronicleEventHistory.map((event) => ({ ...event })),
         cooldowns: [...this.chronicleCooldowns.entries()].map(([id, turns]) => ({ id, turns }))
       },
-      nationState: { ...this.nationState },
+      nationState: {
+        ...this.nationState,
+        completedCoreReformIds: [...this.nationState.completedCoreReformIds],
+        completedTechIds: [...this.nationState.completedTechIds]
+      },
       regions: this.dataset.regions.map((region) => ({
         id: region.definition.id,
         owner: region.owner,
@@ -1121,7 +1140,23 @@ export class StrategyUi {
     const restoredWarTab = snapshot.warTab ?? 'route';
     this.currentGovernanceTurn = Math.max(1, Math.floor(snapshot.governanceTurn ?? 1));
     this.dynastyControlMode = snapshot.dynastyControlMode ?? 'observe';
+    const incomingReformIds = Array.isArray(snapshot.nationState.completedCoreReformIds)
+      ? snapshot.nationState.completedCoreReformIds
+      : [];
+    const incomingTechIds = Array.isArray(snapshot.nationState.completedTechIds)
+      ? snapshot.nationState.completedTechIds
+      : [];
     Object.assign(this.nationState, snapshot.nationState);
+    this.nationState.completedCoreReformIds = incomingReformIds;
+    this.nationState.completedTechIds = incomingTechIds;
+    this.nationState.researchPoints = Number.isFinite(snapshot.nationState.researchPoints)
+      ? snapshot.nationState.researchPoints
+      : 0;
+    this.nationState.currentResearchId = typeof snapshot.nationState.currentResearchId === 'string'
+      ? snapshot.nationState.currentResearchId
+      : '';
+    this.normalizeCompletedCoreReforms();
+    this.normalizeCompletedTechnologies();
     this.mode = restoredMode;
     this.sidebarCollapsed = Boolean(snapshot.sidebarCollapsed);
     this.routePickMode = snapshot.routePickMode ?? 'target';
@@ -1169,7 +1204,14 @@ export class StrategyUi {
   }
 
   private restoreChronicleState(chronicle: GameExportState['chronicle'] | undefined): void {
-    this.chronicleEventHistory.splice(0, this.chronicleEventHistory.length, ...(chronicle?.history ?? []).map((event) => ({ ...event })));
+    this.chronicleEventHistory.splice(
+      0,
+      this.chronicleEventHistory.length,
+      ...(chronicle?.history ?? []).map((event) => ({
+        ...event,
+        followUpTags: normalizeStringList((event as Partial<ChronicleRuntimeEvent>).followUpTags)
+      }))
+    );
     this.chronicleCooldowns.clear();
     for (const cooldown of chronicle?.cooldowns ?? []) {
       if (!cooldown.id) continue;
@@ -1852,6 +1894,7 @@ export class StrategyUi {
     ]);
 
     panel.innerHTML = `
+      ${this.renderGovernanceObjectiveCard(region)}
       <section class="info-band metrics-grid" data-testid="governance-metrics">
         ${metric('粮食', region.definition.foodOutput)}
         ${metric('财税', region.definition.taxOutput)}
@@ -1881,6 +1924,7 @@ export class StrategyUi {
             <span>军政</span><b>征发整备</b>
           </button>
         </div>
+        ${this.renderGovernanceImpactStrip(region)}
         <div class="preview-line">收益：${policyEffects}</div>
         <div class="preview-line" data-testid="policy-logistics-preview">后勤：${policyLogisticsPreview}</div>
         <div class="preview-line risk">副作用：${policyRisks}</div>
@@ -1948,6 +1992,53 @@ export class StrategyUi {
         <div class="band-title">历史来源</div>
         <p>${sourceText}</p>
       </section>
+    `;
+  }
+
+  private renderGovernanceObjectiveCard(region: RegionViewModel): string {
+    const objective = this.primaryObjectiveSummary();
+    const nextStep = this.currentNextStepSummary(region);
+    const latest = this.latestImpactSummary();
+    const pressure = this.selectedRegionPressureSummary(region);
+    return `
+      <section class="objective-card" data-testid="turn-objective-card">
+        <div class="objective-card-head">
+          <span>本回合目标</span>
+          <b>${escapeHtml(objective)}</b>
+        </div>
+        <div class="objective-grid">
+          <div><span>当前地区</span><b>${escapeHtml(pressure)}</b></div>
+          <div><span>下一步</span><b>${escapeHtml(nextStep)}</b></div>
+          <div><span>最近结果</span><b>${escapeHtml(latest)}</b></div>
+        </div>
+      </section>
+    `;
+  }
+
+  private renderGovernanceImpactStrip(region: RegionViewModel): string {
+    const policy = region.recommendedPolicy;
+    const building = region.recommendedBuilding;
+    const policyCost = policy?.cost.money ?? 10;
+    const policyIntegration = effect(policy?.effects.integrationSpeed, 5);
+    const policyRisk = effect(policy?.effects.rebellionRisk, -3) + effect(policy?.risks.rebellionRisk, 0);
+    const policyLegitimacy = effect(policy?.effects.legitimacy, 2);
+    const policyTreasury = effect(policy?.effects.treasuryStability, 0) - effect(policy?.risks.treasuryPressure, 0);
+    const buildingCost = building?.cost ?? 20;
+    const buildingTurns = governanceProjectTurns(building);
+    const buildingYield = formatBuildingCompletionYield(building);
+    const reinforceArmy = Math.max(800, region.definition.manpower * 120);
+    const chips = [
+      impactChip('施政', `钱 -${policyCost} / 整合 ${formatSigned(policyIntegration)} / 民变 ${formatSigned(policyRisk)} / 法统 ${formatSigned(policyLegitimacy)}${policyTreasury ? ` / 财稳 ${formatSigned(policyTreasury)}` : ''}`),
+      impactChip('建设', `钱 -${buildingCost} / ${buildingTurns}旬后 ${buildingYield}`),
+      impactChip('赈济', '粮 -22 / 民变 -8 / 法统 +2'),
+      impactChip('编户', '钱 -12 / 整合 +4 / 贡献 +2 / 民变 +1'),
+      impactChip('征发', `粮 -18 / 兵 +${formatNumber(reinforceArmy)} / 民变 +4 / 贡献 -2`)
+    ];
+    return `
+      <div class="impact-strip" data-testid="governance-impact-strip">
+        <span>直接影响</span>
+        ${chips.join('')}
+      </div>
     `;
   }
 
@@ -2080,6 +2171,8 @@ export class StrategyUi {
         <button class="${this.warTab === 'logistics' ? 'active' : ''}" type="button" data-war-tab="logistics">后勤</button>
         <button class="${this.warTab === 'report' ? 'active' : ''}" type="button" data-war-tab="report">战报</button>
       </div>
+      ${this.renderWarObjectiveCard(region, targetRoute)}
+      ${this.renderWarImpactStrip(targetRoute)}
       <section class="info-band war-tab-panel${this.warTab === 'route' ? '' : ' hidden'}" data-testid="army-selector">
         <div class="band-title">军队选择</div>
         <div class="army-selector-grid">
@@ -2340,6 +2433,49 @@ export class StrategyUi {
         ${queueLines(this.operationLog.slice(0, 4), '暂无战报')}
         <p>${safeTargetSummary}</p>
       </section>
+    `;
+  }
+
+  private renderWarObjectiveCard(region: RegionViewModel, route: RouteForecast): string {
+    const objective = this.primaryObjectiveSummary();
+    const nextStep = this.currentNextStepSummary(region);
+    const latest = this.latestImpactSummary();
+    const report = this.latestBattleReportSummary();
+    return `
+      <section class="objective-card war-objective" data-testid="war-objective-card">
+        <div class="objective-card-head">
+          <span>战役目标</span>
+          <b>${escapeHtml(route.army.name)} → ${escapeHtml(route.target.definition.name)} / ${escapeHtml(objective)}</b>
+        </div>
+        <div class="objective-grid">
+          <div><span>风险预估</span><b>补给 ${route.supplyCost} / 接敌 ${Math.round(route.contactChance)}% / 截粮 ${Math.round(route.interceptionRisk)}%</b></div>
+          <div><span>下一步</span><b>${escapeHtml(nextStep)}</b></div>
+          <div><span>最近结果</span><b>${escapeHtml(report || latest)}</b></div>
+        </div>
+      </section>
+    `;
+  }
+
+  private renderWarImpactStrip(route: RouteForecast): string {
+    const deployTurns = commandTurns('deploy', route);
+    const supplyTurns = commandTurns('supply', route);
+    const scoutTurns = commandTurns('scout', route);
+    const fortifyReserve = commandSupplyReserve('fortify', route);
+    const attackTurns = commandTurns('attack', route);
+    const attackReserve = commandSupplyReserve('attack', route);
+    const chips = [
+      impactChip('部署军府', `钱 -18 / ${deployTurns}回合后补给 +5 / 风险 -2`),
+      impactChip('派运输队', `粮 -24 / ${supplyTurns}回合 / 预计补给 +${commandSupplyReserve('supply', route)}`),
+      impactChip('侦察', `钱 -6 / ${scoutTurns}回合后风险 -3`),
+      impactChip('固兵站', `粮 -10 / 钱 -10 / 2回合后军心 +3 / 补给 +4 / 路线容量提升`),
+      impactChip('启动战役', `粮 -36 / 钱 -12 / ${attackTurns}回合 / 预留补给 ${attackReserve} / 占后军管`),
+      impactChip('推进回合', this.commandQueue.length > 0 ? `结算 ${this.commandQueue.length} 项军令，可能触发截粮` : '暂无军令时只推进敌情与战报')
+    ];
+    return `
+      <div class="impact-strip war-impact-strip" data-testid="war-impact-strip">
+        <span>直接影响</span>
+        ${chips.join('')}
+      </div>
     `;
   }
 
@@ -3157,7 +3293,8 @@ export class StrategyUi {
     list.innerHTML = [
       outlinerItem('高风险', `${risky[0].definition.name} 民变 ${Math.round(risky[0].risk)}%`, risky[0].definition.id),
       outlinerItem('王朝', this.dynastyPressureSummary(), this.selectedRegion.definition.id),
-      outlinerItem('胜利', this.victoryProgressSummary(), this.selectedRegion.definition.id),
+      outlinerItem('当前目标', this.primaryObjectiveSummary(), this.selectedRegion.definition.id),
+      outlinerItem('下一步', this.currentNextStepSummary(this.selectedRegion), this.selectedRegion.definition.id),
       outlinerItem('行军中', `${route.army.name} → ${route.target.definition.name}`, route.target.definition.id),
       outlinerItem('经营', this.governanceQueue[0] ?? `${this.selectedRegion.recommendedPolicy?.name ?? '安抚'} / ${this.selectedRegion.definition.name}`, this.selectedRegion.definition.id),
       outlinerItem('后勤', nextCommand ? describeWarCommand(nextCommand) : `${route.target.definition.name} 需粮 ${route.occupationCost}`, nextCommand?.targetRegionId ?? route.target.definition.id),
@@ -3172,6 +3309,92 @@ export class StrategyUi {
         if (regionId) this.events.onSelectRegion(regionId);
       });
     });
+  }
+
+  private primaryObjectiveSummary(): string {
+    if (this.unifyJiuZhouVictoryAchieved()) return this.unifyJiuZhouProgressSummary();
+    if (this.dynastyVictoryAchieved()) return this.threeGenerationProgressSummary();
+    if (this.institutionalOrderVictoryAchieved()) return this.institutionalOrderProgressSummary();
+
+    const candidates = [
+      this.unifyJiuZhouObjectiveCandidate(),
+      this.threeGenerationObjectiveCandidate(),
+      this.institutionalOrderObjectiveCandidate()
+    ].sort((a, b) => a.gap - b.gap);
+    return candidates[0].summary;
+  }
+
+  private unifyJiuZhouObjectiveCandidate(): { summary: string; gap: number } {
+    const target = this.unifyJiuZhouVictoryTarget();
+    const owned = this.playerOwnedRegionCount();
+    const total = this.dataset.regions.length;
+    const legitimacy = Math.round(this.nationState.legitimacy);
+    const regionGap = Math.max(0, total - owned);
+    const legitimacyGap = Math.max(0, target.minLegitimacy - legitimacy);
+    return {
+      summary: `统一九州：控区 ${owned}/${total}，法统 ${legitimacy}/${target.minLegitimacy}`,
+      gap: regionGap * 4 + legitimacyGap
+    };
+  }
+
+  private threeGenerationObjectiveCandidate(): { summary: string; gap: number } {
+    const target = this.threeGenerationVictoryTarget();
+    const stable = Math.round(this.nationState.stableSuccessions ?? 0);
+    const legitimacy = Math.round(this.nationState.legitimacy);
+    const fragmentation = this.dynastyFragmentationScore();
+    const stableGap = Math.max(0, target.stableSuccessions - stable);
+    const legitimacyGap = Math.max(0, target.minLegitimacy - legitimacy);
+    const fragmentationGap = Math.max(0, fragmentation - target.maxFragmentation);
+    return {
+      summary: `三代延续：续承 ${stable}/${target.stableSuccessions}，法统 ${legitimacy}/${target.minLegitimacy}，分裂度 ${fragmentation}/${target.maxFragmentation}`,
+      gap: stableGap * 18 + legitimacyGap + fragmentationGap * 2
+    };
+  }
+
+  private institutionalOrderObjectiveCandidate(): { summary: string; gap: number } {
+    const target = this.institutionalOrderVictoryTarget();
+    const reforms = Math.round(this.nationState.completedCoreReforms ?? 0);
+    const legitimacy = Math.round(this.nationState.legitimacy ?? 0);
+    const treasury = Math.round(this.nationState.treasuryStability ?? 0);
+    const pressure = this.institutionalOrderPressureScore();
+    const reformGap = Math.max(0, target.requiredCoreReforms - reforms);
+    const legitimacyGap = Math.max(0, target.minLegitimacy - legitimacy);
+    const treasuryGap = Math.max(0, target.minTreasuryStability - treasury);
+    const pressureGap = Math.max(0, pressure - target.maxAnnexationPressure);
+    return {
+      summary: `制度胜利：改革 ${reforms}/${target.requiredCoreReforms}，法统 ${legitimacy}/${target.minLegitimacy}，财政 ${treasury}/${target.minTreasuryStability}，兼并 ${pressure}/${target.maxAnnexationPressure}`,
+      gap: reformGap * 14 + legitimacyGap + treasuryGap + pressureGap
+    };
+  }
+
+  private currentNextStepSummary(region: RegionViewModel): string {
+    if (this.mode === 'war') {
+      if (this.commandQueue.length === 0) return '先派运输队或部署军府，再启动战役';
+      const next = this.commandQueue[this.commandQueue.length - 1];
+      if (this.enemyInterdictionOrders.length > 0) return '先处理截粮威胁，再推进战时回合';
+      return `${next.label}在途：推进战时回合看结算`;
+    }
+
+    if (region.risk >= 30) return `${region.definition.name}民变偏高：先赈济或选民生路线`;
+    if (region.integration < 60) return `${region.definition.name}整合不足：施政、编户或推进一旬`;
+    if (region.contribution < 55) return `${region.definition.name}贡献偏低：编户清丈或建设后推进`;
+    if (this.nationState.legitimacy < this.unifyJiuZhouVictoryTarget().minLegitimacy) return '法统不足：选礼制路线、施政或稳定继承';
+    return '选择相邻敌区进入战争，扩大控区后再处理占后安抚';
+  }
+
+  private selectedRegionPressureSummary(region: RegionViewModel): string {
+    return `${region.definition.name}：民变 ${Math.round(region.risk)}%，整合 ${Math.round(region.integration)}%，贡献 ${Math.round(region.contribution)}%，法统 ${Math.round(region.legitimacy)}%`;
+  }
+
+  private latestImpactSummary(): string {
+    return this.operationLog[0] ?? '暂无操作结果';
+  }
+
+  private latestBattleReportSummary(): string {
+    const report = this.battleReportHistory[0];
+    if (!report) return '';
+    const detail = report.casualties ? `，伤亡 ${formatNumber(report.casualties)}` : report.supplyUsed ? `，补给 ${report.supplyUsed}` : '';
+    return `第${report.turn}回合 ${report.regionName}${commandKindName(report.kind)}：${report.result}${detail}`;
   }
 
   private dynastyPressureSummary(): string {
@@ -5080,6 +5303,7 @@ export class StrategyUi {
     if (!selected) return;
 
     const choice = this.selectChronicleChoice(selected);
+    this.applyChronicleChoiceCoreEffects(choice);
     const runtimeEvent: ChronicleRuntimeEvent = {
       id: selected.id,
       name: selected.name,
@@ -5090,6 +5314,7 @@ export class StrategyUi {
       regionName: this.selectedRegion.definition.name,
       choiceLabel: choice?.label ?? '廷议观望',
       summary: selected.uiSummary,
+      followUpTags: normalizeStringList(choice?.followUpTags),
       musicCueId: `event_${selected.id}`
     };
 
@@ -5104,6 +5329,42 @@ export class StrategyUi {
       this.enqueueGovernance(note);
     }
     this.events.onChronicleEvent?.(selected.id);
+  }
+
+  private applyChronicleChoiceCoreEffects(choice: ChronicleChoiceDefinition | undefined): void {
+    if (!choice) return;
+    const foodDelta =
+      effect(choice.effects?.food, 0) +
+      effect(choice.risks?.food, 0);
+    const moneyDelta =
+      effect(choice.effects?.money, 0) +
+      effect(choice.risks?.money, 0);
+    const legitimacyDelta =
+      effect(choice.effects?.legitimacy, 0) +
+      effect(choice.risks?.legitimacy, 0);
+    const rebellionRiskDelta =
+      effect(choice.effects?.rebellionRisk, 0) +
+      effect(choice.risks?.rebellionRisk, 0);
+    const treasuryDelta =
+      effect(choice.effects?.treasuryStability, 0) -
+      effect(choice.risks?.treasuryPressure, 0);
+
+    if (foodDelta !== 0) {
+      this.nationState.food = Math.max(0, this.nationState.food + foodDelta);
+    }
+    if (moneyDelta !== 0) {
+      this.nationState.money = Math.max(0, this.nationState.money + moneyDelta);
+    }
+    if (legitimacyDelta !== 0) {
+      this.nationState.legitimacy = clamp(this.nationState.legitimacy + legitimacyDelta, 0, 100);
+      this.selectedRegion.legitimacy = clamp(this.selectedRegion.legitimacy + legitimacyDelta, 0, 100);
+    }
+    if (rebellionRiskDelta !== 0) {
+      this.selectedRegion.risk = clamp(this.selectedRegion.risk + rebellionRiskDelta, 0, 100);
+    }
+    if (treasuryDelta !== 0) {
+      this.nationState.treasuryStability = clamp(this.nationState.treasuryStability + treasuryDelta, 0, 100);
+    }
   }
 
   private isChronicleEventEligible(event: ChronicleEventDefinition, source: ChronicleRuntimeEvent['source']): boolean {
@@ -5164,7 +5425,8 @@ export class StrategyUi {
       ...(history?.geographyTags ?? []),
       ...(history?.customTags ?? []),
       ...(history?.strategicResources ?? []),
-      ...(history?.weaponTraditions ?? [])
+      ...(history?.weaponTraditions ?? []),
+      ...this.chronicleEventHistory.slice(0, 6).flatMap((event) => event.followUpTags ?? [])
     ];
     const tags = new Set(rawTags.filter(Boolean).map((tag) => String(tag)));
     const weather = new Set<string>();
@@ -5182,6 +5444,9 @@ export class StrategyUi {
     if (this.currentGovernanceTurn >= 3) techs.add('bronze_casting');
     if (joined.includes('river') || joined.includes('water') || joined.includes('canal')) techs.add('river_transport');
     if (source === 'war' || joined.includes('horse') || joined.includes('cavalry') || joined.includes('frontier')) techs.add('mounted_warfare');
+    for (const techId of this.nationState.completedTechIds ?? []) {
+      if (techId) techs.add(techId);
+    }
 
     return { tags, weather, astronomy, techs };
   }
@@ -5248,9 +5513,66 @@ export class StrategyUi {
     region.risk = clamp(region.risk + effect(policy?.effects.rebellionRisk, -3) + effect(policy?.risks.rebellionRisk, 0), 0, 100);
     region.contribution = clamp(region.contribution + 3, 0, 100);
     this.nationState.legitimacy = clamp(Math.round((this.nationState.legitimacy * 3 + region.legitimacy) / 4), 0, 100);
+    this.nationState.treasuryStability = clamp(
+      this.nationState.treasuryStability +
+      effect(policy?.effects.treasuryStability, 0) -
+      effect(policy?.risks.treasuryPressure, 0),
+      0,
+      100
+    );
     const delta = governanceLogisticsDeltaFromPolicy(policy);
     this.applyGovernanceLogisticsEffect(region, policy?.name ?? '地方安抚', delta);
+    this.recordCompletedCoreReform(policy);
     this.enqueueGovernance(`${region.definition.name}：${policy?.name ?? '地方安抚'}已执行，整合 ${Math.round(region.integration)}%，${formatGovernanceLogisticsDelta(delta)}`);
+  }
+
+  private recordCompletedCoreReform(policy: PolicyDefinition | undefined): void {
+    this.normalizeCompletedCoreReforms();
+    const reformId = policy?.category === 'reform' ? policy.id.trim() : '';
+    if (!reformId || this.nationState.completedCoreReformIds.includes(reformId)) return;
+
+    this.nationState.completedCoreReformIds = [...this.nationState.completedCoreReformIds, reformId];
+    this.normalizeCompletedCoreReforms();
+  }
+
+  private normalizeCompletedCoreReforms(): void {
+    const ids = Array.isArray(this.nationState.completedCoreReformIds) ? this.nationState.completedCoreReformIds : [];
+    const uniqueIds: string[] = [];
+    const seen = new Set<string>();
+    for (const rawId of ids) {
+      if (typeof rawId !== 'string') continue;
+      const id = rawId.trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      uniqueIds.push(id);
+    }
+
+    const legacyCount = Number.isFinite(this.nationState.completedCoreReforms)
+      ? Math.max(0, Math.floor(this.nationState.completedCoreReforms))
+      : 0;
+    this.nationState.completedCoreReformIds = uniqueIds;
+    this.nationState.completedCoreReforms = uniqueIds.length > 0 ? uniqueIds.length : legacyCount;
+  }
+
+  private normalizeCompletedTechnologies(): void {
+    const ids = Array.isArray(this.nationState.completedTechIds) ? this.nationState.completedTechIds : [];
+    const uniqueIds: string[] = [];
+    const seen = new Set<string>();
+    for (const rawId of ids) {
+      if (typeof rawId !== 'string') continue;
+      const id = rawId.trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      uniqueIds.push(id);
+    }
+
+    this.nationState.completedTechIds = uniqueIds;
+    this.nationState.researchPoints = Number.isFinite(this.nationState.researchPoints)
+      ? Math.max(0, Math.floor(this.nationState.researchPoints))
+      : 0;
+    this.nationState.currentResearchId = typeof this.nationState.currentResearchId === 'string'
+      ? this.nationState.currentResearchId.trim()
+      : '';
   }
 
   private applyConstruction(region: RegionViewModel): void {
@@ -5466,6 +5788,10 @@ function queueLines(items: string[], emptyText: string): string {
   return `<div class="queue-lines">${source.map((item) => `<div>${escapeHtml(item)}</div>`).join('')}</div>`;
 }
 
+function impactChip(label: string, text: string): string {
+  return `<em class="impact-chip"><b>${escapeHtml(label)}</b>${escapeHtml(text)}</em>`;
+}
+
 function saveSlotKey(slotId: SaveSlotId): string {
   return `${SAVE_SLOT_PREFIX}${slotId}`;
 }
@@ -5550,6 +5876,23 @@ function formatGovernanceProjectYield(project: GovernanceProject): string {
     project.integrationDelta !== 0 ? `整合 ${formatSigned(project.integrationDelta)}` : '',
     project.legitimacyDelta !== 0 ? `法统 ${formatSigned(project.legitimacyDelta)}` : '',
     project.riskDelta !== 0 ? `民变 ${formatSigned(project.riskDelta)}` : ''
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' / ') : '暂无直接收益';
+}
+
+function governanceProjectTurns(building: BuildingDefinition | undefined): number {
+  return Math.max(2, Math.min(5, Math.ceil((building?.cost ?? 25) / 15)));
+}
+
+function formatBuildingCompletionYield(building: BuildingDefinition | undefined): string {
+  const effects = building?.effects ?? {};
+  const parts = [
+    Math.max(0, Math.round(effect(effects.food, 0) / 2)) !== 0 ? `粮 ${formatSigned(Math.max(0, Math.round(effect(effects.food, 0) / 2)))}` : '',
+    Math.max(0, Math.round((effect(effects.money, 0) + effect(effects.taxEfficiency, 0)) / 2)) !== 0 ? `钱 ${formatSigned(Math.max(0, Math.round((effect(effects.money, 0) + effect(effects.taxEfficiency, 0)) / 2)))}` : '',
+    Math.max(1, Math.round((effect(effects.taxEfficiency, 0) + effect(effects.integrationSpeed, 0)) / 3)) !== 0 ? `贡献 ${formatSigned(Math.max(1, Math.round((effect(effects.taxEfficiency, 0) + effect(effects.integrationSpeed, 0)) / 3)))}` : '',
+    Math.max(1, Math.round(effect(effects.integrationSpeed, 0) / 2)) !== 0 ? `整合 ${formatSigned(Math.max(1, Math.round(effect(effects.integrationSpeed, 0) / 2)))}` : '',
+    Math.max(0, Math.round(effect(effects.legitimacy, 0))) !== 0 ? `法统 ${formatSigned(Math.max(0, Math.round(effect(effects.legitimacy, 0))))}` : '',
+    Math.min(0, Math.round(effect(effects.rebellionRisk, 0))) !== 0 ? `民变 ${formatSigned(Math.min(0, Math.round(effect(effects.rebellionRisk, 0))))}` : ''
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' / ') : '暂无直接收益';
 }
@@ -5985,7 +6328,9 @@ function formatEffects(effects: Record<string, number | undefined>): string {
     manpowerToArmy: '兵力',
     localPower: '地方势力',
     armyMorale: '军心',
-    mobility: '机动'
+    mobility: '机动',
+    treasuryStability: '财稳',
+    treasuryPressure: '财压'
   };
   return Object.entries(effects)
     .flatMap(([key, value]) => typeof value === 'number'
@@ -6160,6 +6505,20 @@ function effect(value: number | undefined, fallback: number): number {
 function matches(value: string, needles: string[]): boolean {
   const normalized = value.toLowerCase();
   return needles.some((needle) => normalized.includes(needle.toLowerCase()));
+}
+
+function normalizeStringList(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const id = value.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    normalized.push(id);
+  }
+  return normalized;
 }
 
 function clamp(value: number, min: number, max: number): number {

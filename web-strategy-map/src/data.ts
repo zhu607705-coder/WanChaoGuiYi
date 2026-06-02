@@ -73,7 +73,11 @@ export interface StrategyDataset {
     courtPressure: number;
     stableSuccessions: number;
     completedCoreReforms: number;
+    completedCoreReformIds: string[];
     treasuryStability: number;
+    researchPoints: number;
+    completedTechIds: string[];
+    currentResearchId: string;
   };
 }
 
@@ -253,7 +257,11 @@ export async function loadStrategyDataset(): Promise<StrategyDataset> {
     courtPressure,
     stableSuccessions: 0,
     completedCoreReforms: 0,
-    treasuryStability: 50
+    completedCoreReformIds: [],
+    treasuryStability: 50,
+    researchPoints: 0,
+    completedTechIds: [],
+    currentResearchId: ''
   };
 
   return {

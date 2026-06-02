@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/web-strategy-map"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "nuget"
+    directory: "/tools/headless_runner/WanChaoGuiYiTests"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
