@@ -13722,3 +13722,47 @@ Playwright 测试在 `consoleErrors` 检查时失败，因为音频文件未在�
 - `dotnet test tools\headless_runner\WanChaoGuiYiTests\WanChaoGuiYiTests.csproj --filter "FullyQualifiedName~VictorySystemInstitutionalOrderTests"`：通过，3/3。
 - `npm --prefix web-strategy-map run build`：通过；同步 403 个运行数据文件并生成 Web `dist`。
 - README 本地链接检查通过；`docs/assets/github-repository-banner.svg` XML 解析通过；`git diff --check` 通过，仅保留已有 LF/CRLF 工作区提示。
+
+### 上传与清理结果
+
+- 已提交并推送到 GitHub `origin/main`：
+  - 内容上传提交：`efb14d02a45ec435485d7ac29e222f1e2a764e93`。
+  - 远端验证：`git ls-remote origin refs/heads/main` 已确认上传后远端 `main` 与本地 HEAD 匹配；报告收口提交后再次以远端 HEAD 复核为准。
+  - GitHub 仓库：`https://github.com/zhu607705-coder/WanChaoGuiYi`，默认分支 `main`。
+- 清理删除 16 个 ignored 本地产物：
+  - `web-strategy-map/dist`
+  - `web-strategy-map/public`
+  - `web-strategy-map/node_modules`
+  - `web-strategy-map/.codex-runlogs`
+  - `web-strategy-map/debug.log`
+  - `web-strategy-map/dev-server.log`
+  - `web-strategy-map/playwright-report`
+  - `web-strategy-map/test-results`
+  - `test-results`
+  - `tools/headless_runner/WanChaoGuiYiHeadless/bin`
+  - `tools/headless_runner/WanChaoGuiYiHeadless/obj`
+  - `tools/headless_runner/WanChaoGuiYiTests/bin`
+  - `tools/headless_runner/WanChaoGuiYiTests/obj`
+  - `tools/headless_runner/latest-war-report.json`
+  - `tools/art/__pycache__`
+  - `.DS_Store`
+- 清理后复扫：工作区从约 5,701 个文件、1.98 GB 降到 672 个文件、约 634 MB。
+- 保留项：
+  - `.outputs/`：约 33.07 MB，包含既有输出/图片生成记录，未作为本轮重复备份删除。
+  - `.omx/`：约 0.02 MB，保留为本地 agent 状态。
+  - `web-strategy-map/game-data-source`：404 个文件、568.08 MB，仍是权威源且已在 GitHub 普通 git 中。
+
+### Inventory What Reached GitHub
+
+- 普通 git：
+  - `web-strategy-map/game-data-source/` 权威 JSON、音频、地图和美术源。
+  - `web-strategy-map/src/`、`web-strategy-map/tests/`、`domain-core/src/`、`tools/headless_runner/` 源码和测试入口。
+  - 根 README、GitHub issue/PR 模板、社区健康文件、仓库展示 SVG、GitHub 发布说明。
+  - `docs/mvp-closure-ledger.md` 与 `project-development-report.md` 的 MVP 收口和发布记录。
+- GitHub Release：
+  - 本轮未创建 Release，也没有超过 100 MB 需要拆分或转 Release 的新增文件。
+- local-only 排除项：
+  - 可重建依赖/构建：`web-strategy-map/node_modules`、`web-strategy-map/public`、`web-strategy-map/dist`。
+  - 本地验证产物：`web-strategy-map/playwright-report`、`web-strategy-map/test-results`、`test-results`、`tools/headless_runner/*/bin`、`tools/headless_runner/*/obj`。
+  - 本地日志：`web-strategy-map/.codex-runlogs`、`web-strategy-map/debug.log`、`web-strategy-map/dev-server.log`。
+  - 本地 agent/输出记录：`.omx/`、`.outputs/`。
